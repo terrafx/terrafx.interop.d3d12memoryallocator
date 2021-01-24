@@ -16,8 +16,11 @@ using static TerraFX.Interop.D3D12MA.D3D12MemAllocH;
 
 using UINT = System.UInt32;
 using uint64_t = System.UInt64;
+using UINT64 = System.UInt64;
 using size_t = nint;
+using BOOL = System.Int32;
 
+using SuballocationList = TerraFX.Interop.D3D12MA.List<TerraFX.Interop.D3D12MA.Suballocation>;
 using D3D12MA_ATOMIC_UINT32 = TerraFX.Interop.D3D12MA.atomic<uint>;
 using D3D12MA_ATOMIC_UINT64 = TerraFX.Interop.D3D12MA.atomic<ulong>;
 
@@ -1484,4 +1487,76 @@ namespace TerraFX.Interop.D3D12MA
             return newItem;
         }
     }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Private class AllocationObjectAllocator definition
+
+    /// <summary>Thread-safe wrapper over PoolAllocator free list, for allocation of Allocation objects.</summary>
+    internal unsafe struct AllocationObjectAllocator
+    {
+        public AllocationObjectAllocator(ALLOCATION_CALLBACKS* allocationCallbacks)
+        {
+            D3D12MA_MUTEX.Init(out m_Mutex);
+            m_Allocator = new(allocationCallbacks, 1024);
+        }
+
+        private D3D12MA_MUTEX m_Mutex;
+        private PoolAllocator<Allocation> m_Allocator;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Private class BlockMetadata and derived classes - declarations
+
+    internal enum SuballocationType
+    {
+        SUBALLOCATION_TYPE_FREE = 0,
+        SUBALLOCATION_TYPE_ALLOCATION = 1,
+    };
+
+    /// <summary>
+    /// Represents a region of NormalBlock that is either assigned and returned as
+    /// allocated memory block or free.
+    /// </summary>
+    internal unsafe struct Suballocation
+    {
+        public UINT64 offset;
+        public UINT64 size;
+        public void* userData;
+        public SuballocationType type;
+    };
+
+    // Comparator for offsets.
+    internal unsafe struct SuballocationOffsetLess : ICmp<Suballocation>
+    {
+        public bool Invoke(Suballocation* lhs, Suballocation* rhs)
+        {
+            return lhs->offset < rhs->offset;
+        }
+    }
+
+    internal unsafe struct SuballocationOffsetGreater : ICmp<Suballocation>
+    {
+        public bool Invoke(Suballocation* lhs, Suballocation* rhs)
+        {
+            return lhs->offset > rhs->offset;
+        }
+    }
+
+    internal unsafe struct SuballocationItemSizeLess : ICmp<SuballocationList.iterator>
+    {
+        public bool Invoke(SuballocationList.iterator* lhs, SuballocationList.iterator* rhs)
+        {
+            return lhs->op_Arrow()->size < rhs->op_Arrow()->size;
+        }
+    }
+
+    /// <summary>Parameters of planned allocation inside a NormalBlock.</summary>
+    internal struct AllocationRequest
+    {
+        public UINT64 offset;
+        public UINT64 sumFreeSize; // Sum size of free items that overlap with proposed allocation.
+        public UINT64 sumItemSize; // Sum size of items to make lost that overlap with proposed allocation.
+        public SuballocationList.iterator item;
+        public BOOL zeroInitialized;
+    };
 }

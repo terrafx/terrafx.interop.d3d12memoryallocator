@@ -9,6 +9,7 @@ using System.Runtime.Intrinsics.X86;
 using UINT = System.UInt32;
 using uint64_t = System.UInt64;
 using size_t = nint;
+using BOOL = System.Int32;
 
 namespace TerraFX.Interop.D3D12MA
 {
@@ -93,8 +94,10 @@ namespace TerraFX.Interop.D3D12MA
     /// <para>The object remembers size and some other information. To retrieve this information, use methods of this class.</para>
     /// <para>The object also remembers `ID3D12Resource` and "owns" a reference to it, so it calls `Release()` on the resource when destroyed.</para>
     /// </summary>
-    public unsafe partial struct Allocation
+    public unsafe partial struct Allocation : IDisposable
     {
+        public void Dispose() { }
+
         /// <summary>
         /// Deletes this object.
         /// <para>This function must be used instead of destructor, which is private. There is no reference counting involved.</para>
@@ -168,7 +171,7 @@ namespace TerraFX.Interop.D3D12MA
         /// </para>
         /// </summary>
         /// <returns>Whether the memory of the allocation was filled with zeros.</returns>
-        public int WasZeroInitialized() { return m_PackedData.WasZeroInitialized(); }
+        public BOOL WasZeroInitialized() { return m_PackedData.WasZeroInitialized(); }
 
         enum Type
         {
@@ -217,13 +220,13 @@ namespace TerraFX.Interop.D3D12MA
             public D3D12_RESOURCE_DIMENSION GetResourceDimension() { return (D3D12_RESOURCE_DIMENSION)m_ResourceDimension; }
             public D3D12_RESOURCE_FLAGS GetResourceFlags() { return (D3D12_RESOURCE_FLAGS)m_ResourceFlags; }
             public D3D12_TEXTURE_LAYOUT GetTextureLayout() { return (D3D12_TEXTURE_LAYOUT)m_TextureLayout; }
-            public int WasZeroInitialized() { return (int)m_WasZeroInitialized; }
+            public BOOL WasZeroInitialized() { return (BOOL)m_WasZeroInitialized; }
 
             public partial void SetType(Type type);
             public partial void SetResourceDimension(D3D12_RESOURCE_DIMENSION resourceDimension);
             public partial void SetResourceFlags(D3D12_RESOURCE_FLAGS resourceFlags);
             public partial void SetTextureLayout(D3D12_TEXTURE_LAYOUT textureLayout);
-            void SetWasZeroInitialized(int wasZeroInitialized) { m_WasZeroInitialized = wasZeroInitialized > 0 ? 1 : 0; }
+            void SetWasZeroInitialized(BOOL wasZeroInitialized) { m_WasZeroInitialized = wasZeroInitialized > 0 ? 1 : 0; }
 
             uint64_t __value;
 
@@ -715,7 +718,7 @@ namespace TerraFX.Interop.D3D12MA
         /// </summary>
         /// <param name="ppStatsString">Must be freed using Allocator::FreeStatsString.</param>
         /// <param name="DetailedMap">`TRUE` to include full list of allocations (can make the string quite long), `FALSE` to only return statistics.</param>
-        public partial void BuildStatsString(char** ppStatsString, int DetailedMap);
+        public partial void BuildStatsString(char** ppStatsString, BOOL DetailedMap);
 
         /// <summary>Frees memory of a string returned from Allocator::BuildStatsString.</summary>
         public partial void FreeStatsString(char* pStatsString);
@@ -798,7 +801,7 @@ namespace TerraFX.Interop.D3D12MA
         public partial void Release();
 
         /// <summary>Returns true if the block is empty - contains 0 allocations.</summary>
-        public partial int IsEmpty();
+        public partial BOOL IsEmpty();
 
         /// <summary>Returns information about an allocation at given offset - its size and custom pointer.</summary>
         public partial void GetAllocationInfo(uint64_t offset, VIRTUAL_ALLOCATION_INFO* pInfo);
