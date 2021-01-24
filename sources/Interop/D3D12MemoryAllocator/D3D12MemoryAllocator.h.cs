@@ -6,13 +6,17 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 
+using UINT = System.UInt32;
+using uint64_t = System.UInt64;
+using size_t = nint;
+
 namespace TerraFX.Interop.D3D12MA
 {
     /// <summary>Custom callbacks to CPU memory allocation functions.</summary>
     public unsafe struct ALLOCATION_CALLBACKS
     {
         /// <summary>Allocation function. The parameters are the size, alignment and `pUserData`.</summary>
-        public delegate*<nint, nint, void*, void*> pAllocate;
+        public delegate*<size_t, size_t, void*, void*> pAllocate;
 
         /// <summary>Dellocation function. The parameters are `pMemory` and `pUserData`.</summary>
         public delegate*<void*, void*, void> pFree;
@@ -105,7 +109,7 @@ namespace TerraFX.Interop.D3D12MA
         /// </para>
         /// </summary>
         /// <returns>If the Allocation represents committed resource with implicit heap, returns 0.</returns>
-        public partial ulong GetOffset();
+        public partial uint64_t GetOffset();
 
         /// <summary>
         /// Returns size in bytes of the allocation.
@@ -117,7 +121,7 @@ namespace TerraFX.Interop.D3D12MA
         /// </para>
         /// </summary>
         /// <returns>The size in bytes of the allocation.</returns>
-        public ulong GetSize() { return m_Size; }
+        public uint64_t GetSize() { return m_Size; }
 
         /// <summary>
         /// Returns D3D12 resource associated with this object.
@@ -175,9 +179,9 @@ namespace TerraFX.Interop.D3D12MA
         }
 
         void* m_Allocator;
-        ulong m_Size;
+        uint64_t m_Size;
         ID3D12Resource* m_Resource;
-        uint m_CreationFrameIndex;
+        UINT m_CreationFrameIndex;
         char* m_Name;
 
         [StructLayout(LayoutKind.Explicit)]
@@ -194,7 +198,7 @@ namespace TerraFX.Interop.D3D12MA
 
             public struct m_Placed_t
             {
-                ulong offset;
+                uint64_t offset;
                 void* block;
             }
 
@@ -221,35 +225,35 @@ namespace TerraFX.Interop.D3D12MA
             public partial void SetTextureLayout(D3D12_TEXTURE_LAYOUT textureLayout);
             void SetWasZeroInitialized(int wasZeroInitialized) { m_WasZeroInitialized = wasZeroInitialized > 0 ? 1 : 0; }
 
-            ulong __value;
+            uint64_t __value;
 
-            uint m_Type
+            UINT m_Type
             {
-                get => (uint)BitHelper.ExtractRange(__value, 0, 2);
+                get => (UINT)BitHelper.ExtractRange(__value, 0, 2);
                 set => __value = BitHelper.SetRange(__value, 0, 2, value);
             }
 
-            uint m_ResourceDimension
+            UINT m_ResourceDimension
             {
-                get => (uint)BitHelper.ExtractRange(__value, 2, 3);
+                get => (UINT)BitHelper.ExtractRange(__value, 2, 3);
                 set => __value = BitHelper.SetRange(__value, 2, 3, value);
             }
 
-            uint m_ResourceFlags
+            UINT m_ResourceFlags
             {
-                get => (uint)BitHelper.ExtractRange(__value, 5, 24);
+                get => (UINT)BitHelper.ExtractRange(__value, 5, 24);
                 set => __value = BitHelper.SetRange(__value, 5, 24, value);
             }
 
-            uint m_TextureLayout
+            UINT m_TextureLayout
             {
-                get => (uint)BitHelper.ExtractRange(__value, 29, 9);
+                get => (UINT)BitHelper.ExtractRange(__value, 29, 9);
                 set => __value = BitHelper.SetRange(__value, 29, 9, value);
             }
 
-            uint m_WasZeroInitialized
+            UINT m_WasZeroInitialized
             {
-                get => (uint)BitHelper.ExtractRange(__value, 38, 1);
+                get => (UINT)BitHelper.ExtractRange(__value, 38, 1);
                 set => __value = BitHelper.SetRange(__value, 38, 1, value);
             }
         }
@@ -289,20 +293,20 @@ namespace TerraFX.Interop.D3D12MA
         /// Then sizes of particular blocks may vary.
         /// </para>
         /// </summary>
-        public ulong BlockSize;
+        public uint64_t BlockSize;
 
         /// <summary>
         /// Minimum number of heaps (memory blocks) to be always allocated in this pool, even if they stay empty. Optional.
         /// <para>Set to 0 to have no preallocated blocks and allow the pool be completely empty.</para>
         /// </summary>
-        public uint MinBlockCount;
+        public UINT MinBlockCount;
 
         /// <summary>
         /// Maximum number of heaps (memory blocks) that can be allocated in this pool. Optional.
         /// <para>Set to 0 to use default, which is `UINT64_MAX`, which means no limit.</para>
         /// <para>Set to same value as D3D12MA::POOL_DESC::MinBlockCount to have fixed amount of memory allocated throughout whole lifetime of this pool.</para>
         /// </summary>
-        public uint MaxBlockCount;
+        public UINT MaxBlockCount;
     }
 
     /// <summary>Bit flags to be used with ALLOCATOR_DESC::Flags.</summary>
@@ -340,7 +344,7 @@ namespace TerraFX.Interop.D3D12MA
         /// Preferred size of a single `ID3D12Heap` block to be allocated.
         /// <para>Set to 0 to use default, which is currently 256 MiB.</para>
         /// </summary>
-        public ulong PreferredBlockSize;
+        public uint64_t PreferredBlockSize;
 
         /// <summary>
         /// Custom CPU memory allocation callbacks. Optional.
@@ -358,7 +362,7 @@ namespace TerraFX.Interop.D3D12MA
     public static unsafe partial class D3D12MemAllocH
     {
         /// <summary>Number of D3D12 memory heap types supported.</summary>
-        public const uint HEAP_TYPE_COUNT = 3;
+        public const UINT HEAP_TYPE_COUNT = 3;
 
         /// <summary>
         /// Creates new main D3D12MA::Allocator object and returns it through `ppAllocator`.
@@ -377,25 +381,25 @@ namespace TerraFX.Interop.D3D12MA
     public struct StatInfo
     {
         /// <summary>Number of memory blocks (heaps) allocated.</summary>
-        public uint BlockCount;
+        public UINT BlockCount;
 
         /// <summary>Number of D3D12MA::Allocation objects allocated.</summary>
-        public uint AllocationCount;
+        public UINT AllocationCount;
 
         /// <summary>Number of free ranges of memory between allocations.</summary>
-        public uint UnusedRangeCount;
+        public UINT UnusedRangeCount;
 
         /// <summary>Total number of bytes occupied by all allocations.</summary>
-        public ulong UsedBytes;
+        public uint64_t UsedBytes;
 
         /// <summary>Total number of bytes occupied by unused ranges.</summary>
-        public ulong UnusedBytes;
-        public ulong AllocationSizeMin;
-        public ulong AllocationSizeAvg;
-        public ulong AllocationSizeMax;
-        public ulong UnusedRangeSizeMin;
-        public ulong UnusedRangeSizeAvg;
-        public ulong UnusedRangeSizeMax;
+        public uint64_t UnusedBytes;
+        public uint64_t AllocationSizeMin;
+        public uint64_t AllocationSizeAvg;
+        public uint64_t AllocationSizeMax;
+        public uint64_t UnusedRangeSizeMin;
+        public uint64_t UnusedRangeSizeAvg;
+        public uint64_t UnusedRangeSizeMax;
     }
 
     /// <summary>General statistics from the current state of the allocator.</summary>
@@ -444,7 +448,7 @@ namespace TerraFX.Interop.D3D12MA
     public struct Budget
     {
         /// <summary>Sum size of all memory blocks allocated from particular heap type, in bytes.</summary>
-        public ulong BlockBytes;
+        public uint64_t BlockBytes;
 
         /// <summary>
         /// Sum size of all allocations created in particular heap type, in bytes.
@@ -454,7 +458,7 @@ namespace TerraFX.Interop.D3D12MA
         /// available for new allocations or wasted due to fragmentation.
         /// </para>
         /// </summary>
-        public ulong AllocationBytes;
+        public uint64_t AllocationBytes;
 
         /// <summary>
         /// Estimated current memory usage of the program, in bytes.
@@ -465,7 +469,7 @@ namespace TerraFX.Interop.D3D12MA
         /// memory blocks allocated outside of this library, if any.
         /// </para>
         /// </summary>
-        public ulong UsageBytes;
+        public uint64_t UsageBytes;
 
         /// <summary>
         /// Estimated amount of memory available to the program, in bytes.
@@ -477,7 +481,7 @@ namespace TerraFX.Interop.D3D12MA
         /// be allocated without problems. Exceeding the budget may result in various problems.
         /// </para>
         /// </summary>
-        public ulong BudgetBytes;
+        public uint64_t BudgetBytes;
     }
 
     /// <summary>
@@ -659,7 +663,7 @@ namespace TerraFX.Interop.D3D12MA
         /// </remarks>
         public partial HRESULT CreateAliasingResource(
             Allocation* pAllocation,
-            ulong AllocationLocalOffset,
+            uint64_t AllocationLocalOffset,
             D3D12_RESOURCE_DESC* pResourceDesc,
             D3D12_RESOURCE_STATES InitialResourceState,
             D3D12_CLEAR_VALUE* pOptimizedClearValue,
@@ -682,13 +686,13 @@ namespace TerraFX.Interop.D3D12MA
         public partial HRESULT SetDefaultHeapMinBytes(
             D3D12_HEAP_TYPE heapType,
             D3D12_HEAP_FLAGS heapFlags,
-            ulong minBytes);
+            uint64_t minBytes);
 
         /// <summary>
         /// Sets the index of the current frame.
         /// <para>This function is used to set the frame index in the allocator when a new game frame begins.</para>
         /// </summary>
-        public partial void SetCurrentFrameIndex(uint frameIndex);
+        public partial void SetCurrentFrameIndex(UINT frameIndex);
 
         /// <summary>Retrieves statistics from the current state of the allocator.</summary>
         public partial void CalculateStats(Stats* pStats);
@@ -727,7 +731,7 @@ namespace TerraFX.Interop.D3D12MA
         /// For example, if you allocate from some array of structures, 1 can mean single instance of entire structure.
         /// </para>
         /// </summary>
-        public ulong Size;
+        public uint64_t Size;
 
         /// <summary>
         /// Custom CPU memory allocation callbacks. Optional.
@@ -743,13 +747,13 @@ namespace TerraFX.Interop.D3D12MA
         /// Size of the allocation.
         /// <para>Cannot be zero.</para>
         /// </summary>
-        public ulong Size;
+        public uint64_t Size;
 
         /// <summary>
         /// Required alignment of the allocation.
         /// <para>Must be power of two. Special value 0 has the same meaning as 1 - means no special alignment is required, so allocation can start at any offset.</para>
         /// </summary>
-        public ulong Alignment;
+        public uint64_t Alignment;
 
         /// <summary>
         /// Custom pointer to be associated with the allocation.
@@ -765,7 +769,7 @@ namespace TerraFX.Interop.D3D12MA
         /// Size of the allocation.
         /// <para>Same value as passed in VIRTUAL_ALLOCATION_DESC::Size.</para>
         /// </summary>
-        public ulong Size;
+        public uint64_t Size;
 
         /// <summary>
         /// Custom pointer associated with the allocation.
@@ -797,21 +801,21 @@ namespace TerraFX.Interop.D3D12MA
         public partial int IsEmpty();
 
         /// <summary>Returns information about an allocation at given offset - its size and custom pointer.</summary>
-        public partial void GetAllocationInfo(ulong offset, VIRTUAL_ALLOCATION_INFO* pInfo);
+        public partial void GetAllocationInfo(uint64_t offset, VIRTUAL_ALLOCATION_INFO* pInfo);
 
         /// <summary>Creates new allocation.</summary>
         /// <param name="pOffset">Offset of the new allocation, which can also be treated as an unique identifier of the allocation within this block. `UINT64_MAX` if allocation failed.</param>
         /// <returns>`S_OK` if allocation succeeded, `E_OUTOFMEMORY` if it failed.</returns>
-        public partial HRESULT Allocate(VIRTUAL_ALLOCATION_DESC* pDesc, ulong* pOffset);
+        public partial HRESULT Allocate(VIRTUAL_ALLOCATION_DESC* pDesc, uint64_t* pOffset);
 
         /// <summary>Frees the allocation at given offset.</summary>
-        public partial void FreeAllocation(ulong offset);
+        public partial void FreeAllocation(uint64_t offset);
 
         /// <summary>Frees all the allocations.</summary>
         public partial void Clear();
 
         /// <summary>Changes custom pointer for an allocation at given offset to a new value.</summary>
-        public partial void SetAllocationUserData(ulong offset, void* pUserData);
+        public partial void SetAllocationUserData(uint64_t offset, void* pUserData);
 
         /// <summary>Retrieves statistics from the current state of the block.</summary>
         public partial void CalculateStats(StatInfo* pInfo);
@@ -834,7 +838,7 @@ namespace TerraFX.Interop.D3D12MA
         /// <summary>
         /// Extracts a bit field range from a given value.
         /// </summary>
-        /// <param name="value">The input <see cref="ulong"/> value.</param>
+        /// <param name="value">The input <see cref="uint64_t"/> value.</param>
         /// <param name="start">The initial index of the range to extract (in [0, 63] range).</param>
         /// <param name="length">The length of the range to extract (depends on <paramref name="start"/>).</param>
         /// <returns>The value of the extracted range within <paramref name="value"/>.</returns>
@@ -842,11 +846,11 @@ namespace TerraFX.Interop.D3D12MA
         /// This method doesn't validate <paramref name="start"/> and <paramref name="length"/>.
         /// If either parameter is not valid, the result will just be inconsistent. The method
         /// should not be used to set all the bits at once, and it is not guaranteed to work in
-        /// that case, which would just be equivalent to assigning the <see cref="ulong"/> value.
+        /// that case, which would just be equivalent to assigning the <see cref="uint64_t"/> value.
         /// Additionally, no conditional branches are used to retrieve the range.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong ExtractRange(ulong value, byte start, byte length)
+        public static uint64_t ExtractRange(uint64_t value, byte start, byte length)
         {
             if (Bmi1.X64.IsSupported)
             {
@@ -859,19 +863,19 @@ namespace TerraFX.Interop.D3D12MA
         /// <summary>
         /// Sets a bit field range within a target value.
         /// </summary>
-        /// <param name="value">The initial <see cref="ulong"/> value.</param>
+        /// <param name="value">The initial <see cref="uint64_t"/> value.</param>
         /// <param name="start">The initial index of the range to extract (in [0, 63] range).</param>
         /// <param name="length">The length of the range to extract (depends on <paramref name="start"/>).</param>
         /// <param name="flags">The input flags to insert in the target range.</param>
         /// <returns>The updated bit field value after setting the specified range.</returns>
         /// <remarks>
-        /// Just like <see cref="ExtractRange(ulong,byte,byte)"/>, this method doesn't validate the parameters
+        /// Just like <see cref="ExtractRange(uint64_t,byte,byte)"/>, this method doesn't validate the parameters
         /// and does not contain branching instructions, so it's well suited for use in tight loops as well.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong SetRange(ulong value, byte start, byte length, ulong flags)
+        public static uint64_t SetRange(uint64_t value, byte start, byte length, uint64_t flags)
         {
-            ulong
+            uint64_t
                 highBits = (1ul << length) - 1ul,
                 loadMask = highBits << start,
                 storeMask = (flags & highBits) << start;

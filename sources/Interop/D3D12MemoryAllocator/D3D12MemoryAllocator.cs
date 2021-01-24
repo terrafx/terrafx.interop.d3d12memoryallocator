@@ -14,6 +14,10 @@ using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12MA.D3D12MemAllocH;
 
+using UINT = System.UInt32;
+using uint64_t = System.UInt64;
+using size_t = nint;
+
 using D3D12MA_ATOMIC_UINT32 = TerraFX.Interop.D3D12MA.atomic<uint>;
 using D3D12MA_ATOMIC_UINT64 = TerraFX.Interop.D3D12MA.atomic<ulong>;
 
@@ -52,7 +56,7 @@ namespace TerraFX.Interop.D3D12MA
         internal const int D3D12MA_DEBUG_GLOBAL_MUTEX = 0;
 
         // Default size of a block allocated as single ID3D12Heap.
-        internal const ulong D3D12MA_DEFAULT_BLOCK_SIZE = (256UL * 1024 * 1024);
+        internal const uint64_t D3D12MA_DEFAULT_BLOCK_SIZE = (256UL * 1024 * 1024);
 
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +69,7 @@ namespace TerraFX.Interop.D3D12MA
         ////////////////////////////////////////////////////////////////////////////////
         // Private globals - CPU memory allocation
 
-        internal static void* DefaultAllocate(nint Size, nint Alignment, void* _  /*pUserData*/)
+        internal static void* DefaultAllocate(size_t Size, size_t Alignment, void* _  /*pUserData*/)
         {
             return (void*)Marshal.AllocHGlobal(Size);
         }
@@ -74,7 +78,7 @@ namespace TerraFX.Interop.D3D12MA
             Marshal.FreeHGlobal((IntPtr)pMemory);
         }
 
-        internal static void* Malloc(ALLOCATION_CALLBACKS* allocs, nint size, nint alignment)
+        internal static void* Malloc(ALLOCATION_CALLBACKS* allocs, size_t size, size_t alignment)
         {
             void* result = allocs->pAllocate(size, alignment, allocs->pUserData);
             D3D12MA_ASSERT((IntPtr)result);
@@ -90,13 +94,13 @@ namespace TerraFX.Interop.D3D12MA
         {
             return (T*)Malloc(allocs, sizeof(T), __alignof<T>());
         }
-        internal static T* AllocateArray<T>(ALLOCATION_CALLBACKS* allocs, nint count)
+        internal static T* AllocateArray<T>(ALLOCATION_CALLBACKS* allocs, size_t count)
             where T : unmanaged
         {
             return (T*)Malloc(allocs, sizeof(T) * count, __alignof<T>());
         }
 
-        private static nint __alignof<T>() where T : unmanaged => 8;
+        private static size_t __alignof<T>() where T : unmanaged => 8;
 
         internal static T* D3D12MA_NEW<T>(ALLOCATION_CALLBACKS* allocs)
             where T : unmanaged
@@ -105,11 +109,11 @@ namespace TerraFX.Interop.D3D12MA
             *p = default;
             return p;
         }
-        internal static T* D3D12MA_NEW_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, nint count)
+        internal static T* D3D12MA_NEW_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, size_t count)
             where T : unmanaged
         {
             T* p = AllocateArray<T>(allocs, count);
-            Unsafe.InitBlock(p, 0, (uint)(sizeof(T) * count));
+            Unsafe.InitBlock(p, 0, (UINT)(sizeof(T) * count));
             return p;
         }
 
@@ -122,12 +126,12 @@ namespace TerraFX.Interop.D3D12MA
                 Free(allocs, memory);
             }
         }
-        internal static void D3D12MA_DELETE_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, T* memory, nint count)
+        internal static void D3D12MA_DELETE_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, T* memory, size_t count)
             where T : unmanaged, IDisposable
         {
             if (memory != null)
             {
-                for (nint i = count; i > 0; i--)
+                for (size_t i = count; i > 0; i--)
                 {
                     memory[i].Dispose();
                 }
@@ -150,7 +154,7 @@ namespace TerraFX.Interop.D3D12MA
             }
         }
 
-        internal static void memcpy(void* dst, void* src, nint size)
+        internal static void memcpy(void* dst, void* src, size_t size)
         {
             Buffer.MemoryCopy(src, dst, size, size);
         }
@@ -178,7 +182,7 @@ namespace TerraFX.Interop.D3D12MA
             return cond;
         }
 
-        internal const uint NEW_BLOCK_SIZE_SHIFT_MAX = 3;
+        internal const UINT NEW_BLOCK_SIZE_SHIFT_MAX = 3;
 
         internal static T D3D12MA_MIN<T>(T a, T b)
             where T : unmanaged, IComparable<T>
@@ -239,18 +243,18 @@ namespace TerraFX.Interop.D3D12MA
 
         public void Increment()
         {
-            if (typeof(T) == typeof(uint))
+            if (typeof(T) == typeof(UINT))
                 Interlocked.Increment(ref Unsafe.As<T, int>(ref value));
-            else if (typeof(T) == typeof(ulong))
+            else if (typeof(T) == typeof(uint64_t))
                 Interlocked.Increment(ref Unsafe.As<T, long>(ref value));
             throw null!;
         }
 
         public T Load()
         {
-            if (typeof(T) == typeof(uint))
+            if (typeof(T) == typeof(UINT))
                 Interlocked.Increment(ref Unsafe.As<T, int>(ref value));
-            else if (typeof(T) == typeof(ulong))
+            else if (typeof(T) == typeof(uint64_t))
                 Interlocked.Increment(ref Unsafe.As<T, long>(ref value));
             throw null!;
         }
@@ -263,38 +267,38 @@ namespace TerraFX.Interop.D3D12MA
         /// T must be unsigned integer number or signed integer but always nonnegative.
         /// For 0 returns true.
         /// </summary>
-        internal static bool IsPow2(nint x)
+        internal static bool IsPow2(size_t x)
         {
             return (x & (x - 1)) == 0;
         }
 
         // Aligns given value up to nearest multiply of align value. For example: AlignUp(11, 8) = 16.
         // Use types like UINT, uint64_t as T.
-        internal static nint AlignUp(nint val, nint alignment)
+        internal static size_t AlignUp(size_t val, size_t alignment)
         {
             D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
             return (val + alignment - 1) & ~(alignment - 1);
         }
         // Aligns given value down to nearest multiply of align value. For example: AlignUp(11, 8) = 8.
         // Use types like UINT, uint64_t as T.
-        internal static nint AlignDown(nint val, nint alignment)
+        internal static size_t AlignDown(size_t val, size_t alignment)
         {
             D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
             return val & ~(alignment - 1);
         }
 
         // Division with mathematical rounding to nearest number.
-        internal static uint RoundDiv(uint x, uint y)
+        internal static UINT RoundDiv(UINT x, UINT y)
         {
-            return (x + (y / (uint)2)) / y;
+            return (x + (y / (UINT)2)) / y;
         }
-        internal static uint DivideRoudingUp(uint x, uint y)
+        internal static UINT DivideRoudingUp(UINT x, UINT y)
         {
             return (x + y - 1) / y;
         }
 
         // Returns smallest power of 2 greater or equal to v.
-        internal static uint NextPow2(uint v)
+        internal static UINT NextPow2(UINT v)
         {
             v--;
             v |= v >> 1;
@@ -305,7 +309,7 @@ namespace TerraFX.Interop.D3D12MA
             v++;
             return v;
         }
-        internal static ulong NextPow2(ulong v)
+        internal static uint64_t NextPow2(uint64_t v)
         {
             v--;
             v |= v >> 1;
@@ -319,7 +323,7 @@ namespace TerraFX.Interop.D3D12MA
         }
 
         // Returns largest power of 2 less or equal to v.
-        internal static uint PrevPow2(uint v)
+        internal static UINT PrevPow2(UINT v)
         {
             v |= v >> 1;
             v |= v >> 2;
@@ -329,7 +333,7 @@ namespace TerraFX.Interop.D3D12MA
             v = v ^ (v >> 1);
             return v;
         }
-        internal static ulong PrevPow2(ulong v)
+        internal static uint64_t PrevPow2(uint64_t v)
         {
             v |= v >> 1;
             v |= v >> 2;
@@ -404,7 +408,7 @@ namespace TerraFX.Interop.D3D12MA
     public static unsafe partial class D3D12MemAllocH
     {
         // Minimum size of a free suballocation to register it in the free suballocation collection.
-        internal const ulong MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER = 16;
+        internal const uint64_t MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER = 16;
 
         internal interface ICmp<T>
             where T : unmanaged
@@ -425,10 +429,10 @@ namespace TerraFX.Interop.D3D12MA
             where CmpLess : struct, ICmp<KeyT>
             where KeyT : unmanaged
         {
-            nint down = 0, up = (nint)end - (nint)beg;
+            size_t down = 0, up = (size_t)end - (size_t)beg;
             while (down < up)
             {
-                nint mid = (down + up) / 2;
+                size_t mid = (down + up) / 2;
                 if (cmp.Invoke((beg + mid), key))
                 {
                     down = mid + 1;
@@ -469,14 +473,14 @@ namespace TerraFX.Interop.D3D12MA
             }
         }
 
-        internal static uint HeapTypeToIndex(D3D12_HEAP_TYPE type)
+        internal static UINT HeapTypeToIndex(D3D12_HEAP_TYPE type)
         {
             switch (type)
             {
                 case D3D12_HEAP_TYPE_DEFAULT: return 0;
                 case D3D12_HEAP_TYPE_UPLOAD: return 1;
                 case D3D12_HEAP_TYPE_READBACK: return 2;
-                default: D3D12MA_ASSERT(0); return uint.MaxValue;
+                default: D3D12MA_ASSERT(0); return UINT.MaxValue;
             }
         }
 
@@ -518,7 +522,7 @@ namespace TerraFX.Interop.D3D12MA
                 statInfo.UnusedBytes / statInfo.UnusedRangeCount : 0;
         }
 
-        static ulong HeapFlagsToAlignment(D3D12_HEAP_FLAGS flags)
+        static uint64_t HeapFlagsToAlignment(D3D12_HEAP_FLAGS flags)
         {
             /*
             Documentation of D3D12_HEAP_DESC structure says:
@@ -571,7 +575,7 @@ namespace TerraFX.Interop.D3D12MA
         }
 
         // Only some formats are supported. For others it returns 0.
-        static uint GetBitsPerPixel(DXGI_FORMAT format)
+        static UINT GetBitsPerPixel(DXGI_FORMAT format)
         {
             switch (format)
             {
@@ -698,9 +702,9 @@ namespace TerraFX.Interop.D3D12MA
             if(resourceDesc.DepthOrArraySize != 1)
                 return false;
 
-            uint sizeX = (uint)resourceDesc.Width;
-            uint sizeY = resourceDesc.Height;
-            uint bitsPerPixel = GetBitsPerPixel(resourceDesc.Format);
+            UINT sizeX = (UINT)resourceDesc.Width;
+            UINT sizeY = resourceDesc.Height;
+            UINT bitsPerPixel = GetBitsPerPixel(resourceDesc.Format);
             if(bitsPerPixel == 0)
                 return false;
 
@@ -711,7 +715,7 @@ namespace TerraFX.Interop.D3D12MA
                 bitsPerPixel *= 16;
             }
 
-            uint tileSizeX = 0, tileSizeY = 0;
+            UINT tileSizeX = 0, tileSizeY = 0;
             switch(bitsPerPixel)
             {
             case   8: tileSizeX = 64; tileSizeY = 64; break;
@@ -722,7 +726,7 @@ namespace TerraFX.Interop.D3D12MA
             default: return false;
             }
 
-            uint tileCount = DivideRoudingUp(sizeX, tileSizeX) * DivideRoudingUp(sizeY, tileSizeY);
+            UINT tileCount = DivideRoudingUp(sizeX, tileSizeX) * DivideRoudingUp(sizeY, tileSizeY);
             return tileCount <= 16;
         }
 
@@ -761,7 +765,7 @@ namespace TerraFX.Interop.D3D12MA
             m_Capacity = 0;
         }
 
-        public Vector(nint count, ALLOCATION_CALLBACKS* allocationCallbacks)
+        public Vector(size_t count, ALLOCATION_CALLBACKS* allocationCallbacks)
         {
             m_AllocationCallbacks = allocationCallbacks;
             m_pArray = count > 0 ? AllocateArray<T>(allocationCallbacks, count) : null;
@@ -800,10 +804,10 @@ namespace TerraFX.Interop.D3D12MA
         }
 
         public bool empty() { return m_Count == 0; }
-        public nint size() { return m_Count; }
+        public size_t size() { return m_Count; }
         public T* data() { return m_pArray; }
 
-        public T* this[nint index]
+        public T* this[size_t index]
         {
             get
             {
@@ -824,7 +828,7 @@ namespace TerraFX.Interop.D3D12MA
             return m_pArray + m_Count - 1;
         }
 
-        void reserve(nint newCapacity, bool freeMemory = false)
+        void reserve(size_t newCapacity, bool freeMemory = false)
         {
             newCapacity = D3D12MA_MAX(newCapacity, m_Count);
 
@@ -846,12 +850,12 @@ namespace TerraFX.Interop.D3D12MA
             }
         }
 
-        void resize(nint newCount, bool freeMemory = false)
+        void resize(size_t newCount, bool freeMemory = false)
         {
-            nint newCapacity = m_Capacity;
+            size_t newCapacity = m_Capacity;
             if (newCount > m_Capacity)
             {
-                newCapacity = D3D12MA_MAX(newCount, D3D12MA_MAX(m_Capacity * 3 / 2, (nint)8));
+                newCapacity = D3D12MA_MAX(newCount, D3D12MA_MAX(m_Capacity * 3 / 2, (size_t)8));
             }
             else if (freeMemory)
             {
@@ -861,7 +865,7 @@ namespace TerraFX.Interop.D3D12MA
             if (newCapacity != m_Capacity)
             {
                 T* newArray = newCapacity > 0 ? AllocateArray<T>(m_AllocationCallbacks, newCapacity) : null;
-                nint elementsToCopy = D3D12MA_MIN(m_Count, newCount);
+                size_t elementsToCopy = D3D12MA_MIN(m_Count, newCount);
                 if (elementsToCopy != 0)
                 {
                     memcpy(newArray, m_pArray, elementsToCopy * sizeof(T));
@@ -879,10 +883,10 @@ namespace TerraFX.Interop.D3D12MA
             resize(0, freeMemory);
         }
 
-        void insert(nint index, T* src)
+        void insert(size_t index, T* src)
         {
             D3D12MA_HEAVY_ASSERT(index <= m_Count);
-            nint oldCount = size();
+            size_t oldCount = size();
             resize(oldCount + 1);
             if(index<oldCount)
             {
@@ -891,10 +895,10 @@ namespace TerraFX.Interop.D3D12MA
             m_pArray[index] = *src;
         }
 
-        void remove(nint index)
+        void remove(size_t index)
         {
             D3D12MA_HEAVY_ASSERT(index < m_Count);
-            nint oldCount = size();
+            size_t oldCount = size();
             if (index < oldCount - 1)
             {
                 memcpy(m_pArray + index, m_pArray + (index + 1), (oldCount - index - 1) * sizeof(T));
@@ -904,7 +908,7 @@ namespace TerraFX.Interop.D3D12MA
 
         void push_back(T* src)
         {
-            nint newIndex = size();
+            size_t newIndex = size();
             resize(newIndex + 1);
             m_pArray[newIndex] = *src;
         }
@@ -929,10 +933,10 @@ namespace TerraFX.Interop.D3D12MA
         public T* begin() { return m_pArray; }
         public T* end() { return m_pArray + m_Count; }
 
-        nint InsertSorted<CmpLess>(T* value, in CmpLess cmp)
+        size_t InsertSorted<CmpLess>(T* value, in CmpLess cmp)
             where CmpLess : struct, ICmp<T>
         {
-            nint indexToInsert = (nint)(BinaryFindFirstNotLess(
+            size_t indexToInsert = (size_t)(BinaryFindFirstNotLess(
                 m_pArray,
                 m_pArray + m_Count,
                 value,
@@ -951,7 +955,7 @@ namespace TerraFX.Interop.D3D12MA
                 cmp);
             if((it != end()) && !cmp.Invoke(it, value) && !cmp.Invoke(value, it))
             {
-                nint indexToRemove = (nint)(it - begin());
+                size_t indexToRemove = (size_t)(it - begin());
                 remove(indexToRemove);
                 return true;
             }
@@ -960,7 +964,7 @@ namespace TerraFX.Interop.D3D12MA
 
         private readonly ALLOCATION_CALLBACKS* m_AllocationCallbacks;
         private T* m_pArray;
-        private nint m_Count;
-        private nint m_Capacity;
+        private size_t m_Count;
+        private size_t m_Capacity;
     }
 }
