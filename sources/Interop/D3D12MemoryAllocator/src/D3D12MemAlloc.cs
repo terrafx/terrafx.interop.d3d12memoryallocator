@@ -80,11 +80,17 @@ namespace TerraFX.Interop
 
         internal static void* DefaultAllocate(size_t Size, size_t Alignment, void* _  /*pUserData*/)
         {
-            return (void*)Marshal.AllocHGlobal((nint)Size);
+            [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+            static extern unsafe void* _aligned_malloc(size_t _Size, size_t _Alignment);
+
+            return _aligned_malloc(Size, Alignment);
         }
         internal static void DefaultFree(void* pMemory, void* _ /*pUserData*/)
         {
-            Marshal.FreeHGlobal((IntPtr)pMemory);
+            [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+            static extern unsafe void _aligned_free(void* _Block);
+
+            _aligned_free(pMemory);
         }
 
         internal static void* Malloc(ALLOCATION_CALLBACKS* allocs, size_t size, size_t alignment)
@@ -111,19 +117,81 @@ namespace TerraFX.Interop
 
         private static size_t __alignof<T>() where T : unmanaged => 8;
 
+        [DllImport("libc", CallingConvention = CallingConvention.Cdecl, EntryPoint = "?get_new_handler@std@@YAP6AXXZXZ", ExactSpelling = true)]
+        private static extern delegate* unmanaged[Cdecl]<void> win32_std_get_new_handler();
+
+        // out of memory
+        private const int ENOMEM = 12;
+
         internal static T* D3D12MA_NEW<T>(ALLOCATION_CALLBACKS* allocs)
             where T : unmanaged
         {
             T* p = Allocate<T>(allocs);
-            *p = default;
-            return p;
+
+            if (p != null)
+            {
+                *p = default;
+                return p;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static T* TRY_D3D12MA_NEW(ALLOCATION_CALLBACKS* allocs)
+            {
+                T* p = null;
+
+                while (p == null)
+                {
+                    delegate* unmanaged[Cdecl]<void> h = win32_std_get_new_handler();
+
+                    if (h == null)
+                    {
+                        Environment.Exit(ENOMEM);
+                    }
+
+                    h();
+                    p = Allocate<T>(allocs);
+                }
+
+                *p = default;
+                return p;
+            }
+
+            return TRY_D3D12MA_NEW(allocs);
         }
         internal static T* D3D12MA_NEW_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, size_t count)
             where T : unmanaged
         {
             T* p = AllocateArray<T>(allocs, count);
-            Unsafe.InitBlock(p, 0, (UINT)(sizeof(T) * (int)count));
-            return p;
+
+            if (p != null)
+            {
+                Unsafe.InitBlock(p, 0, (UINT)(sizeof(T) * (int)count));
+                return p;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static T* TRY_D3D12MA_NEW_ARRAY(ALLOCATION_CALLBACKS* allocs, size_t count)
+            {
+                T* p = null;
+
+                while (p == null)
+                {
+                    delegate* unmanaged[Cdecl]<void> h = win32_std_get_new_handler();
+
+                    if (h == null)
+                    {
+                        Environment.Exit(ENOMEM);
+                    }
+
+                    h();
+                    p = AllocateArray<T>(allocs, count);
+                }
+
+                Unsafe.InitBlock(p, 0, (UINT)(sizeof(T) * (int)count));
+                return p;
+            }
+
+            return TRY_D3D12MA_NEW_ARRAY(allocs, count);
         }
 
         internal static void D3D12MA_DELETE<T>(ALLOCATION_CALLBACKS* allocs, T* memory)
