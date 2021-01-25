@@ -8,10 +8,10 @@ using System.Runtime.Intrinsics.X86;
 
 using UINT = System.UInt32;
 using uint64_t = System.UInt64;
-using size_t = nint;
+using size_t = nuint;
 using BOOL = System.Int32;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop
 {
     /// <summary>Custom callbacks to CPU memory allocation functions.</summary>
     public unsafe struct ALLOCATION_CALLBACKS
@@ -362,7 +362,7 @@ namespace TerraFX.Interop.D3D12MA
         public IDXGIAdapter* pAdapter;
     }
 
-    public static unsafe partial class D3D12MemAllocH
+    public static unsafe partial class D3D12MemoryAllocator
     {
         /// <summary>Number of D3D12 memory heap types supported.</summary>
         public const UINT HEAP_TYPE_COUNT = 3;

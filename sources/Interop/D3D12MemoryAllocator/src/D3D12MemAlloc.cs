@@ -12,22 +12,22 @@ using static TerraFX.Interop.DXGI_FORMAT;
 using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12MA.D3D12MemAllocH;
-using static TerraFX.Interop.D3D12MA.SuballocationType;
+using static TerraFX.Interop.D3D12MemoryAllocator;
+using static TerraFX.Interop.SuballocationType;
 
 using UINT = System.UInt32;
 using uint64_t = System.UInt64;
 using UINT64 = System.UInt64;
-using size_t = nint;
+using size_t = nuint;
 using BOOL = System.Int32;
 
-using SuballocationList = TerraFX.Interop.D3D12MA.List<TerraFX.Interop.D3D12MA.Suballocation>;
-using D3D12MA_ATOMIC_UINT32 = TerraFX.Interop.D3D12MA.atomic<uint>;
-using D3D12MA_ATOMIC_UINT64 = TerraFX.Interop.D3D12MA.atomic<ulong>;
+using SuballocationList = TerraFX.Interop.List<TerraFX.Interop.Suballocation>;
+using D3D12MA_ATOMIC_UINT32 = TerraFX.Interop.atomic<uint>;
+using D3D12MA_ATOMIC_UINT64 = TerraFX.Interop.atomic<ulong>;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop
 {
-    public static unsafe partial class D3D12MemAllocH
+    public static unsafe partial class D3D12MemoryAllocator
     {
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
@@ -80,7 +80,7 @@ namespace TerraFX.Interop.D3D12MA
 
         internal static void* DefaultAllocate(size_t Size, size_t Alignment, void* _  /*pUserData*/)
         {
-            return (void*)Marshal.AllocHGlobal(Size);
+            return (void*)Marshal.AllocHGlobal((nint)Size);
         }
         internal static void DefaultFree(void* pMemory, void* _ /*pUserData*/)
         {
@@ -101,12 +101,12 @@ namespace TerraFX.Interop.D3D12MA
         internal static T* Allocate<T>(ALLOCATION_CALLBACKS* allocs)
             where T : unmanaged
         {
-            return (T*)Malloc(allocs, sizeof(T), __alignof<T>());
+            return (T*)Malloc(allocs, (size_t)sizeof(T), __alignof<T>());
         }
         internal static T* AllocateArray<T>(ALLOCATION_CALLBACKS* allocs, size_t count)
             where T : unmanaged
         {
-            return (T*)Malloc(allocs, sizeof(T) * count, __alignof<T>());
+            return (T*)Malloc(allocs, (size_t)sizeof(T) * count, __alignof<T>());
         }
 
         private static size_t __alignof<T>() where T : unmanaged => 8;
@@ -122,7 +122,7 @@ namespace TerraFX.Interop.D3D12MA
             where T : unmanaged
         {
             T* p = AllocateArray<T>(allocs, count);
-            Unsafe.InitBlock(p, 0, (UINT)(sizeof(T) * count));
+            Unsafe.InitBlock(p, 0, (UINT)(sizeof(T) * (int)count));
             return p;
         }
 
@@ -269,7 +269,7 @@ namespace TerraFX.Interop.D3D12MA
         }
     }
 
-    public static unsafe partial class D3D12MemAllocH
+    public static unsafe partial class D3D12MemoryAllocator
     {
         /// <summary>
         /// Returns true if given number is a power of two.
@@ -414,7 +414,7 @@ namespace TerraFX.Interop.D3D12MA
         readonly D3D12MA_RW_MUTEX? m_pMutex;
     }
 
-    public static unsafe partial class D3D12MemAllocH
+    public static unsafe partial class D3D12MemoryAllocator
     {
         // Minimum size of a free suballocation to register it in the free suballocation collection.
         internal const uint64_t MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER = 16;
@@ -818,7 +818,7 @@ namespace TerraFX.Interop.D3D12MA
 
             if (m_Count > 0)
             {
-                memcpy(m_pArray, src.m_pArray, m_Count * sizeof(T));
+                memcpy(m_pArray, src.m_pArray, m_Count * (size_t)sizeof(T));
             }
         }
 
@@ -834,7 +834,7 @@ namespace TerraFX.Interop.D3D12MA
                 lhs.resize(rhs.m_Count);
                 if (lhs.m_Count != 0)
                 {
-                    memcpy(lhs.m_pArray, rhs.m_pArray, lhs.m_Count * sizeof(T));
+                    memcpy(lhs.m_pArray, rhs.m_pArray, lhs.m_Count * (size_t)sizeof(T));
                 }
             }
         }
@@ -878,7 +878,7 @@ namespace TerraFX.Interop.D3D12MA
                 T* newArray = newCapacity > 0 ? AllocateArray<T>(m_AllocationCallbacks, newCapacity) : null;
                 if (m_Count != 0)
                 {
-                    memcpy(newArray, m_pArray, m_Count * sizeof(T));
+                    memcpy(newArray, m_pArray, m_Count * (size_t)sizeof(T));
                 }
                 Free(m_AllocationCallbacks, m_pArray);
                 m_Capacity = newCapacity;
@@ -904,7 +904,7 @@ namespace TerraFX.Interop.D3D12MA
                 size_t elementsToCopy = D3D12MA_MIN(m_Count, newCount);
                 if (elementsToCopy != 0)
                 {
-                    memcpy(newArray, m_pArray, elementsToCopy * sizeof(T));
+                    memcpy(newArray, m_pArray, elementsToCopy * (size_t)sizeof(T));
                 }
                 Free(m_AllocationCallbacks, m_pArray);
                 m_Capacity = newCapacity;
@@ -926,7 +926,7 @@ namespace TerraFX.Interop.D3D12MA
             resize(oldCount + 1);
             if(index<oldCount)
             {
-                memcpy(m_pArray + (index + 1), m_pArray + index, (oldCount - index) * sizeof(T));
+                memcpy(m_pArray + (index + 1), m_pArray + index, (oldCount - index) * (size_t)sizeof(T));
             }
             m_pArray[index] = *src;
         }
@@ -937,7 +937,7 @@ namespace TerraFX.Interop.D3D12MA
             size_t oldCount = size();
             if (index < oldCount - 1)
             {
-                memcpy(m_pArray + index, m_pArray + (index + 1), (oldCount - index - 1) * sizeof(T));
+                memcpy(m_pArray + index, m_pArray + (index + 1), (oldCount - index - 1) * (size_t)sizeof(T));
             }
             resize(oldCount - 1);
         }
@@ -1161,7 +1161,7 @@ namespace TerraFX.Interop.D3D12MA
                 ItemBlock* block = m_ItemBlocks[i];
 
                 Item* pItemPtr;
-                memcpy(&pItemPtr, &ptr, sizeof(Item));
+                memcpy(&pItemPtr, &ptr, (size_t)sizeof(Item));
 
                 // Check if pItemPtr is in address range of this block.
                 if ((pItemPtr >= block->pItems) && (pItemPtr < block->pItems + block->Capacity))
