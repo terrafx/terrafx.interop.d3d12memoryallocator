@@ -5,19 +5,17 @@ using System.Threading;
 
 namespace TerraFX.Interop
 {
-    internal readonly struct D3D12MA_RW_MUTEX
+    internal readonly struct D3D12MA_MUTEX
     {
-        public void LockRead() { m_Lock.EnterReadLock(); }
-        public void UnlockRead() { m_Lock.ExitReadLock(); }
-        public void LockWrite() { m_Lock.EnterWriteLock(); }
-        public void UnlockWrite() { m_Lock.ExitWriteLock(); }
+        public void Lock() { Monitor.Enter(m_Mutex); }
+        public void Unlock() { Monitor.Exit(m_Mutex); }
 
-        public static void Init(out D3D12MA_RW_MUTEX mutex)
+        public static void Init(out D3D12MA_MUTEX mutex)
         {
             mutex = default;
-            Unsafe.AsRef(mutex.m_Lock) = new();
+            Unsafe.AsRef(mutex.m_Mutex) = new();
         }
 
-        private readonly ReaderWriterLockSlim m_Lock;
+        private readonly object m_Mutex;
     }
 }

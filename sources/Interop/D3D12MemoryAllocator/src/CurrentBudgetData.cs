@@ -43,12 +43,6 @@ namespace TerraFX.Interop
             public T _0;
             public T _1;
             public T _2;
-            public T _3;
-            public T _4;
-            public T _5;
-            public T _6;
-            public T _7;
-            public T _8;
 
             public ref T this[int index] => ref ((T*)Unsafe.AsPointer(ref this))[index];
         }
