@@ -772,7 +772,7 @@ namespace TerraFX.Interop.D3D12MA
         /// Size of the allocation.
         /// <para>Same value as passed in VIRTUAL_ALLOCATION_DESC::Size.</para>
         /// </summary>
-        public uint64_t Size;
+        public uint64_t size;
 
         /// <summary>
         /// Custom pointer associated with the allocation.
