@@ -261,16 +261,24 @@ namespace TerraFX.Interop
 
         internal const UINT NEW_BLOCK_SIZE_SHIFT_MAX = 3;
 
-        internal static T D3D12MA_MIN<T>(T a, T b)
-            where T : unmanaged, IComparable<T>
+        internal static size_t D3D12MA_MIN(size_t a, size_t b)
         {
-            return a.CompareTo(b) <= 0 ? a : b;
+            return a <= b ? a : b;
         }
 
-        internal static T D3D12MA_MAX<T>(T a, T b)
-            where T : unmanaged, IComparable<T>
+        internal static uint64_t D3D12MA_MIN(uint64_t a, uint64_t b)
         {
-            return a.CompareTo(b) >= 0 ? a : b;
+            return a <= b ? a : b;
+        }
+
+        internal static size_t D3D12MA_MAX(size_t a, size_t b)
+        {
+            return a >= b ? a : b;
+        }
+
+        internal static uint64_t D3D12MA_MAX(uint64_t a, uint64_t b)
+        {
+            return a >= b ? a : b;
         }
 
         internal static void D3D12MA_SWAP<T>(T* a, T* b)
@@ -424,7 +432,7 @@ namespace TerraFX.Interop
 
         internal static bool StrIsEmpty(byte* pStr)
         {
-            return pStr is null || *pStr == '\0';
+            return (pStr == null) || (*pStr == '\0');
         }
     }
 
