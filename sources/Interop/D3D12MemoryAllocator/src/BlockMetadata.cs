@@ -93,12 +93,12 @@ namespace TerraFX.Interop
         // Tries to find a place for suballocation with given parameters inside this block.
         // If succeeded, fills pAllocationRequest and returns true.
         // If failed, returns false.
-        public void CreateAllocationRequest(
+        public bool CreateAllocationRequest(
             UINT64 allocSize,
             UINT64 allocAlignment,
             AllocationRequest* pAllocationRequest)
         {
-            ((delegate*<BlockMetadata*, UINT64, UINT64, AllocationRequest*, void>)lpVtbl[8])((BlockMetadata*)Unsafe.AsPointer(ref this), allocSize, allocAlignment, pAllocationRequest);
+            return ((delegate*<BlockMetadata*, UINT64, UINT64, AllocationRequest*, bool>)lpVtbl[8])((BlockMetadata*)Unsafe.AsPointer(ref this), allocSize, allocAlignment, pAllocationRequest);
         }
 
         // Makes actual allocation based on request. Request must already be checked and valid.

@@ -16,6 +16,8 @@ namespace TerraFX.Interop
             this.ptr = ptr;
         }
 
+        public T* Value => ptr;
+
         public ref T this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -115,9 +115,9 @@ namespace TerraFX.Interop
         [NativeTypeName("UINT")] uint m_NextBlockId;
 
         [return: NativeTypeName("UINT64")]
-        readonly partial ulong CalcSumBlockSize();
+        private readonly partial ulong CalcSumBlockSize();
         [return: NativeTypeName("UINT64")]
-        readonly partial ulong CalcMaxBlockSize();
+        private readonly partial ulong CalcMaxBlockSize();
 
         // Finds and removes given block from vector.
         partial void Remove(NormalBlock* pBlock);
@@ -126,20 +126,23 @@ namespace TerraFX.Interop
         // after this call.
         partial void IncrementallySortBlocks();
 
-        partial HRESULT AllocatePage(
+        [return: NativeTypeName("HRESULT")]
+        private partial int AllocatePage(
             [NativeTypeName("UINT64")] ulong size,
             [NativeTypeName("UINT64")] ulong alignment,
             ALLOCATION_DESC* allocDesc,
             Allocation** pAllocation);
 
-        partial HRESULT AllocateFromBlock(
+        [return: NativeTypeName("HRESULT")]
+        private partial int AllocateFromBlock(
             NormalBlock* pBlock,
             [NativeTypeName("UINT64")] ulong size,
             [NativeTypeName("UINT64")] ulong alignment,
             ALLOCATION_FLAGS allocFlags,
             Allocation** pAllocation);
 
-        partial HRESULT CreateBlock([NativeTypeName("UINT64")] ulong blockSize, [NativeTypeName("size_t")] nuint* pNewBlockIndex);
+        [return: NativeTypeName("HRESULT")]
+        private partial int CreateBlock([NativeTypeName("UINT64")] ulong blockSize, [NativeTypeName("size_t")] nuint* pNewBlockIndex);
     }
 
     internal unsafe partial struct BlockVector : IDisposable
@@ -148,7 +151,7 @@ namespace TerraFX.Interop
         {
             for (nuint i = m_Blocks.size(); i > 0; i--)
             {
-                D3D12MA_DELETE(m_hAllocator->GetAllocs(), m_Blocks[i]);
+                D3D12MA_DELETE(m_hAllocator->GetAllocs(), m_Blocks[i]->Value);
             }
         }
 
@@ -167,7 +170,7 @@ namespace TerraFX.Interop
 
         public partial bool IsEmpty()
         {
-            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator.UseMutex());
+            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
             return m_Blocks.empty();
         }
 
@@ -182,7 +185,7 @@ namespace TerraFX.Interop
             HRESULT hr = S_OK;
 
             {
-                using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator.UseMutex());
+                using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
                 for (allocIndex = 0; allocIndex < allocationCount; ++allocIndex)
                 {
                     hr = AllocatePage(
@@ -210,7 +213,7 @@ namespace TerraFX.Interop
             return hr;
         }
 
-        partial int AllocatePage(
+        private partial int AllocatePage(
             ulong size,
             ulong alignment,
             ALLOCATION_DESC* allocDesc,
@@ -242,7 +245,7 @@ namespace TerraFX.Interop
                 // Forward order in m_Blocks - prefer blocks with smallest amount of free space.
                 for (nuint blockIndex = 0; blockIndex < m_Blocks.size(); ++blockIndex)
                 {
-                    NormalBlock* pCurrBlock = m_Blocks[blockIndex];
+                    NormalBlock* pCurrBlock = *m_Blocks[blockIndex];
                     D3D12MA_ASSERT(pCurrBlock);
                     HRESULT hr = AllocateFromBlock(
                         pCurrBlock,
@@ -308,7 +311,7 @@ namespace TerraFX.Interop
 
                 if (SUCCEEDED(hr))
                 {
-                    NormalBlock* pBlock = m_Blocks[newBlockIndex];
+                    NormalBlock* pBlock = *m_Blocks[newBlockIndex];
                     D3D12MA_ASSERT(pBlock->m_pMetadata->GetSize() >= size);
 
                     hr = AllocateFromBlock(
@@ -345,9 +348,9 @@ namespace TerraFX.Interop
 
             // Scope for lock.
             {
-                using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator.UseMutex());
+                using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
 
-                NormalBlock* pBlock = hAllocation->m_Placed.block;
+                NormalBlock* pBlock = hAllocation->m_Union.m_Placed.block;
 
                 pBlock->m_pMetadata->FreeAtOffset(hAllocation->GetOffset());
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());
@@ -375,7 +378,7 @@ namespace TerraFX.Interop
                 // (This is optional, heuristics.)
                 else if (m_HasEmptyBlock && blockCount > m_MinBlockCount)
                 {
-                    NormalBlock* pLastBlock = m_Blocks.back();
+                    NormalBlock* pLastBlock = m_Blocks.back()->Value;
                     if (pLastBlock->m_pMetadata->IsEmpty() &&
                         sumBlockSize - pLastBlock->m_pMetadata->GetSize() >= m_MinBytes)
                     {
@@ -412,9 +415,9 @@ namespace TerraFX.Interop
             {
                 ID3D12Resource* res = null;
                 hr = m_hAllocator->GetDevice()->CreatePlacedResource(
-                    (*ppAllocation)->m_Union.m_Placed.block->GetHeap(),
+                    (*ppAllocation)->m_Union.m_Placed.block->@base.GetHeap(),
                     (*ppAllocation)->GetOffset(),
-                    &resourceDesc,
+                    resourceDesc,
                     InitialResourceState,
                     pOptimizedClearValue,
                     __uuidof<ID3D12Resource>(),
@@ -468,9 +471,9 @@ namespace TerraFX.Interop
             {
                 ID3D12Resource* res = null;
                 hr = device8->CreatePlacedResource1(
-                    (*ppAllocation)->m_Union.m_Placed.block->GetHeap(),
+                    (*ppAllocation)->m_Union.m_Placed.block->@base.GetHeap(),
                     (*ppAllocation)->GetOffset(),
-                    &resourceDesc,
+                    resourceDesc,
                     InitialResourceState,
                     pOptimizedClearValue,
                     __uuidof<ID3D12Resource>(),
@@ -499,22 +502,22 @@ namespace TerraFX.Interop
             return hr;
         }
 
-        readonly partial ulong CalcSumBlockSize()
+        private readonly partial ulong CalcSumBlockSize()
         {
             ulong result = 0;
             for (nuint i = m_Blocks.size(); i-- > 0;)
             {
-                result += m_Blocks[i]->m_pMetadata->GetSize();
+                result += m_Blocks[i]->Value->m_pMetadata->GetSize();
             }
             return result;
         }
 
-        readonly partial ulong CalcMaxBlockSize()
+        private readonly partial ulong CalcMaxBlockSize()
         {
             ulong result = 0;
             for (nuint i = m_Blocks.size(); i-- > 0;)
             {
-                result = D3D12MA_MAX(result, m_Blocks[i]->m_pMetadata->GetSize());
+                result = D3D12MA_MAX(result, m_Blocks[i]->Value->m_pMetadata->GetSize());
                 if (result >= m_PreferredBlockSize)
                 {
                     break;
@@ -543,7 +546,7 @@ namespace TerraFX.Interop
             // Bubble sort only until first swap.
             for (nuint i = 1; i < m_Blocks.size(); ++i)
             {
-                if (m_Blocks[i - 1]->m_pMetadata->GetSumFreeSize() > m_Blocks[i]->m_pMetadata->GetSumFreeSize())
+                if (m_Blocks[i - 1]->Value->m_pMetadata->GetSumFreeSize() > m_Blocks[i]->Value->m_pMetadata->GetSumFreeSize())
                 {
                     D3D12MA_SWAP(m_Blocks[i - 1], m_Blocks[i]);
                     return;
@@ -551,7 +554,7 @@ namespace TerraFX.Interop
             }
         }
 
-        partial int AllocateFromBlock(
+        private partial int AllocateFromBlock(
             NormalBlock* pBlock,
             ulong size,
             ulong alignment,
@@ -571,7 +574,7 @@ namespace TerraFX.Interop
                 }
 
                 *pAllocation = m_hAllocator->GetAllocationObjectAllocator().Allocate(m_hAllocator, size, currRequest.zeroInitialized);
-                pBlock->m_pMetadata->Alloc(currRequest, size, *pAllocation);
+                pBlock->m_pMetadata->Alloc(&currRequest, size, *pAllocation);
                 (*pAllocation)->InitPlaced(currRequest.offset, alignment, pBlock);
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());
                 m_hAllocator->m_Budget.AddAllocation(HeapTypeToIndex(m_HeapType), size);
@@ -580,23 +583,24 @@ namespace TerraFX.Interop
             return E_OUTOFMEMORY;
         }
 
-        partial HRESULT CreateBlock(ulong blockSize, nuint* pNewBlockIndex)
+        private partial int CreateBlock(ulong blockSize, nuint* pNewBlockIndex)
         {
-            NormalBlock* pBlock = D3D12MA_NEW(m_hAllocator->GetAllocs(), NormalBlock)(
+            NormalBlock* pBlock = D3D12MA_NEW<NormalBlock>(m_hAllocator->GetAllocs());
+            *pBlock = new(
                 m_hAllocator,
-                this,
+                (BlockVector*)Unsafe.AsPointer(ref this),
                 m_HeapType,
                 m_HeapFlags,
                 blockSize,
                 m_NextBlockId++);
-            HRESULT hr = pBlock->Init();
+            int hr = pBlock->Init();
             if (FAILED(hr))
             {
                 D3D12MA_DELETE(m_hAllocator->GetAllocs(), pBlock);
                 return hr;
             }
 
-            m_Blocks.push_back(pBlock);
+            m_Blocks.push_back((Ptr<NormalBlock>*)&pBlock);
             if (pNewBlockIndex != null)
             {
                 *pNewBlockIndex = m_Blocks.size() - 1;
@@ -607,7 +611,7 @@ namespace TerraFX.Interop
 
         public partial int SetMinBytes(ulong minBytes)
         {
-            using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator.UseMutex());
+            using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
 
             if (minBytes == m_MinBytes)
             {
@@ -624,7 +628,7 @@ namespace TerraFX.Interop
                 m_HasEmptyBlock = false; // Will recalculate this value from scratch.
                 for (nuint blockIndex = blockCount; blockIndex-- > 0;)
                 {
-                    NormalBlock* block = m_Blocks[blockIndex];
+                    NormalBlock* block = *m_Blocks[blockIndex];
                     ulong size = block->m_pMetadata->GetSize();
                     bool isEmpty = block->m_pMetadata->IsEmpty();
                     if (isEmpty &&
@@ -648,7 +652,7 @@ namespace TerraFX.Interop
             // New minBytes is larger - may need to allocate some blocks.
             else
             {
-                ulong minBlockSize = m_PreferredBlockSize >> NEW_BLOCK_SIZE_SHIFT_MAX;
+                ulong minBlockSize = m_PreferredBlockSize >> (int)NEW_BLOCK_SIZE_SHIFT_MAX;
                 while (SUCCEEDED(hr) && sumBlockSize < minBytes)
                 {
                     if (blockCount < m_MaxBlockCount)
@@ -669,7 +673,7 @@ namespace TerraFX.Interop
                             }
                         }
 
-                        hr = CreateBlock(newBlockSize, NULL);
+                        hr = CreateBlock(newBlockSize, null);
                         if (SUCCEEDED(hr))
                         {
                             m_HasEmptyBlock = true;
@@ -690,16 +694,16 @@ namespace TerraFX.Interop
 
         public partial void AddStats(StatInfo* outStats)
         {
-            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator.UseMutex());
+            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
 
             for (nuint i = 0; i < m_Blocks.size(); ++i)
             {
-                NormalBlock* pBlock = m_Blocks[i];
+                NormalBlock* pBlock = *m_Blocks[i];
                 D3D12MA_ASSERT(pBlock);
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());
                 StatInfo blockStatInfo;
-                pBlock->m_pMetadata->CalcAllocationStatInfo(blockStatInfo);
-                AddStatInfo(outStats, blockStatInfo);
+                pBlock->m_pMetadata->CalcAllocationStatInfo(&blockStatInfo);
+                AddStatInfo(ref *outStats, ref blockStatInfo);
             }
         }
 
@@ -708,7 +712,7 @@ namespace TerraFX.Interop
             uint heapTypeIndex = HeapTypeToIndex(m_HeapType);
             ref StatInfo pStatInfo = ref outStats->HeapType[(int)heapTypeIndex];
 
-            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator.UseMutex());
+            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
 
             for (nuint i = 0; i < m_Blocks.size(); ++i)
             {
@@ -716,15 +720,15 @@ namespace TerraFX.Interop
                 D3D12MA_ASSERT(pBlock);
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());
                 StatInfo blockStatInfo;
-                pBlock->m_pMetadata->CalcAllocationStatInfo(blockStatInfo);
-                AddStatInfo(outStats.Total, blockStatInfo);
-                AddStatInfo(*pStatInfo, blockStatInfo);
+                pBlock->m_pMetadata->CalcAllocationStatInfo(&blockStatInfo);
+                AddStatInfo(ref outStats->Total, ref blockStatInfo);
+                AddStatInfo(ref pStatInfo, ref blockStatInfo);
             }
         }
 
         public partial void WriteBlockInfoToJson(JsonWriter* json)
         {
-            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator.UseMutex());
+            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
 
             json->BeginObject();
 
@@ -734,7 +738,7 @@ namespace TerraFX.Interop
                 D3D12MA_ASSERT(pBlock);
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());
                 json->BeginString();
-                json->ContinueString(pBlock->GetId());
+                json->ContinueString(pBlock->@base.GetId());
                 json->EndString();
 
                 pBlock->m_pMetadata->WriteAllocationInfoToJson(json);
