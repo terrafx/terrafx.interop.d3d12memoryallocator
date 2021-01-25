@@ -14,21 +14,30 @@ namespace TerraFX.Interop
     {
         private T value;
 
+        public void Add(T value)
+        {
+            if (typeof(T) == typeof(UINT))
+                Interlocked.Add(ref Unsafe.As<T, UINT>(ref this.value), Unsafe.As<T, UINT>(ref value));
+            else if (typeof(T) == typeof(uint64_t))
+                Interlocked.Add(ref Unsafe.As<T, uint64_t>(ref this.value), Unsafe.As<T, uint64_t>(ref value));
+            throw null!;
+        }
+
         public void Increment()
         {
             if (typeof(T) == typeof(UINT))
-                Interlocked.Increment(ref Unsafe.As<T, int>(ref value));
+                Interlocked.Increment(ref Unsafe.As<T, UINT>(ref value));
             else if (typeof(T) == typeof(uint64_t))
-                Interlocked.Increment(ref Unsafe.As<T, long>(ref value));
+                Interlocked.Increment(ref Unsafe.As<T, uint64_t>(ref value));
             throw null!;
         }
 
         public T Load()
         {
             if (typeof(T) == typeof(UINT))
-                Interlocked.Increment(ref Unsafe.As<T, int>(ref value));
+                Interlocked.Increment(ref Unsafe.As<T, UINT>(ref value));
             else if (typeof(T) == typeof(uint64_t))
-                Interlocked.Increment(ref Unsafe.As<T, long>(ref value));
+                Interlocked.Increment(ref Unsafe.As<T, uint64_t>(ref value));
             throw null!;
         }
     }
