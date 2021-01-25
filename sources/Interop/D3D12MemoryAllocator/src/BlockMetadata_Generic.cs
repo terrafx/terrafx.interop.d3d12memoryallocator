@@ -20,7 +20,7 @@ namespace TerraFX.Interop
 
         private static void** InitLpVtbl()
         {
-            SharedLpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BlockMetadata_Generic), sizeof(void*) * 14);
+            SharedLpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BlockMetadata_Generic), sizeof(void*) * 15);
             SharedLpVtbl[0] = (delegate*<BlockMetadata_Generic*, void>)&Dispose;
             SharedLpVtbl[1] = (delegate*<BlockMetadata_Generic*, UINT64, void>)&Init;
             SharedLpVtbl[2] = (delegate*<BlockMetadata_Generic*, bool>)&Validate;
@@ -35,6 +35,7 @@ namespace TerraFX.Interop
             SharedLpVtbl[11] = (delegate*<BlockMetadata_Generic*, void>)&Clear;
             SharedLpVtbl[12] = (delegate*<BlockMetadata_Generic*, UINT64, void*, void>)&SetAllocationUserData;
             SharedLpVtbl[13] = (delegate*<BlockMetadata_Generic*, StatInfo*, void>)&CalcAllocationStatInfo;
+            SharedLpVtbl[14] = (delegate*<BlockMetadata_Generic*, JsonWriter*, void>)&WriteAllocationInfoToJson;
             return SharedLpVtbl;
         }
 
@@ -80,6 +81,7 @@ namespace TerraFX.Interop
         public partial void SetAllocationUserData(UINT64 offset, void* userData);
 
         public partial void CalcAllocationStatInfo(StatInfo* outInfo);
+        public partial void WriteAllocationInfoToJson(JsonWriter* json);
 
         private UINT m_FreeCount;
         private UINT64 m_SumFreeSize;
@@ -237,6 +239,11 @@ namespace TerraFX.Interop
         public partial void CalcAllocationStatInfo(StatInfo* outInfo)
         {
             CalcAllocationStatInfo((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), outInfo);
+        }
+
+        public partial void WriteAllocationInfoToJson(JsonWriter* json)
+        {
+            WriteAllocationInfoToJson((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), json);
         }
 
         public static void Dispose(BlockMetadata_Generic* @this)
@@ -787,6 +794,58 @@ namespace TerraFX.Interop
                     outInfo->AllocationSizeMax = D3D12MA_MAX(suballoc->size, outInfo->AllocationSizeMax);
                 }
             }
+        }
+
+        public static void WriteAllocationInfoToJson(BlockMetadata_Generic* @this, JsonWriter* json)
+        {
+            json->BeginObject();
+            json->WriteString("TotalBytes");
+            json->WriteNumber(@this->@base.GetSize());
+            json->WriteString("UnusuedBytes");
+            json->WriteNumber(@this->GetSumFreeSize());
+            json->WriteString("Allocations");
+            json->WriteNumber(@this->GetAllocationCount());
+            json->WriteString("UnusedRanges");
+            json->WriteNumber(@this->m_FreeCount);
+            json->WriteString("Suballocations");
+            json->BeginArray();
+            for (SuballocationList.iterator suballocItem = @this->m_Suballocations.begin();
+                 suballocItem != @this->m_Suballocations.end();
+                 suballocItem.op_MoveNext())
+            {
+                Suballocation* suballoc = suballocItem.op_Arrow();
+                json->BeginObject(true);
+                json->WriteString("Offset");
+                json->WriteNumber(suballoc->offset);
+                if (suballoc->type == SUBALLOCATION_TYPE_FREE)
+                {
+                    json->WriteString("Type");
+                    json->WriteString("FREE");
+                    json->WriteString("Size");
+                    json->WriteNumber(suballoc->size);
+                }
+                else if (@this->@base.IsVirtual())
+                {
+                    json->WriteString("Type");
+                    json->WriteString("ALLOCATION");
+                    json->WriteString("Size");
+                    json->WriteNumber(suballoc->size);
+                    if (suballoc->userData != null)
+                    {
+                        json->WriteString("UserData");
+                        json->WriteNumber((UINT)suballoc->userData);
+                    }
+                }
+                else
+                {
+                    Allocation* alloc = (Allocation*)suballoc->userData;
+                    D3D12MA_ASSERT(alloc);
+                    json->AddAllocationToObject(alloc);
+                }
+                json->EndObject();
+            }
+            json->EndArray();
+            json->EndObject();
         }
     }
 }

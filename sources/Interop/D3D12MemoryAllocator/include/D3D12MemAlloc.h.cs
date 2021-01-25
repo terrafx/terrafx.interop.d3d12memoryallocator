@@ -173,7 +173,7 @@ namespace TerraFX.Interop
         /// <returns>Whether the memory of the allocation was filled with zeros.</returns>
         public BOOL WasZeroInitialized() { return m_PackedData.WasZeroInitialized(); }
 
-        enum Type
+        internal enum Type
         {
             TYPE_COMMITTED,
             TYPE_PLACED,
@@ -181,11 +181,11 @@ namespace TerraFX.Interop
             TYPE_COUNT
         }
 
-        void* m_Allocator;
-        uint64_t m_Size;
-        ID3D12Resource* m_Resource;
-        UINT m_CreationFrameIndex;
-        char* m_Name;
+        internal void* m_Allocator;
+        internal uint64_t m_Size;
+        internal ID3D12Resource* m_Resource;
+        internal UINT m_CreationFrameIndex;
+        internal char* m_Name;
 
         [StructLayout(LayoutKind.Explicit)]
         struct _Anonymous_e__Union
@@ -214,7 +214,7 @@ namespace TerraFX.Interop
 
         _Anonymous_e__Union m_Union;
 
-        partial struct PackedData
+        internal partial struct PackedData
         {
             public new Type GetType() { return (Type)m_Type; }
             public D3D12_RESOURCE_DIMENSION GetResourceDimension() { return (D3D12_RESOURCE_DIMENSION)m_ResourceDimension; }
@@ -261,7 +261,7 @@ namespace TerraFX.Interop
             }
         }
 
-        PackedData m_PackedData;
+        internal PackedData m_PackedData;
 
         // TODO
     }

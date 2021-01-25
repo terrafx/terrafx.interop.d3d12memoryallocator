@@ -22,7 +22,7 @@ namespace TerraFX.Interop
 
         private static void** InitLpVtbl()
         {
-            SharedLpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BlockMetadata), sizeof(void*) * 14);
+            SharedLpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BlockMetadata), sizeof(void*) * 15);
             SharedLpVtbl[0] = (delegate*<BlockMetadata*, void>)&Dispose;
             SharedLpVtbl[1] = (delegate*<BlockMetadata*, UINT64, void>)&Init;
             SharedLpVtbl[2] = null;
@@ -37,6 +37,7 @@ namespace TerraFX.Interop
             SharedLpVtbl[11] = null;
             SharedLpVtbl[12] = null;
             SharedLpVtbl[13] = null;
+            SharedLpVtbl[14] = null;
             return SharedLpVtbl;
         }
 
@@ -128,6 +129,11 @@ namespace TerraFX.Interop
         public void CalcAllocationStatInfo(StatInfo* outInfo)
         {
             ((delegate*<BlockMetadata*, StatInfo*, void>)lpVtbl[13])((BlockMetadata*)Unsafe.AsPointer(ref this), outInfo);
+        }
+
+        public void WriteAllocationInfoToJson(JsonWriter* json)
+        {
+            ((delegate*<BlockMetadata*, JsonWriter*, void>)lpVtbl[14])((BlockMetadata*)Unsafe.AsPointer(ref this), json);
         }
 
         public static void Dispose(BlockMetadata* @this) { }

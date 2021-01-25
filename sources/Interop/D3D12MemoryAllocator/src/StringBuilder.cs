@@ -25,6 +25,7 @@ namespace TerraFX.Interop
 
         public void Add(WCHAR ch) { m_Data.push_back(&ch); }
         public partial void Add(WCHAR* str);
+        public void Add(string str) { fixed (WCHAR* p = str) Add(p); }
         public void AddNewLine() { Add('\n'); }
         public partial void AddNumber(UINT num);
         public partial void AddNumber(UINT64 num);
