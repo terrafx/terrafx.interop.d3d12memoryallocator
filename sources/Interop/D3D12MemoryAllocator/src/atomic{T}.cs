@@ -23,6 +23,15 @@ namespace TerraFX.Interop
             throw null!;
         }
 
+        public void Subtract(T value)
+        {
+            if (typeof(T) == typeof(UINT))
+                Interlocked.Add(ref Unsafe.As<T, int>(ref this.value), -Unsafe.As<T, int>(ref value));
+            else if (typeof(T) == typeof(uint64_t))
+                Interlocked.Add(ref Unsafe.As<T, long>(ref this.value), -Unsafe.As<T, long>(ref value));
+            throw null!;
+        }
+
         public void Increment()
         {
             if (typeof(T) == typeof(UINT))

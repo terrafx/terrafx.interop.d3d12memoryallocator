@@ -518,7 +518,7 @@ namespace TerraFX.Interop
 
         // Stat helper functions
 
-        static void AddStatInfo(ref StatInfo dst, ref StatInfo src)
+        internal static void AddStatInfo(ref StatInfo dst, ref StatInfo src)
         {
             dst.BlockCount += src.BlockCount;
             dst.AllocationCount += src.AllocationCount;
@@ -531,7 +531,7 @@ namespace TerraFX.Interop
             dst.UnusedRangeSizeMax = D3D12MA_MAX(dst.UnusedRangeSizeMax, src.UnusedRangeSizeMax);
         }
 
-        static void PostProcessStatInfo(ref StatInfo statInfo)
+        internal static void PostProcessStatInfo(ref StatInfo statInfo)
         {
             statInfo.AllocationSizeAvg = statInfo.AllocationCount > 0 ?
                 statInfo.UsedBytes / statInfo.AllocationCount : 0;
@@ -539,7 +539,7 @@ namespace TerraFX.Interop
                 statInfo.UnusedBytes / statInfo.UnusedRangeCount : 0;
         }
 
-        static uint64_t HeapFlagsToAlignment(D3D12_HEAP_FLAGS flags)
+        internal static uint64_t HeapFlagsToAlignment(D3D12_HEAP_FLAGS flags)
         {
             /*
             Documentation of D3D12_HEAP_DESC structure says:
@@ -560,7 +560,7 @@ namespace TerraFX.Interop
                 D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
         }
 
-        static bool IsFormatCompressed(DXGI_FORMAT format)
+        internal static bool IsFormatCompressed(DXGI_FORMAT format)
         {
             switch (format)
             {
@@ -592,7 +592,7 @@ namespace TerraFX.Interop
         }
 
         // Only some formats are supported. For others it returns 0.
-        static UINT GetBitsPerPixel(DXGI_FORMAT format)
+        internal static UINT GetBitsPerPixel(DXGI_FORMAT format)
         {
             switch (format)
             {
@@ -708,7 +708,7 @@ namespace TerraFX.Interop
         }
 
         // This algorithm is overly conservative.
-        static bool CanUseSmallAlignment(in D3D12_RESOURCE_DESC resourceDesc)
+        internal static bool CanUseSmallAlignment(in D3D12_RESOURCE_DESC resourceDesc)
         {
             if (resourceDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D)
                 return false;
@@ -763,14 +763,14 @@ namespace TerraFX.Interop
             return tileCount <= 16;
         }
 
-        static D3D12_HEAP_FLAGS GetExtraHeapFlagsToIgnore()
+        internal static D3D12_HEAP_FLAGS GetExtraHeapFlagsToIgnore()
         {
             D3D12_HEAP_FLAGS result =
                 D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
             return result;
         }
 
-        static bool IsHeapTypeValid(D3D12_HEAP_TYPE type)
+        internal static bool IsHeapTypeValid(D3D12_HEAP_TYPE type)
         {
             return type == D3D12_HEAP_TYPE_DEFAULT ||
                 type == D3D12_HEAP_TYPE_UPLOAD ||
