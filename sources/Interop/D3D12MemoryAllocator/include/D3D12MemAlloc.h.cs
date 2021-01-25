@@ -97,8 +97,6 @@ namespace TerraFX.Interop
     /// </summary>
     public unsafe partial struct Allocation : IDisposable
     {
-        public void Dispose() { }
-
         /// <summary>
         /// Deletes this object.
         /// <para>This function must be used instead of destructor, which is private. There is no reference counting involved.</para>
@@ -189,7 +187,7 @@ namespace TerraFX.Interop
         internal char* m_Name;
 
         [StructLayout(LayoutKind.Explicit)]
-        struct _Anonymous_e__Union
+        internal struct _Anonymous_e__Union
         {
             [FieldOffset(0)] public m_Committed_t m_Committed;
             [FieldOffset(0)] public m_Placed_t m_Placed;
@@ -202,18 +200,18 @@ namespace TerraFX.Interop
 
             public struct m_Placed_t
             {
-                uint64_t offset;
-                void* block;
+                public uint64_t offset;
+                public NormalBlock* block;
             }
 
             public struct m_Heap_t
             {
-                D3D12_HEAP_TYPE heapType;
-                ID3D12Heap* heap;
+                public D3D12_HEAP_TYPE heapType;
+                public ID3D12Heap* heap;
             }
         }
 
-        _Anonymous_e__Union m_Union;
+        internal _Anonymous_e__Union m_Union;
 
         internal partial struct PackedData
         {
@@ -264,7 +262,18 @@ namespace TerraFX.Interop
 
         internal PackedData m_PackedData;
 
-        // TODO
+        internal Allocation(AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
+        {
+            // TODO
+        }
+
+        internal partial void Dispose();
+        internal partial void InitCommitted(D3D12_HEAP_TYPE heapType);
+        internal partial void InitPlaced([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong alignment, NormalBlock* block);
+        internal partial void InitHeap(D3D12_HEAP_TYPE heapType, ID3D12Heap* heap);
+        internal partial void SetResource<D3D12_RESOURCE_DESC_T>(ID3D12Resource* resource, D3D12_RESOURCE_DESC_T* pResourceDesc)
+            where D3D12_RESOURCE_DESC_T : unmanaged;
+        internal partial void FreeName();
     }
 
     /// <summary>Parameters of created D3D12MA::Pool object. To be used with D3D12MA::Allocator::CreatePool.</summary>
@@ -497,14 +506,10 @@ namespace TerraFX.Interop
                     {
                         switch (index)
                         {
-                            case 0:
-                                return ref p->_HeapType0;
-                            case 1:
-                                return ref p->_HeapType1;
-                            case 2:
-                                return ref p->_HeapType2;
-                            default:
-                                return ref Unsafe.NullRef<StatInfo>();
+                            case 0: return ref p->_HeapType0;
+                            case 1: return ref p->_HeapType1;
+                            case 2: return ref p->_HeapType2;
+                            default: return ref Unsafe.NullRef<StatInfo>();
                         }
                     }
                 }

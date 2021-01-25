@@ -251,6 +251,11 @@ namespace TerraFX.Interop
             Buffer.MemoryCopy(src, dst, size, size);
         }
 
+        internal static void ZeroMemory(void* dst, size_t size)
+        {
+            Unsafe.InitBlock(dst, 0, (uint)size);
+        }
+
         ////////////////////////////////////////////////////////////////////////////////
         // Private globals - basic facilities
 
