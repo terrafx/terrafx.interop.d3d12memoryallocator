@@ -305,7 +305,7 @@ namespace TerraFX.Interop
         partial void UnregisterCommittedAllocation(Allocation* alloc, D3D12_HEAP_TYPE heapType);
 
         // Registers Pool object in m_pPools.
-        partial void RegisterPool(Pool* pool, D3D12_HEAP_TYPE heapType);
+        internal partial void RegisterPool(Pool* pool, D3D12_HEAP_TYPE heapType);
         // Unregisters Pool object from m_pPools.
         internal partial void UnregisterPool(Pool* pool, D3D12_HEAP_TYPE heapType);
 
@@ -1435,7 +1435,7 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(success);
         }
 
-        partial void RegisterPool(Pool* pool, D3D12_HEAP_TYPE heapType)
+        internal partial void RegisterPool(Pool* pool, D3D12_HEAP_TYPE heapType)
         {
             uint heapTypeIndex = HeapTypeToIndex(heapType);
 
