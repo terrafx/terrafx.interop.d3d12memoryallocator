@@ -27,11 +27,12 @@ namespace TerraFX.Interop
         public partial Allocation* Allocate(AllocatorPimpl* allocator, ulong size, int wasZeroInitialized)
         {
             using MutexLock mutexLock = new((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
-            static Allocation Cctor(Ptr<AllocatorPimpl> allocator, ulong size, int wasZeroInitialized)
+            static Allocation Ctor(void** args)
             {
-                return new(allocator, size, wasZeroInitialized);
+                return new((AllocatorPimpl*)args[0], *(ulong*)args[1], *(int*)args[2]);
             }
-            return m_Allocator.Alloc((Ptr<AllocatorPimpl>)allocator, size, wasZeroInitialized, &Cctor);
+            void** args = stackalloc void*[3] { allocator, &size, &wasZeroInitialized };
+            return m_Allocator.Alloc(args, &Ctor);
         }
 
         public partial void Free(Allocation* alloc)

@@ -34,15 +34,7 @@ namespace TerraFX.Interop
         public void Dispose() { Clear(); }
         public partial void Clear();
         public partial T* Alloc();
-        public partial T* Alloc<T0>(T0 arg0, delegate*<T0, T> cctor)
-            where T0 : unmanaged;
-        public partial T* Alloc<T0, T1>(T0 arg0, T1 arg1, delegate*<T0, T1, T> cctor)
-            where T0 : unmanaged
-            where T1 : unmanaged;
-        public partial T* Alloc<T0, T1, T2>(T0 arg0, T1 arg1, T2 arg2, delegate*<T0, T1, T2, T> cctor)
-            where T0 : unmanaged
-            where T1 : unmanaged
-            where T2 : unmanaged;
+        public partial T* Alloc(void** args, delegate*<void**, T> ctor);
         public partial void Free(T* ptr);
 
         [StructLayout(LayoutKind.Explicit)]
@@ -77,57 +69,10 @@ namespace TerraFX.Interop
 
         public partial T* Alloc()
         {
-            static T Cctor(void** args, void* f)
-            {
-                return default;
-            }
-
-            return Alloc(null, null, &Cctor);
+            return Alloc(null, null);
         }
 
-        public partial T* Alloc<T0>(T0 arg0, delegate*<T0, T> cctor)
-            where T0 : unmanaged
-        {
-            void* args = &arg0;
-
-            static T Cctor(void** args, void* f)
-            {
-                return ((delegate*<T0, T>)f)(*(T0*)args[0]);
-            }
-
-            return Alloc(&args, cctor, &Cctor);
-        }
-
-        public partial T* Alloc<T0, T1>(T0 arg0, T1 arg1, delegate*<T0, T1, T> cctor)
-            where T0 : unmanaged
-            where T1 : unmanaged
-        {
-            void* args = stackalloc void*[2] { &arg0, &arg1 };
-
-            static T Cctor(void** args, void* f)
-            {
-                return ((delegate*<T0, T1, T>)f)(*(T0*)args[0], *(T1*)args[1]);
-            }
-
-            return Alloc(&args, cctor, &Cctor);
-        }
-
-        public partial T* Alloc<T0, T1, T2>(T0 arg0, T1 arg1, T2 arg2, delegate*<T0, T1, T2, T> cctor)
-            where T0 : unmanaged
-            where T1 : unmanaged
-            where T2 : unmanaged
-        {
-            void* args = stackalloc void*[3] { &arg0, &arg1, &arg2 };
-
-            static T Cctor(void** args, void* f)
-            {
-                return ((delegate*<T0, T1, T2, T>)f)(*(T0*)args[0], *(T1*)args[1], *(T2*)args[2]);
-            }
-
-            return Alloc(&args, cctor, &Cctor);
-        }
-
-        private T* Alloc(void** args, void* f, delegate*<void**, void*, T> cctor)
+        public partial T* Alloc(void** args, delegate*<void**, T> ctor)
         {
             for (nuint i = m_ItemBlocks.size(); i > 0; i--)
             {
@@ -138,7 +83,7 @@ namespace TerraFX.Interop
                     Item* pItem = &block->pItems[block->FirstFreeIndex];
                     block->FirstFreeIndex = pItem->NextFreeIndex;
                     T* result = (T*)pItem->Value;
-                    *result = cctor(args, f); // Explicit constructor call.
+                    *result = ctor == null ? default : ctor(args); // Explicit constructor call.
                     return result;
                 }
             }
@@ -149,7 +94,7 @@ namespace TerraFX.Interop
                 Item* pItem = &newBlock->pItems[0];
                 newBlock->FirstFreeIndex = pItem->NextFreeIndex;
                 T* result = (T*)pItem->Value;
-                *result = cctor(args, f); // Explicit constructor call.
+                *result = ctor == null ? default : ctor(args); // Explicit constructor call.
                 return result;
             }
         }
