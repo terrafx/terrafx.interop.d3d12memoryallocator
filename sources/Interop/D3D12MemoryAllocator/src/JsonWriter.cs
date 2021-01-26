@@ -5,17 +5,16 @@ using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12MemoryAllocator;
 using static TerraFX.Interop.JsonWriter.CollectionType;
 
-using UINT = System.UInt32;
-using UINT64 = System.UInt64;
-using size_t = nuint;
-using WCHAR = System.Char;
-
 namespace TerraFX.Interop
 {
     ////////////////////////////////////////////////////////////////////////////////
     // Private class JsonWriter
     internal unsafe partial struct JsonWriter : IDisposable
     {
+        private StringBuilder* m_SB;
+        private Vector<StackItem> m_Stack;
+        private bool m_InsideString;
+
         public JsonWriter(ALLOCATION_CALLBACKS* allocationCallbacks, StringBuilder* stringBuilder)
         {
             m_SB = stringBuilder;
@@ -31,19 +30,19 @@ namespace TerraFX.Interop
         public partial void BeginArray(bool singleLine = false);
         public partial void EndArray();
 
-        public partial void WriteString(WCHAR* pStr);
-        public void WriteString(string str) { fixed (WCHAR* p = str) WriteString(p); }
-        public partial void BeginString(WCHAR* pStr = null);
-        public partial void ContinueString(WCHAR* pStr);
-        public void ContinueString(string str) { fixed (WCHAR* p = str) ContinueString(p); }
-        public partial void ContinueString(UINT num);
-        public partial void ContinueString(UINT64 num);
+        public partial void WriteString([NativeTypeName("LPCWSTR")] char* pStr);
+        public void WriteString(string str) { fixed (char* p = str) WriteString(p); }
+        public partial void BeginString([NativeTypeName("LPCWSTR")] char* pStr = null);
+        public partial void ContinueString([NativeTypeName("LPCWSTR")] char* pStr);
+        public void ContinueString(string str) { fixed (char* p = str) ContinueString(p); }
+        public partial void ContinueString([NativeTypeName("UINT")] uint num);
+        public partial void ContinueString([NativeTypeName("UINT64")] ulong num);
         public partial void AddAllocationToObject(Allocation* alloc);
         // void ContinueString_Pointer(const void* ptr);
-        public partial void EndString(WCHAR* pStr = null);
+        public partial void EndString([NativeTypeName("LPCWSTR")] char* pStr = null);
 
-        public partial void WriteNumber(UINT num);
-        public partial void WriteNumber(UINT64 num);
+        public partial void WriteNumber([NativeTypeName("UINT")] uint num);
+        public partial void WriteNumber([NativeTypeName("UINT64")] ulong num);
         public partial void WriteBool(bool b);
         public partial void WriteNull();
 
@@ -57,13 +56,9 @@ namespace TerraFX.Interop
         struct StackItem
         {
             public CollectionType type;
-            public UINT valueCount;
+            [NativeTypeName("UINT")] public uint valueCount;
             public bool singleLineMode;
         };
-
-        private StringBuilder* m_SB;
-        private Vector<StackItem> m_Stack;
-        private bool m_InsideString;
 
         private partial void BeginValue(bool isString);
         private partial void WriteIndent(bool oneLess = false);
@@ -128,13 +123,13 @@ namespace TerraFX.Interop
             m_Stack.pop_back();
         }
 
-        public partial void WriteString(WCHAR* pStr)
+        public partial void WriteString(char* pStr)
         {
             BeginString(pStr);
             EndString();
         }
 
-        public partial void BeginString(WCHAR* pStr)
+        public partial void BeginString(char* pStr)
         {
             D3D12MA_ASSERT(!m_InsideString);
 
@@ -147,19 +142,19 @@ namespace TerraFX.Interop
             }
         }
 
-        public partial void ContinueString(WCHAR* pStr)
+        public partial void ContinueString(char* pStr)
         {
             D3D12MA_ASSERT(m_InsideString);
             D3D12MA_ASSERT(pStr);
 
-            for (WCHAR* p = pStr; *p != 0; ++p)
+            for (char* p = pStr; *p != 0; ++p)
             {
                 // the strings we encode are assumed to be in UTF-16LE format, the native
                 // windows wide character unicode format. In this encoding unicode code
                 // points U+0000 to U+D7FF and U+E000 to U+FFFF are encoded in two bytes,
                 // and everything else takes more than two bytes. We will reject any
                 // multi wchar character encodings for simplicity.
-                UINT val = *p;
+                uint val = *p;
                 D3D12MA_ASSERT((val <= 0xD7FF) || (0xE000 <= val && val <= 0xFFFF));
                 switch (*p)
                 {
@@ -180,14 +175,14 @@ namespace TerraFX.Interop
                         {
                             m_SB->Add('\\');
                             m_SB->Add('u');
-                            for (UINT i = 0; i < 4; ++i)
+                            for (uint i = 0; i < 4; ++i)
                             {
-                                UINT hexDigit = (val & 0xF000) >> 12;
+                                uint hexDigit = (val & 0xF000) >> 12;
                                 val <<= 4;
                                 if (hexDigit < 10)
-                                    m_SB->Add((WCHAR)('0' + hexDigit));
+                                    m_SB->Add((char)('0' + hexDigit));
                                 else
-                                    m_SB->Add((WCHAR)('A' + hexDigit));
+                                    m_SB->Add((char)('A' + hexDigit));
                             }
                         }
                         break;
@@ -195,19 +190,19 @@ namespace TerraFX.Interop
             }
         }
 
-        public partial void ContinueString(UINT num)
+        public partial void ContinueString(uint num)
         {
             D3D12MA_ASSERT(m_InsideString);
             m_SB->AddNumber(num);
         }
 
-        public partial void ContinueString(UINT64 num)
+        public partial void ContinueString(ulong num)
         {
             D3D12MA_ASSERT(m_InsideString);
             m_SB->AddNumber(num);
         }
 
-        public partial void EndString(WCHAR* pStr)
+        public partial void EndString(char* pStr)
         {
             D3D12MA_ASSERT(m_InsideString);
 
@@ -217,14 +212,14 @@ namespace TerraFX.Interop
             m_InsideString = false;
         }
 
-        public partial void WriteNumber(UINT num)
+        public partial void WriteNumber(uint num)
         {
             D3D12MA_ASSERT(!m_InsideString);
             BeginValue(false);
             m_SB->AddNumber(num);
         }
 
-        public partial void WriteNumber(UINT64 num)
+        public partial void WriteNumber(ulong num)
         {
             D3D12MA_ASSERT(!m_InsideString);
             BeginValue(false);
@@ -283,12 +278,12 @@ namespace TerraFX.Interop
             {
                 m_SB->AddNewLine();
 
-                size_t count = m_Stack.size();
+                nuint count = m_Stack.size();
                 if (count > 0 && oneLess)
                 {
                     --count;
                 }
-                for (size_t i = 0; i < count; ++i)
+                for (nuint i = 0; i < count; ++i)
                 {
                     m_SB->Add(INDENT);
                 }
@@ -321,7 +316,7 @@ namespace TerraFX.Interop
             }
             WriteString("Size");
             WriteNumber(alloc->GetSize());
-            WCHAR* name = alloc->GetName();
+            char* name = alloc->GetName();
             if (name != null)
             {
                 WriteString("Name");
@@ -330,12 +325,12 @@ namespace TerraFX.Interop
             if (alloc->m_PackedData.GetResourceFlags() != 0)
             {
                 WriteString("Flags");
-                WriteNumber((UINT)alloc->m_PackedData.GetResourceFlags());
+                WriteNumber((uint)alloc->m_PackedData.GetResourceFlags());
             }
             if (alloc->m_PackedData.GetTextureLayout() != 0)
             {
                 WriteString("Layout");
-                WriteNumber((UINT)alloc->m_PackedData.GetTextureLayout());
+                WriteNumber((uint)alloc->m_PackedData.GetTextureLayout());
             }
             if (alloc->m_CreationFrameIndex != 0)
             {

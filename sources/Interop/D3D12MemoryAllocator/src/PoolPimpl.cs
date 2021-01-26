@@ -11,6 +11,11 @@ namespace TerraFX.Interop
 
     internal unsafe partial struct PoolPimpl : IDisposable
     {
+        public AllocatorPimpl* m_Allocator; // Externally owned object
+        public POOL_DESC m_Desc;
+        public BlockVector* m_BlockVector; // Owned object
+        [NativeTypeName("wchar_t*")] public char* m_Name;
+
         public PoolPimpl(AllocatorPimpl* allocator, POOL_DESC* desc)
         {
             m_Allocator = allocator;
@@ -49,11 +54,6 @@ namespace TerraFX.Interop
         public partial void SetName([NativeTypeName("LPCWSTR")] char* Name);
         [return: NativeTypeName("LPCWSTR")]
         public char* GetName() { return m_Name; }
-
-        public AllocatorPimpl* m_Allocator; // Externally owned object
-        public POOL_DESC m_Desc;
-        public BlockVector* m_BlockVector; // Owned object
-        [NativeTypeName("wchar_t*")] public char* m_Name;
 
         public partial void FreeName();
     }

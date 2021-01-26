@@ -4,13 +4,17 @@ using System;
 using System.Runtime.CompilerServices;
 using static TerraFX.Interop.D3D12MemoryAllocator;
 
-using size_t = nuint;
-
 namespace TerraFX.Interop
 {
     internal unsafe partial struct List<T> : IDisposable
-    where T : unmanaged
+        where T : unmanaged
     {
+        private readonly ALLOCATION_CALLBACKS* m_AllocationCallbacks;
+        private PoolAllocator<Item> m_ItemAllocator;
+        private Item* m_pFront;
+        private Item* m_pBack;
+        [NativeTypeName("size_t")] private nuint m_Count;
+
         public struct Item : IDisposable
         {
             public Item* pPrev;
@@ -33,10 +37,11 @@ namespace TerraFX.Interop
         public partial void Dispose();
         public partial void Clear();
 
-        public size_t GetCount() { return m_Count; }
-        public bool IsEmpty() { return m_Count == 0; }
-        public Item* Front() { return m_pFront; }
-        public Item* Back() { return m_pBack; }
+        [return: NativeTypeName("size_t")]
+        public readonly nuint GetCount() { return m_Count; }
+        public readonly bool IsEmpty() { return m_Count == 0; }
+        public readonly Item* Front() { return m_pFront; }
+        public readonly Item* Back() { return m_pBack; }
 
         public partial Item* PushBack();
         public partial Item* PushFront();
@@ -59,6 +64,9 @@ namespace TerraFX.Interop
         public struct iterator
 #pragma warning restore CS0660, CS0661
         {
+            private List<T>* m_pList;
+            internal Item* m_pItem;
+
             public T* op_Arrow()
             {
                 D3D12MA_HEAVY_ASSERT(m_pItem != null);
@@ -96,9 +104,6 @@ namespace TerraFX.Interop
                 return lhs.m_pItem != rhs.m_pItem;
             }
 
-            private List<T>* m_pList;
-            internal Item* m_pItem;
-
             public iterator(List<T>* pList, Item* pItem)
             {
                 m_pList = pList;
@@ -106,8 +111,10 @@ namespace TerraFX.Interop
             }
         }
 
-        public bool empty() { return IsEmpty(); }
-        public size_t size() { return GetCount(); }
+        public readonly bool empty() { return IsEmpty(); }
+
+        [return: NativeTypeName("size_t")]
+        public readonly nuint size() { return GetCount(); }
 
         public iterator begin() { return new((List<T>*)Unsafe.AsPointer(ref this), Front()); }
         public iterator end() { return new((List<T>*)Unsafe.AsPointer(ref this), null); }
@@ -116,12 +123,6 @@ namespace TerraFX.Interop
         public void push_back(T* value) { PushBack(value); }
         public void erase(iterator it) { Remove(it.m_pItem); }
         public iterator insert(iterator it, T* value) { return new((List<T>*)Unsafe.AsPointer(ref this), InsertBefore(it.m_pItem, value)); }
-
-        private readonly ALLOCATION_CALLBACKS* m_AllocationCallbacks;
-        private PoolAllocator<Item> m_ItemAllocator;
-        private Item* m_pFront;
-        private Item* m_pBack;
-        private size_t m_Count;
     }
 
     internal unsafe partial struct List<T>

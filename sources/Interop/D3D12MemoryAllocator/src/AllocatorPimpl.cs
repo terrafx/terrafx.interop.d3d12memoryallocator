@@ -33,6 +33,34 @@ namespace TerraFX.Interop
     {
         public CurrentBudgetData m_Budget;
 
+        readonly bool m_UseMutex;
+        readonly bool m_AlwaysCommitted;
+        ID3D12Device* m_Device; // AddRef
+        ID3D12Device4* m_Device4; // AddRef, optional
+        ID3D12Device8* m_Device8; // AddRef, optional
+        IDXGIAdapter* m_Adapter; // AddRef
+        IDXGIAdapter3* m_Adapter3; //AddRef, optional
+        [NativeTypeName("UINT64")] ulong m_PreferredBlockSize;
+        ALLOCATION_CALLBACKS m_AllocationCallbacks;
+        [NativeTypeName("D3D12MA_ATOMIC_UINT32")] atomic<uint> m_CurrentFrameIndex;
+        DXGI_ADAPTER_DESC m_AdapterDesc;
+        D3D12_FEATURE_DATA_D3D12_OPTIONS m_D3D12Options;
+        AllocationObjectAllocator m_AllocationObjectAllocator;
+
+        [NativeTypeName("AllocationVectorType*")] __m_Buffer_HEAP_TYPE_COUNT<Ptr<AllocationVectorType>> m_pCommittedAllocations;
+        __m_Buffer_HEAP_TYPE_COUNT<D3D12MA_RW_MUTEX> m_CommittedAllocationsMutex;
+
+        [NativeTypeName("PoolVectorType*")] __m_Buffer_HEAP_TYPE_COUNT<Ptr<PoolVectorType>> m_pPools;
+        __m_Buffer_HEAP_TYPE_COUNT<D3D12MA_RW_MUTEX> m_PoolsMutex;
+
+        // Default pools.
+        [NativeTypeName("BlockVector*")] __m_Buffer_DEFAULT_POOL_MAX_COUNT<Ptr<BlockVector>> m_BlockVectors;
+
+        // # Used only when ResourceHeapTier = 1
+        [NativeTypeName("UINT64")] __m_Buffer_DEFAULT_POOL_MAX_COUNT<ulong> m_DefaultPoolTier1MinBytes; // Default 0
+        [NativeTypeName("UINT64")] __m_Buffer_HEAP_TYPE_COUNT<ulong> m_DefaultPoolHeapTypeMinBytes; // Default UINT64_MAX, meaning not set
+        D3D12MA_RW_MUTEX m_DefaultPoolMinBytesMutex;
+
         public AllocatorPimpl(ALLOCATION_CALLBACKS* allocationCallbacks, ALLOCATOR_DESC* desc)
         {
             Unsafe.SkipInit(out this);
@@ -180,34 +208,6 @@ namespace TerraFX.Interop
         /// </summary>
         internal static partial bool PrefersCommittedAllocation<D3D12_RESOURCE_DESC_T>(D3D12_RESOURCE_DESC_T* resourceDesc)
             where D3D12_RESOURCE_DESC_T : unmanaged;
-
-        readonly bool m_UseMutex;
-        readonly bool m_AlwaysCommitted;
-        ID3D12Device* m_Device; // AddRef
-        ID3D12Device4* m_Device4; // AddRef, optional
-        ID3D12Device8* m_Device8; // AddRef, optional
-        IDXGIAdapter* m_Adapter; // AddRef
-        IDXGIAdapter3* m_Adapter3; //AddRef, optional
-        [NativeTypeName("UINT64")] ulong m_PreferredBlockSize;
-        ALLOCATION_CALLBACKS m_AllocationCallbacks;
-        [NativeTypeName("D3D12MA_ATOMIC_UINT32")] atomic<uint> m_CurrentFrameIndex;
-        DXGI_ADAPTER_DESC m_AdapterDesc;
-        D3D12_FEATURE_DATA_D3D12_OPTIONS m_D3D12Options;
-        AllocationObjectAllocator m_AllocationObjectAllocator;
-
-        [NativeTypeName("AllocationVectorType*")] __m_Buffer_HEAP_TYPE_COUNT<Ptr<AllocationVectorType>> m_pCommittedAllocations;
-        __m_Buffer_HEAP_TYPE_COUNT<D3D12MA_RW_MUTEX> m_CommittedAllocationsMutex;
-
-        [NativeTypeName("PoolVectorType*")] __m_Buffer_HEAP_TYPE_COUNT<Ptr<PoolVectorType>> m_pPools;
-        __m_Buffer_HEAP_TYPE_COUNT<D3D12MA_RW_MUTEX> m_PoolsMutex;
-
-        // Default pools.
-        [NativeTypeName("BlockVector*")] __m_Buffer_DEFAULT_POOL_MAX_COUNT<Ptr<BlockVector>> m_BlockVectors;
-
-        // # Used only when ResourceHeapTier = 1
-        [NativeTypeName("UINT64")] __m_Buffer_DEFAULT_POOL_MAX_COUNT<ulong> m_DefaultPoolTier1MinBytes; // Default 0
-        [NativeTypeName("UINT64")] __m_Buffer_HEAP_TYPE_COUNT<ulong> m_DefaultPoolHeapTypeMinBytes; // Default UINT64_MAX, meaning not set
-        D3D12MA_RW_MUTEX m_DefaultPoolMinBytesMutex;
 
         // Allocates and registers new committed resource with implicit heap, as dedicated allocation.
         // Creates and returns Allocation object.

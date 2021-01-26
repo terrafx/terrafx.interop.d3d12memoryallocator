@@ -2,9 +2,6 @@
 
 using static TerraFX.Interop.D3D12MemoryAllocator;
 
-using UINT64 = System.UInt64;
-using BOOL = System.Int32;
-
 namespace TerraFX.Interop
 {
     /// <summary>
@@ -15,20 +12,23 @@ namespace TerraFX.Interop
     /// </summary>
     internal struct ZeroInitializedRange
     {
-        public void Reset(UINT64 size)
+        [NativeTypeName("UINT64")] private ulong m_ZeroBeg, m_ZeroEnd;
+
+        public void Reset([NativeTypeName("UINT64")] ulong size)
         {
             D3D12MA_ASSERT(size > 0);
             m_ZeroBeg = 0;
             m_ZeroEnd = size;
         }
 
-        public BOOL IsRangeZeroInitialized(UINT64 beg, UINT64 end)
+        [return: NativeTypeName("BOOL")]
+        public int IsRangeZeroInitialized([NativeTypeName("UINT64")] ulong beg, [NativeTypeName("UINT64")] ulong end)
         {
             D3D12MA_ASSERT(beg < end);
             return (m_ZeroBeg <= beg && end <= m_ZeroEnd) ? 1 : 0;
         }
 
-        public void MarkRangeAsUsed(UINT64 usedBeg, UINT64 usedEnd)
+        public void MarkRangeAsUsed([NativeTypeName("UINT64")] ulong usedBeg, [NativeTypeName("UINT64")] ulong usedEnd)
         {
             D3D12MA_ASSERT(usedBeg < usedEnd);
             // No new bytes marked.
@@ -44,8 +44,8 @@ namespace TerraFX.Interop
             // Some bytes marked.
             else
             {
-                UINT64 remainingZeroBefore = usedBeg > m_ZeroBeg ? usedBeg - m_ZeroBeg : 0;
-                UINT64 remainingZeroAfter = usedEnd < m_ZeroEnd ? m_ZeroEnd - usedEnd : 0;
+                ulong remainingZeroBefore = usedBeg > m_ZeroBeg ? usedBeg - m_ZeroBeg : 0;
+                ulong remainingZeroAfter = usedEnd < m_ZeroEnd ? m_ZeroEnd - usedEnd : 0;
                 D3D12MA_ASSERT(remainingZeroBefore > 0 || remainingZeroAfter > 0);
                 if (remainingZeroBefore > remainingZeroAfter)
                 {
@@ -57,7 +57,5 @@ namespace TerraFX.Interop
                 }
             }
         }
-
-        private UINT64 m_ZeroBeg, m_ZeroEnd;
     }
 }

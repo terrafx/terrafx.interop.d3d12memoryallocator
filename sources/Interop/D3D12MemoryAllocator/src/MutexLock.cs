@@ -5,6 +5,8 @@ namespace TerraFX.Interop
     // Helper RAII class to lock a mutex in constructor and unlock it in destructor (at the end of scope).
     internal readonly unsafe ref struct MutexLock
     {
+        readonly D3D12MA_MUTEX* m_pMutex;
+
         public MutexLock(D3D12MA_MUTEX* mutex, bool useMutex = true)
         {
             m_pMutex = useMutex ? mutex : null;
@@ -18,7 +20,5 @@ namespace TerraFX.Interop
             if (m_pMutex != null)
                 m_pMutex->Unlock();
         }
-
-        readonly D3D12MA_MUTEX* m_pMutex;
     }
 }

@@ -5,11 +5,6 @@ using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12MemoryAllocator;
 using static TerraFX.Interop.SuballocationType;
 
-using UINT = System.UInt32;
-using UINT64 = System.UInt64;
-using size_t = nuint;
-using BOOL = System.Int32;
-
 using SuballocationList = TerraFX.Interop.List<TerraFX.Interop.Suballocation>;
 
 namespace TerraFX.Interop
@@ -22,24 +17,32 @@ namespace TerraFX.Interop
         {
             SharedLpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BlockMetadata_Generic), sizeof(void*) * 15);
             SharedLpVtbl[0] = (delegate*<BlockMetadata_Generic*, void>)&Dispose;
-            SharedLpVtbl[1] = (delegate*<BlockMetadata_Generic*, UINT64, void>)&Init;
+            SharedLpVtbl[1] = (delegate*<BlockMetadata_Generic*, ulong, void>)&Init;
             SharedLpVtbl[2] = (delegate*<BlockMetadata_Generic*, bool>)&Validate;
-            SharedLpVtbl[3] = (delegate*<BlockMetadata_Generic*, size_t>)&GetAllocationCount;
-            SharedLpVtbl[4] = (delegate*<BlockMetadata_Generic*, UINT64>)&GetSumFreeSize;
-            SharedLpVtbl[5] = (delegate*<BlockMetadata_Generic*, UINT64>)&GetUnusedRangeSizeMax;
+            SharedLpVtbl[3] = (delegate*<BlockMetadata_Generic*, nuint>)&GetAllocationCount;
+            SharedLpVtbl[4] = (delegate*<BlockMetadata_Generic*, ulong>)&GetSumFreeSize;
+            SharedLpVtbl[5] = (delegate*<BlockMetadata_Generic*, ulong>)&GetUnusedRangeSizeMax;
             SharedLpVtbl[6] = (delegate*<BlockMetadata_Generic*, bool>)&IsEmpty;
-            SharedLpVtbl[7] = (delegate*<BlockMetadata_Generic*, UINT64, VIRTUAL_ALLOCATION_INFO*, void>)&GetAllocationInfo;
-            SharedLpVtbl[8] = (delegate*<BlockMetadata_Generic*, UINT64, UINT64, AllocationRequest*, bool>)&CreateAllocationRequest;
-            SharedLpVtbl[9] = (delegate*<BlockMetadata_Generic*, AllocationRequest*, UINT64, void*, void>)&Alloc;
-            SharedLpVtbl[10] = (delegate*<BlockMetadata_Generic*, UINT64, void>)&FreeAtOffset;
+            SharedLpVtbl[7] = (delegate*<BlockMetadata_Generic*, ulong, VIRTUAL_ALLOCATION_INFO*, void>)&GetAllocationInfo;
+            SharedLpVtbl[8] = (delegate*<BlockMetadata_Generic*, ulong, ulong, AllocationRequest*, bool>)&CreateAllocationRequest;
+            SharedLpVtbl[9] = (delegate*<BlockMetadata_Generic*, AllocationRequest*, ulong, void*, void>)&Alloc;
+            SharedLpVtbl[10] = (delegate*<BlockMetadata_Generic*, ulong, void>)&FreeAtOffset;
             SharedLpVtbl[11] = (delegate*<BlockMetadata_Generic*, void>)&Clear;
-            SharedLpVtbl[12] = (delegate*<BlockMetadata_Generic*, UINT64, void*, void>)&SetAllocationUserData;
+            SharedLpVtbl[12] = (delegate*<BlockMetadata_Generic*, ulong, void*, void>)&SetAllocationUserData;
             SharedLpVtbl[13] = (delegate*<BlockMetadata_Generic*, StatInfo*, void>)&CalcAllocationStatInfo;
             SharedLpVtbl[14] = (delegate*<BlockMetadata_Generic*, JsonWriter*, void>)&WriteAllocationInfoToJson;
             return SharedLpVtbl;
         }
 
         private BlockMetadata @base;
+
+        [NativeTypeName("UINT")] private uint m_FreeCount;
+        [NativeTypeName("UINT")] private ulong m_SumFreeSize;
+        private SuballocationList m_Suballocations;
+        // Suballocations that are free and have size greater than certain threshold.
+        // Sorted by size, ascending.
+        private Vector<SuballocationList.iterator> m_FreeSuballocationsBySize;
+        private ZeroInitializedRange m_ZeroInitializedRange;
 
         public BlockMetadata_Generic(ALLOCATION_CALLBACKS* allocationCallbacks, bool isVirtual)
         {
@@ -55,54 +58,51 @@ namespace TerraFX.Interop
         }
 
         public partial void Dispose();
-        public partial void Init(UINT64 size);
+        public partial void Init([NativeTypeName("UINT64")] ulong size);
 
-        public partial bool Validate();
-        public size_t GetAllocationCount() { return GetAllocationCount((BlockMetadata_Generic*)Unsafe.AsPointer(ref this)); }
-        public UINT64 GetSumFreeSize() { return GetSumFreeSize((BlockMetadata_Generic*)Unsafe.AsPointer(ref this)); }
-        public partial UINT64 GetUnusedRangeSizeMax();
-        public partial bool IsEmpty();
+        public readonly partial bool Validate();
 
-        public partial void GetAllocationInfo(UINT64 offset, VIRTUAL_ALLOCATION_INFO* outInfo);
+        [return: NativeTypeName("size_t")]
+        public readonly nuint GetAllocationCount() { return GetAllocationCount((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this))); }
+
+        [return: NativeTypeName("UINT64")]
+        public readonly ulong GetSumFreeSize() { return GetSumFreeSize((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this))); }
+        [return: NativeTypeName("UINT64")]
+        public readonly partial ulong GetUnusedRangeSizeMax();
+        public readonly partial bool IsEmpty();
+
+        public readonly partial void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, VIRTUAL_ALLOCATION_INFO* outInfo);
 
         public partial bool CreateAllocationRequest(
-            UINT64 allocSize,
-            UINT64 allocAlignment,
+            [NativeTypeName("UINT64")] ulong allocSize,
+            [NativeTypeName("UINT64")] ulong allocAlignment,
             AllocationRequest* pAllocationRequest);
 
         public partial void Alloc(
             AllocationRequest* request,
-            UINT64 allocSize,
+            [NativeTypeName("UINT64")] ulong allocSize,
             void* userData);
 
-        public partial void FreeAtOffset(UINT64 offset);
+        public partial void FreeAtOffset([NativeTypeName("UINT64")] ulong offset);
         public partial void Clear();
 
-        public partial void SetAllocationUserData(UINT64 offset, void* userData);
+        public partial void SetAllocationUserData([NativeTypeName("UINT64")] ulong offset, void* userData);
 
         public partial void CalcAllocationStatInfo(StatInfo* outInfo);
         public partial void WriteAllocationInfoToJson(JsonWriter* json);
-
-        private UINT m_FreeCount;
-        private UINT64 m_SumFreeSize;
-        private SuballocationList m_Suballocations;
-        // Suballocations that are free and have size greater than certain threshold.
-        // Sorted by size, ascending.
-        private Vector<SuballocationList.iterator> m_FreeSuballocationsBySize;
-        private ZeroInitializedRange m_ZeroInitializedRange;
 
         public partial bool ValidateFreeSuballocationList();
 
         // Checks if requested suballocation with given parameters can be placed in given pFreeSuballocItem.
         // If yes, fills pOffset and returns true. If no, returns false.
         public partial bool CheckAllocation(
-            UINT64 allocSize,
-            UINT64 allocAlignment,
+            [NativeTypeName("UINT64")] ulong allocSize,
+            [NativeTypeName("UINT64")] ulong allocAlignment,
             SuballocationList.iterator suballocItem,
-            UINT64* pOffset,
-            UINT64* pSumFreeSize,
-            UINT64* pSumItemSize,
-            BOOL* pZeroInitialized);
+            [NativeTypeName("UINT64*")] ulong* pOffset,
+            [NativeTypeName("UINT64*")] ulong* pSumFreeSize,
+            [NativeTypeName("UINT64*")] ulong* pSumItemSize,
+            [NativeTypeName("BOOL")] int* pZeroInitialized);
         // Given free suballocation, it merges it with following one, which must also be free.
         public partial void MergeFreeWithNext(SuballocationList.iterator item);
         // Releases given suballocation, making it free.
@@ -127,34 +127,34 @@ namespace TerraFX.Interop
             Dispose((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
         }
 
-        public partial void Init(UINT64 size)
+        public partial void Init(ulong size)
         {
             Init((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), size);
         }
 
-        public partial bool Validate()
+        public readonly partial bool Validate()
         {
-            return Validate((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
+            return Validate((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
         }
 
-        public partial UINT64 GetUnusedRangeSizeMax()
+        public readonly partial ulong GetUnusedRangeSizeMax()
         {
-            return GetUnusedRangeSizeMax((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
+            return GetUnusedRangeSizeMax((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
         }
 
-        public partial bool IsEmpty()
+        public readonly partial bool IsEmpty()
         {
-            return IsEmpty((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
+            return IsEmpty((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
         }
 
-        public partial void GetAllocationInfo(ulong offset, VIRTUAL_ALLOCATION_INFO* outInfo)
+        public readonly partial void GetAllocationInfo(ulong offset, VIRTUAL_ALLOCATION_INFO* outInfo)
         {
-            GetAllocationInfo((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), offset, outInfo);
+            GetAllocationInfo((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)), offset, outInfo);
         }
 
         public partial bool CreateAllocationRequest(
-            UINT64 allocSize,
-            UINT64 allocAlignment,
+            ulong allocSize,
+            ulong allocAlignment,
             AllocationRequest* pAllocationRequest)
         {
             return CreateAllocationRequest(
@@ -166,7 +166,7 @@ namespace TerraFX.Interop
 
         public partial void Alloc(
             AllocationRequest* request,
-            UINT64 allocSize,
+            ulong allocSize,
             void* userData)
         {
             Alloc(
@@ -176,7 +176,7 @@ namespace TerraFX.Interop
                 userData);
         }
 
-        public partial void FreeAtOffset(UINT64 offset)
+        public partial void FreeAtOffset(ulong offset)
         {
             FreeAtOffset((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), offset);
         }
@@ -192,13 +192,13 @@ namespace TerraFX.Interop
         }
 
         public partial bool CheckAllocation(
-            UINT64 allocSize,
-            UINT64 allocAlignment,
+            ulong allocSize,
+            ulong allocAlignment,
             SuballocationList.iterator suballocItem,
-            UINT64* pOffset,
-            UINT64* pSumFreeSize,
-            UINT64* pSumItemSize,
-            BOOL* pZeroInitialized)
+            ulong* pOffset,
+            ulong* pSumFreeSize,
+            ulong* pSumItemSize,
+            int* pZeroInitialized)
         {
             return CheckAllocation(
                 (BlockMetadata_Generic*)Unsafe.AsPointer(ref this),
@@ -250,7 +250,7 @@ namespace TerraFX.Interop
         {
         }
 
-        public static void Init(BlockMetadata_Generic* @this, UINT64 size)
+        public static void Init(BlockMetadata_Generic* @this, ulong size)
         {
             BlockMetadata.Init((BlockMetadata*)@this, size);
             @this->m_ZeroInitializedRange.Reset(size);
@@ -276,14 +276,14 @@ namespace TerraFX.Interop
             D3D12MA_VALIDATE(!@this->m_Suballocations.empty());
 
             // Expected offset of new suballocation as calculated from previous ones.
-            UINT64 calculatedOffset = 0;
+            ulong calculatedOffset = 0;
             // Expected number of free suballocations as calculated from traversing their list.
-            UINT calculatedFreeCount = 0;
+            uint calculatedFreeCount = 0;
             // Expected sum size of free suballocations as calculated from traversing their list.
-            UINT64 calculatedSumFreeSize = 0;
+            ulong calculatedSumFreeSize = 0;
             // Expected number of free suballocations that should be registered in
             // m_FreeSuballocationsBySize calculated from traversing their list.
-            size_t freeSuballocationsToRegister = 0;
+            nuint freeSuballocationsToRegister = 0;
             // True if previous visited suballocation was free.
             bool prevFree = false;
 
@@ -338,8 +338,8 @@ namespace TerraFX.Interop
             // match expected one.
             D3D12MA_VALIDATE(@this->m_FreeSuballocationsBySize.size() == freeSuballocationsToRegister);
 
-            UINT64 lastSize = 0;
-            for (size_t i = 0; i < @this->m_FreeSuballocationsBySize.size(); ++i)
+            ulong lastSize = 0;
+            for (nuint i = 0; i < @this->m_FreeSuballocationsBySize.size(); ++i)
             {
                 SuballocationList.iterator suballocItem = *@this->m_FreeSuballocationsBySize[i];
 
@@ -360,14 +360,14 @@ namespace TerraFX.Interop
             return true;
         }
 
-        public static size_t GetAllocationCount(BlockMetadata_Generic* @this)
+        public static nuint GetAllocationCount(BlockMetadata_Generic* @this)
         {
-            return (size_t)(@this->m_Suballocations.size() - @this->m_FreeCount);
+            return @this->m_Suballocations.size() - @this->m_FreeCount;
         }
 
-        public static UINT64 GetSumFreeSize(BlockMetadata_Generic* @this) { return @this->m_SumFreeSize; }
+        public static ulong GetSumFreeSize(BlockMetadata_Generic* @this) { return @this->m_SumFreeSize; }
 
-        public static UINT64 GetUnusedRangeSizeMax(BlockMetadata_Generic* @this)
+        public static ulong GetUnusedRangeSizeMax(BlockMetadata_Generic* @this)
         {
             if (!@this->m_FreeSuballocationsBySize.empty())
             {
@@ -403,8 +403,8 @@ namespace TerraFX.Interop
 
         public static bool CreateAllocationRequest(
             BlockMetadata_Generic* @this,
-            UINT64 allocSize,
-            UINT64 allocAlignment,
+            ulong allocSize,
+            ulong allocAlignment,
             AllocationRequest* pAllocationRequest)
         {
             D3D12MA_ASSERT(allocSize > 0);
@@ -418,7 +418,7 @@ namespace TerraFX.Interop
             }
 
             // New algorithm, efficiently searching freeSuballocationsBySize.
-            size_t freeSuballocCount = @this->m_FreeSuballocationsBySize.size();
+            nuint freeSuballocCount = @this->m_FreeSuballocationsBySize.size();
             if (freeSuballocCount > 0)
             {
                 // Find first free suballocation with size not less than allocSize + 2 * D3D12MA_DEBUG_MARGIN.
@@ -427,7 +427,7 @@ namespace TerraFX.Interop
                      @this->m_FreeSuballocationsBySize.data() + freeSuballocCount,
                      allocSize + 2 * D3D12MA_DEBUG_MARGIN,
                      new SuballocationItemSizeLess());
-                size_t index = (size_t)(it - @this->m_FreeSuballocationsBySize.data());
+                nuint index = (nuint)(it - @this->m_FreeSuballocationsBySize.data());
                 for (; index < freeSuballocCount; ++index)
                 {
                     if (@this->CheckAllocation(
@@ -451,7 +451,7 @@ namespace TerraFX.Interop
         public static void Alloc(
             BlockMetadata_Generic* @this,
             AllocationRequest* request,
-            UINT64 allocSize,
+            ulong allocSize,
             void* userData)
         {
             D3D12MA_ASSERT(request->item != @this->m_Suballocations.end());
@@ -460,9 +460,9 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(suballoc->type == SUBALLOCATION_TYPE_FREE);
             // Given offset is inside this suballocation.
             D3D12MA_ASSERT(request->offset >= suballoc->offset);
-            UINT64 paddingBegin = request->offset - suballoc->offset;
+            ulong paddingBegin = request->offset - suballoc->offset;
             D3D12MA_ASSERT(suballoc->size >= paddingBegin + allocSize);
-            UINT64 paddingEnd = suballoc->size - paddingBegin - allocSize;
+            ulong paddingEnd = suballoc->size - paddingBegin - allocSize;
 
             // Unregister this free suballocation from m_FreeSuballocationsBySize and update
             // it to become used.
@@ -514,7 +514,7 @@ namespace TerraFX.Interop
             @this->m_ZeroInitializedRange.MarkRangeAsUsed(request->offset, request->offset + allocSize);
         }
 
-        public static void FreeAtOffset(BlockMetadata_Generic* @this, UINT64 offset)
+        public static void FreeAtOffset(BlockMetadata_Generic* @this, ulong offset)
         {
             for (SuballocationList.iterator suballocItem = @this->m_Suballocations.begin();
                  suballocItem != @this->m_Suballocations.end();
@@ -549,8 +549,8 @@ namespace TerraFX.Interop
 
         public static bool ValidateFreeSuballocationList(BlockMetadata_Generic* @this)
         {
-            UINT64 lastSize = 0;
-            for (size_t i = 0, count = @this->m_FreeSuballocationsBySize.size(); i < count; ++i)
+            ulong lastSize = 0;
+            for (nuint i = 0, count = @this->m_FreeSuballocationsBySize.size(); i < count; ++i)
             {
                 SuballocationList.iterator it = *@this->m_FreeSuballocationsBySize[i];
 
@@ -564,13 +564,13 @@ namespace TerraFX.Interop
 
         public static bool CheckAllocation(
             BlockMetadata_Generic* @this,
-            UINT64 allocSize,
-            UINT64 allocAlignment,
+            ulong allocSize,
+            ulong allocAlignment,
             SuballocationList.iterator suballocItem,
-            UINT64* pOffset,
-            UINT64* pSumFreeSize,
-            UINT64* pSumItemSize,
-            BOOL* pZeroInitialized)
+            ulong* pOffset,
+            ulong* pSumFreeSize,
+            ulong* pSumItemSize,
+            int* pZeroInitialized)
         {
             D3D12MA_ASSERT(allocSize > 0);
             D3D12MA_ASSERT(suballocItem != @this->m_Suballocations.end());
@@ -603,13 +603,13 @@ namespace TerraFX.Interop
             }
 
             // Apply alignment.
-            *pOffset = (UINT64)AlignUp((size_t)(*pOffset), (size_t)allocAlignment);
+            *pOffset = AlignUp((nuint)(*pOffset), (nuint)allocAlignment);
 
             // Calculate padding at the beginning based on current offset.
-            UINT64 paddingBegin = *pOffset - suballoc->offset;
+            ulong paddingBegin = *pOffset - suballoc->offset;
 
             // Calculate required margin at the end.
-            UINT64 requiredEndMargin = D3D12MA_DEBUG_MARGIN;
+            ulong requiredEndMargin = D3D12MA_DEBUG_MARGIN;
 
             // Fail if requested size plus margin before and after is bigger than size of this suballocation.
             if (paddingBegin + allocSize + requiredEndMargin > suballoc->size)
@@ -729,7 +729,7 @@ namespace TerraFX.Interop
                      @this->m_FreeSuballocationsBySize.data() + @this->m_FreeSuballocationsBySize.size(),
                      &item,
                      new SuballocationItemSizeLess());
-                for (size_t index = (size_t)(it - @this->m_FreeSuballocationsBySize.data());
+                for (nuint index = (nuint)(it - @this->m_FreeSuballocationsBySize.data());
                      index < @this->m_FreeSuballocationsBySize.size();
                      ++index)
                 {
@@ -766,7 +766,7 @@ namespace TerraFX.Interop
         {
             outInfo->BlockCount = 1;
 
-            UINT rangeCount = (UINT)@this->m_Suballocations.size();
+            uint rangeCount = (uint)@this->m_Suballocations.size();
             outInfo->AllocationCount = rangeCount - @this->m_FreeCount;
             outInfo->UnusedRangeCount = @this->m_FreeCount;
 
@@ -833,7 +833,7 @@ namespace TerraFX.Interop
                     if (suballoc->userData != null)
                     {
                         json->WriteString("UserData");
-                        json->WriteNumber((UINT)suballoc->userData);
+                        json->WriteNumber((uint)suballoc->userData);
                     }
                 }
                 else

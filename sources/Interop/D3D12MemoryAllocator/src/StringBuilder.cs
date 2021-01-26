@@ -1,13 +1,7 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using System.Runtime.InteropServices;
-using static TerraFX.Interop.D3D12MemoryAllocator;
-
-using UINT = System.UInt32;
-using UINT64 = System.UInt64;
-using size_t = nuint;
-using WCHAR = System.Char;
 using System;
+using static TerraFX.Interop.D3D12MemoryAllocator;
 
 namespace TerraFX.Interop
 {
@@ -16,6 +10,8 @@ namespace TerraFX.Interop
 
     internal unsafe partial struct StringBuilder : IDisposable
     {
+        [NativeTypeName("Vector<WCHAR>")] private Vector<char> m_Data;
+
         public StringBuilder(ALLOCATION_CALLBACKS* allocationCallbacks)
         {
             m_Data = new(allocationCallbacks);
@@ -23,54 +19,56 @@ namespace TerraFX.Interop
 
         public void Dispose() { m_Data.Dispose(); }
 
-        public size_t GetLength() { return m_Data.size(); }
-        public WCHAR* GetData() { return m_Data.data(); }
 
-        public void Add(WCHAR ch) { m_Data.push_back(&ch); }
-        public partial void Add(WCHAR* str);
-        public void Add(string str) { fixed (WCHAR* p = str) Add(p); }
+        [return: NativeTypeName("size_t")]
+        public readonly nuint GetLength() { return m_Data.size(); }
+
+        [return: NativeTypeName("LPCWSTR")]
+        public readonly char* GetData() { return m_Data.data(); }
+
+        public void Add([NativeTypeName("WCHAR")] char ch) { m_Data.push_back(&ch); }
+        public partial void Add([NativeTypeName("LPCWSTR")] char* str);
+        public void Add(string str) { fixed (char* p = str) Add(p); }
         public void AddNewLine() { Add('\n'); }
-        public partial void AddNumber(UINT num);
-        public partial void AddNumber(UINT64 num);
-
-        private Vector<WCHAR> m_Data;
+        public partial void AddNumber([NativeTypeName("UINT")] uint num);
+        public partial void AddNumber([NativeTypeName("UINT64")] ulong num);
     }
 
     internal unsafe partial struct StringBuilder
     {
-        public partial void Add(WCHAR* str)
+        public partial void Add(char* str)
         {
-            size_t len = wcslen(str);
+            nuint len = wcslen(str);
             if (len > 0)
             {
-                size_t oldCount = m_Data.size();
+                nuint oldCount = m_Data.size();
                 m_Data.resize(oldCount + len);
-                memcpy(m_Data.data() + oldCount, str, len * sizeof(WCHAR));
+                memcpy(m_Data.data() + oldCount, str, len * sizeof(char));
             }
         }
 
-        public partial void AddNumber(UINT num)
+        public partial void AddNumber(uint num)
         {
-            WCHAR* buf = stackalloc WCHAR[11];
+            char* buf = stackalloc char[11];
             buf[10] = '\0';
-            WCHAR* p = &buf[10];
+            char* p = &buf[10];
             do
             {
-                *--p = (WCHAR)('0' + (num % 10));
+                *--p = (char)('0' + (num % 10));
                 num /= 10;
             }
             while (num > 0);
             Add(p);
         }
 
-        public partial void AddNumber(UINT64 num)
+        public partial void AddNumber(ulong num)
         {
-            WCHAR* buf = stackalloc WCHAR[21];
+            char* buf = stackalloc char[21];
             buf[20] = '\0';
-            WCHAR* p = &buf[20];
+            char* p = &buf[20];
             do
             {
-                *--p = (WCHAR)('0' + (num % 10));
+                *--p = (char)('0' + (num % 10));
                 num /= 10;
             }
             while (num > 0);

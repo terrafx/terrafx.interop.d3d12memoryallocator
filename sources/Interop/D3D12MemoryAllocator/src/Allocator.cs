@@ -22,6 +22,8 @@ namespace TerraFX.Interop
     /// </summary>
     public unsafe partial struct Allocator : IDisposable
     {
+        internal AllocatorPimpl* m_Pimpl;
+
         /// <summary>
         /// Deletes this object.
         /// <para>
@@ -260,8 +262,6 @@ namespace TerraFX.Interop
         }
 
         public partial void Dispose();
-
-        internal AllocatorPimpl* m_Pimpl;
     }
 
     ////////////////////////////////////////////////////////////////////////////////

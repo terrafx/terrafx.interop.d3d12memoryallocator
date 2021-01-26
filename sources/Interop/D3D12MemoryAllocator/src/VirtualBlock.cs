@@ -22,6 +22,8 @@ namespace TerraFX.Interop
     /// </summary>
     public unsafe partial struct VirtualBlock : IDisposable
     {
+        VirtualBlockPimpl* m_Pimpl;
+
         /// <summary>
         /// Destroys this object and frees it from memory.
         /// <para>You need to free all the allocations within this block or call Clear() before destroying it.</para>
@@ -59,8 +61,6 @@ namespace TerraFX.Interop
 
         /// <summary>Frees memory of a string returned from VirtualBlock::BuildStatsString.</summary>
         public partial void FreeStatsString([NativeTypeName("WCHAR*")] char* pStatsString);
-
-        VirtualBlockPimpl* m_Pimpl;
 
         internal VirtualBlock(ALLOCATION_CALLBACKS* allocationCallbacks, VIRTUAL_BLOCK_DESC* desc)
         {

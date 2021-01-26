@@ -10,6 +10,9 @@ namespace TerraFX.Interop
     /// <summary>Thread-safe wrapper over PoolAllocator free list, for allocation of Allocation objects.</summary>
     internal unsafe partial struct AllocationObjectAllocator
     {
+        private D3D12MA_MUTEX m_Mutex;
+        private PoolAllocator<Allocation> m_Allocator;
+
         public AllocationObjectAllocator(ALLOCATION_CALLBACKS* allocationCallbacks)
         {
             D3D12MA_MUTEX.Init(out m_Mutex);
@@ -17,9 +20,6 @@ namespace TerraFX.Interop
         }
         public partial Allocation* Allocate(AllocatorPimpl* allocator, ulong size, int wasZeroInitialized);
         public partial void Free(Allocation* alloc);
-
-        private D3D12MA_MUTEX m_Mutex;
-        private PoolAllocator<Allocation> m_Allocator;
     }
 
     internal unsafe partial struct AllocationObjectAllocator

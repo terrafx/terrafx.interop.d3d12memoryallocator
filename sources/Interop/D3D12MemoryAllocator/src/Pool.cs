@@ -17,6 +17,8 @@ namespace TerraFX.Interop
     /// </summary>
     public unsafe partial struct Pool : IDisposable
     {
+        internal PoolPimpl* m_Pimpl;
+
         /// <summary>
         /// Deletes pool object, frees D3D12 heaps (memory blocks) managed by it. Allocations and resources must already be released!
         /// <para>
@@ -59,8 +61,6 @@ namespace TerraFX.Interop
         /// </summary>
         [return: NativeTypeName("LPCWSTR")]
         public partial char* GetName();
-
-        internal PoolPimpl* m_Pimpl;
 
         internal Pool(Allocator* allocator, POOL_DESC* desc)
         {

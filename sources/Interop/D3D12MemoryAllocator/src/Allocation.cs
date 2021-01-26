@@ -21,6 +21,14 @@ namespace TerraFX.Interop
     /// </summary>
     public unsafe partial struct Allocation : IDisposable
     {
+        internal AllocatorPimpl* m_Allocator;
+        [NativeTypeName("UINT64")] internal ulong m_Size;
+        internal ID3D12Resource* m_Resource;
+        [NativeTypeName("UINT")] internal uint m_CreationFrameIndex;
+        [NativeTypeName("wchar_t*")] internal char* m_Name;
+        internal _Anonymous_e__Union m_Union;
+        internal PackedData m_PackedData;
+
         /// <summary>
         /// Deletes this object.
         /// <para>This function must be used instead of destructor, which is private. There is no reference counting involved.</para>
@@ -108,12 +116,6 @@ namespace TerraFX.Interop
             TYPE_COUNT
         }
 
-        internal AllocatorPimpl* m_Allocator;
-        [NativeTypeName("UINT64")] internal ulong m_Size;
-        internal ID3D12Resource* m_Resource;
-        [NativeTypeName("UINT")] internal uint m_CreationFrameIndex;
-        [NativeTypeName("wchar_t*")] internal char* m_Name;
-
         [StructLayout(LayoutKind.Explicit)]
         internal struct _Anonymous_e__Union
         {
@@ -139,10 +141,10 @@ namespace TerraFX.Interop
             }
         }
 
-        internal _Anonymous_e__Union m_Union;
-
         internal partial struct PackedData
         {
+            ulong __value;
+
             public readonly new Type GetType() { return (Type)m_Type; }
             public readonly D3D12_RESOURCE_DIMENSION GetResourceDimension() { return (D3D12_RESOURCE_DIMENSION)m_ResourceDimension; }
             public readonly D3D12_RESOURCE_FLAGS GetResourceFlags() { return (D3D12_RESOURCE_FLAGS)m_ResourceFlags; }
@@ -155,8 +157,6 @@ namespace TerraFX.Interop
             public partial void SetResourceFlags(D3D12_RESOURCE_FLAGS resourceFlags);
             public partial void SetTextureLayout(D3D12_TEXTURE_LAYOUT textureLayout);
             public void SetWasZeroInitialized([NativeTypeName("BOOL")] int wasZeroInitialized) { m_WasZeroInitialized = wasZeroInitialized > 0 ? 1 : 0; }
-
-            ulong __value;
 
             [NativeTypeName("UINT")]
             uint m_Type
@@ -193,8 +193,6 @@ namespace TerraFX.Interop
                 set => __value = BitHelper.SetRange(__value, 38, 1, value);
             }
         }
-
-        internal PackedData m_PackedData;
 
         internal Allocation(AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
         {

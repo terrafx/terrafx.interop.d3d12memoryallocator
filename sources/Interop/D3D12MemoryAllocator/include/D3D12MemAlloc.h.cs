@@ -1,16 +1,5 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.X86;
-
-using UINT = System.UInt32;
-using uint64_t = System.UInt64;
-using size_t = nuint;
-using BOOL = System.Int32;
-
 namespace TerraFX.Interop
 {
     public static partial class D3D12MemoryAllocator
@@ -38,7 +27,7 @@ namespace TerraFX.Interop
     public static unsafe partial class D3D12MemoryAllocator
     {
         /// <summary>Number of D3D12 memory heap types supported.</summary>
-        public const UINT HEAP_TYPE_COUNT = 3;
+        [NativeTypeName("UINT")] public const uint HEAP_TYPE_COUNT = 3;
 
         /// <summary>
         /// Creates new main D3D12MA::Allocator object and returns it through `ppAllocator`.

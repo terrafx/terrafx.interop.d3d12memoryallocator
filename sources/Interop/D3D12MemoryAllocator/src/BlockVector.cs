@@ -18,6 +18,23 @@ namespace TerraFX.Interop
     /// </summary>
     internal unsafe partial struct BlockVector : IDisposable
     {
+        readonly AllocatorPimpl* m_hAllocator;
+        readonly D3D12_HEAP_TYPE m_HeapType;
+        readonly D3D12_HEAP_FLAGS m_HeapFlags;
+        [NativeTypeName("UINT64")] readonly ulong m_PreferredBlockSize;
+        [NativeTypeName("size_t")] readonly nuint m_MinBlockCount;
+        [NativeTypeName("size_t")] readonly nuint m_MaxBlockCount;
+        readonly bool m_ExplicitBlockSize;
+        [NativeTypeName("UINT64")] ulong m_MinBytes;
+        /* There can be at most one allocation that is completely empty - a
+        hysteresis to avoid pessimistic case of alternating creation and destruction
+        of a VkDeviceMemory. */
+        bool m_HasEmptyBlock;
+        D3D12MA_RW_MUTEX m_Mutex;
+        // Incrementally sorted by sumFreeSize, ascending.
+        Vector<Ptr<NormalBlock>> m_Blocks;
+        [NativeTypeName("UINT")] uint m_NextBlockId;
+
         public BlockVector(
             AllocatorPimpl* hAllocator,
             D3D12_HEAP_TYPE heapType,
@@ -96,23 +113,6 @@ namespace TerraFX.Interop
         public partial void AddStats(Stats* outStats);
 
         public partial void WriteBlockInfoToJson(JsonWriter* json);
-
-        readonly AllocatorPimpl* m_hAllocator;
-        readonly D3D12_HEAP_TYPE m_HeapType;
-        readonly D3D12_HEAP_FLAGS m_HeapFlags;
-        [NativeTypeName("UINT64")] readonly ulong m_PreferredBlockSize;
-        [NativeTypeName("size_t")] readonly nuint m_MinBlockCount;
-        [NativeTypeName("size_t")] readonly nuint m_MaxBlockCount;
-        readonly bool m_ExplicitBlockSize;
-        [NativeTypeName("UINT64")] ulong m_MinBytes;
-        /* There can be at most one allocation that is completely empty - a
-        hysteresis to avoid pessimistic case of alternating creation and destruction
-        of a VkDeviceMemory. */
-        bool m_HasEmptyBlock;
-        D3D12MA_RW_MUTEX m_Mutex;
-        // Incrementally sorted by sumFreeSize, ascending.
-        Vector<Ptr<NormalBlock>> m_Blocks;
-        [NativeTypeName("UINT")] uint m_NextBlockId;
 
         [return: NativeTypeName("UINT64")]
         private readonly partial ulong CalcSumBlockSize();
@@ -573,7 +573,7 @@ namespace TerraFX.Interop
                     m_HasEmptyBlock = false;
                 }
 
-                *pAllocation = m_hAllocator->GetAllocationObjectAllocator().Allocate(m_hAllocator, size, currRequest.zeroInitialized);
+                *pAllocation = m_hAllocator->GetAllocationObjectAllocator()->Allocate(m_hAllocator, size, currRequest.zeroInitialized);
                 pBlock->m_pMetadata->Alloc(&currRequest, size, *pAllocation);
                 (*pAllocation)->InitPlaced(currRequest.offset, alignment, pBlock);
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());

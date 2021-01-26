@@ -4,8 +4,6 @@ using System;
 using System.Runtime.CompilerServices;
 using static TerraFX.Interop.D3D12MemoryAllocator;
 
-using size_t = nuint;
-
 namespace TerraFX.Interop
 {
     ////////////////////////////////////////////////////////////////////////////////
@@ -19,6 +17,11 @@ namespace TerraFX.Interop
     internal unsafe struct Vector<T> : IDisposable
         where T : unmanaged
     {
+        private readonly ALLOCATION_CALLBACKS* m_AllocationCallbacks;
+        private T* m_pArray;
+        [NativeTypeName("size_t")] private nuint m_Count;
+        [NativeTypeName("size_t")] private nuint m_Capacity;
+
         // allocationCallbacks externally owned, must outlive this object.
         public Vector(ALLOCATION_CALLBACKS* allocationCallbacks)
         {
@@ -28,7 +31,7 @@ namespace TerraFX.Interop
             m_Capacity = 0;
         }
 
-        public Vector(size_t count, ALLOCATION_CALLBACKS* allocationCallbacks)
+        public Vector([NativeTypeName("size_t")] nuint count, ALLOCATION_CALLBACKS* allocationCallbacks)
         {
             m_AllocationCallbacks = allocationCallbacks;
             m_pArray = count > 0 ? AllocateArray<T>(allocationCallbacks, count) : null;
@@ -45,7 +48,7 @@ namespace TerraFX.Interop
 
             if (m_Count > 0)
             {
-                memcpy(m_pArray, src.m_pArray, m_Count * (size_t)sizeof(T));
+                memcpy(m_pArray, src.m_pArray, m_Count * (nuint)sizeof(T));
             }
         }
 
@@ -61,16 +64,18 @@ namespace TerraFX.Interop
                 lhs.resize(rhs.m_Count);
                 if (lhs.m_Count != 0)
                 {
-                    memcpy(lhs.m_pArray, rhs.m_pArray, lhs.m_Count * (size_t)sizeof(T));
+                    memcpy(lhs.m_pArray, rhs.m_pArray, lhs.m_Count * (nuint)sizeof(T));
                 }
             }
         }
 
-        public bool empty() { return m_Count == 0; }
-        public size_t size() { return m_Count; }
-        public T* data() { return m_pArray; }
+        public readonly bool empty() { return m_Count == 0; }
 
-        public T* this[size_t index]
+        [return: NativeTypeName("size_t")]
+        public readonly nuint size() { return m_Count; }
+        public readonly T* data() { return m_pArray; }
+
+        public readonly T* this[[NativeTypeName("size_t")] nuint index]
         {
             get
             {
@@ -79,19 +84,19 @@ namespace TerraFX.Interop
             }
         }
 
-        public T* front()
+        public readonly T* front()
         {
             D3D12MA_HEAVY_ASSERT(m_Count > 0);
             return m_pArray;
         }
 
-        public T* back()
+        public readonly T* back()
         {
             D3D12MA_HEAVY_ASSERT(m_Count > 0);
             return m_pArray + m_Count - 1;
         }
 
-        public void reserve(size_t newCapacity, bool freeMemory = false)
+        public void reserve([NativeTypeName("size_t")] nuint newCapacity, bool freeMemory = false)
         {
             newCapacity = D3D12MA_MAX(newCapacity, m_Count);
 
@@ -105,7 +110,7 @@ namespace TerraFX.Interop
                 T* newArray = newCapacity > 0 ? AllocateArray<T>(m_AllocationCallbacks, newCapacity) : null;
                 if (m_Count != 0)
                 {
-                    memcpy(newArray, m_pArray, m_Count * (size_t)sizeof(T));
+                    memcpy(newArray, m_pArray, m_Count * (nuint)sizeof(T));
                 }
                 Free(m_AllocationCallbacks, m_pArray);
                 m_Capacity = newCapacity;
@@ -113,12 +118,12 @@ namespace TerraFX.Interop
             }
         }
 
-        public void resize(size_t newCount, bool freeMemory = false)
+        public void resize([NativeTypeName("size_t")] nuint newCount, bool freeMemory = false)
         {
-            size_t newCapacity = m_Capacity;
+            nuint newCapacity = m_Capacity;
             if (newCount > m_Capacity)
             {
-                newCapacity = D3D12MA_MAX(newCount, D3D12MA_MAX(m_Capacity * 3 / 2, (size_t)8));
+                newCapacity = D3D12MA_MAX(newCount, D3D12MA_MAX(m_Capacity * 3 / 2, (nuint)8));
             }
             else if (freeMemory)
             {
@@ -128,10 +133,10 @@ namespace TerraFX.Interop
             if (newCapacity != m_Capacity)
             {
                 T* newArray = newCapacity > 0 ? AllocateArray<T>(m_AllocationCallbacks, newCapacity) : null;
-                size_t elementsToCopy = D3D12MA_MIN(m_Count, newCount);
+                nuint elementsToCopy = D3D12MA_MIN(m_Count, newCount);
                 if (elementsToCopy != 0)
                 {
-                    memcpy(newArray, m_pArray, elementsToCopy * (size_t)sizeof(T));
+                    memcpy(newArray, m_pArray, elementsToCopy * (nuint)sizeof(T));
                 }
                 Free(m_AllocationCallbacks, m_pArray);
                 m_Capacity = newCapacity;
@@ -146,32 +151,32 @@ namespace TerraFX.Interop
             resize(0, freeMemory);
         }
 
-        public void insert(size_t index, T* src)
+        public void insert([NativeTypeName("size_t")] nuint index, T* src)
         {
             D3D12MA_HEAVY_ASSERT(index <= m_Count);
-            size_t oldCount = size();
+            nuint oldCount = size();
             resize(oldCount + 1);
             if (index < oldCount)
             {
-                memcpy(m_pArray + (index + 1), m_pArray + index, (oldCount - index) * (size_t)sizeof(T));
+                memcpy(m_pArray + (index + 1), m_pArray + index, (oldCount - index) * (nuint)sizeof(T));
             }
             m_pArray[index] = *src;
         }
 
-        public void remove(size_t index)
+        public void remove([NativeTypeName("size_t")] nuint index)
         {
             D3D12MA_HEAVY_ASSERT(index < m_Count);
-            size_t oldCount = size();
+            nuint oldCount = size();
             if (index < oldCount - 1)
             {
-                memcpy(m_pArray + index, m_pArray + (index + 1), (oldCount - index - 1) * (size_t)sizeof(T));
+                memcpy(m_pArray + index, m_pArray + (index + 1), (oldCount - index - 1) * (nuint)sizeof(T));
             }
             resize(oldCount - 1);
         }
 
         public void push_back(T* src)
         {
-            size_t newIndex = size();
+            nuint newIndex = size();
             resize(newIndex + 1);
             m_pArray[newIndex] = *src;
         }
@@ -196,10 +201,11 @@ namespace TerraFX.Interop
         public T* begin() { return m_pArray; }
         public T* end() { return m_pArray + m_Count; }
 
-        public size_t InsertSorted<CmpLess>(T* value, in CmpLess cmp)
+        [return: NativeTypeName("size_t")]
+        public nuint InsertSorted<CmpLess>(T* value, in CmpLess cmp)
             where CmpLess : struct, ICmp<T>
         {
-            size_t indexToInsert = (size_t)(BinaryFindFirstNotLess(
+            nuint indexToInsert = (nuint)(BinaryFindFirstNotLess(
                 m_pArray,
                 m_pArray + m_Count,
                 value,
@@ -218,16 +224,11 @@ namespace TerraFX.Interop
                 cmp);
             if ((it != end()) && !cmp.Invoke(it, value) && !cmp.Invoke(value, it))
             {
-                size_t indexToRemove = (size_t)(it - begin());
+                nuint indexToRemove = (nuint)(it - begin());
                 remove(indexToRemove);
                 return true;
             }
             return false;
         }
-
-        private readonly ALLOCATION_CALLBACKS* m_AllocationCallbacks;
-        private T* m_pArray;
-        private size_t m_Count;
-        private size_t m_Capacity;
     }
 }

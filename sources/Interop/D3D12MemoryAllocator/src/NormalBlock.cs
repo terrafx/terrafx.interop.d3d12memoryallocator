@@ -29,6 +29,8 @@ namespace TerraFX.Interop
         public MemoryBlock @base;
         public BlockMetadata* m_pMetadata;
 
+        private BlockVector* m_BlockVector;
+
         public NormalBlock(
             AllocatorPimpl* allocator,
             BlockVector* blockVector,
@@ -51,8 +53,6 @@ namespace TerraFX.Interop
 
         // Validates all data structures inside this object. If not valid, returns false.
         public readonly partial bool Validate();
-
-        private BlockVector* m_BlockVector;
     }
 
     internal unsafe partial struct NormalBlock

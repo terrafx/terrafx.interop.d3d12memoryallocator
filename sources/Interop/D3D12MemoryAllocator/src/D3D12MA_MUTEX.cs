@@ -6,6 +6,8 @@ namespace TerraFX.Interop
 {
     internal unsafe struct D3D12MA_MUTEX
     {
+        [NativeTypeName("std::mutex")] private HANDLE m_Mutex;
+
         public void Lock() { WaitForSingleObject(m_Mutex, INFINITE); }
         public void Unlock() { ReleaseMutex(m_Mutex); }
 
@@ -14,8 +16,5 @@ namespace TerraFX.Interop
             mutex = default;
             mutex.m_Mutex = CreateMutex(null, 0, null);
         }
-
-        [NativeTypeName("std::mutex")]
-        private HANDLE m_Mutex;
     }
 }

@@ -1,7 +1,5 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using UINT64 = System.UInt64;
-
 namespace TerraFX.Interop
 {
     /// <summary>
@@ -10,8 +8,8 @@ namespace TerraFX.Interop
     /// </summary>
     internal unsafe struct Suballocation
     {
-        public UINT64 offset;
-        public UINT64 size;
+        [NativeTypeName("UINT64")] public ulong offset;
+        [NativeTypeName("UINT64")] public ulong size;
         public void* userData;
         public SuballocationType type;
     };

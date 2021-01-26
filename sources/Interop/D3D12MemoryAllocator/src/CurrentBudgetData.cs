@@ -1,10 +1,7 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using System.Runtime.CompilerServices;
-
-using UINT = System.UInt32;
-using UINT64 = System.UInt64;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace TerraFX.Interop
 {
@@ -20,17 +17,17 @@ namespace TerraFX.Interop
 
         public atomic<uint> m_OperationsSinceBudgetFetch;
         public D3D12MA_RW_MUTEX m_BudgetMutex;
-        public UINT64 m_D3D12UsageLocal, m_D3D12UsageNonLocal;
-        public UINT64 m_D3D12BudgetLocal, m_D3D12BudgetNonLocal;
-        public __m_Buffer64_Data<UINT64> m_BlockBytesAtBudgetFetch;
+        [NativeTypeName("UINT64")] public ulong m_D3D12UsageLocal, m_D3D12UsageNonLocal;
+        [NativeTypeName("UINT64")] public ulong m_D3D12BudgetLocal, m_D3D12BudgetNonLocal;
+        [NativeTypeName("UINT64")] public __m_Buffer64_Data<ulong> m_BlockBytesAtBudgetFetch;
 
-        public void AddAllocation(UINT heapTypeIndex, UINT64 allocationSize)
+        public void AddAllocation([NativeTypeName("UINT")] uint heapTypeIndex, [NativeTypeName("UINT64")] ulong allocationSize)
         {
             m_AllocationBytes[(int)heapTypeIndex].Add(allocationSize);
             m_OperationsSinceBudgetFetch.Increment();
         }
 
-        public void RemoveAllocation(UINT heapTypeIndex, UINT64 allocationSize)
+        public void RemoveAllocation([NativeTypeName("UINT")] uint heapTypeIndex, [NativeTypeName("UINT64")] ulong allocationSize)
         {
             m_AllocationBytes[(int)heapTypeIndex].Add(allocationSize);
             m_OperationsSinceBudgetFetch.Increment();

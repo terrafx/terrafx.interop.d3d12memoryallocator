@@ -5,9 +5,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using static TerraFX.Interop.D3D12MemoryAllocator;
 
-using UINT = System.UInt32;
-using size_t = nuint;
-
 namespace TerraFX.Interop
 {
     /// <summary>
@@ -20,8 +17,12 @@ namespace TerraFX.Interop
     internal unsafe partial struct PoolAllocator<T> : IDisposable
         where T : unmanaged, IDisposable
     {
+        private readonly ALLOCATION_CALLBACKS* m_AllocationCallbacks;
+        [NativeTypeName("UINT")] private readonly uint m_FirstBlockCapacity;
+        private Vector<ItemBlock> m_ItemBlocks;
+
         // allocationCallbacks externally owned, must outlive this object.
-        public PoolAllocator(ALLOCATION_CALLBACKS* allocationCallbacks, UINT firstBlockCapacity)
+        public PoolAllocator(ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("UINT")] uint firstBlockCapacity)
         {
             m_AllocationCallbacks = allocationCallbacks;
             m_FirstBlockCapacity = firstBlockCapacity;
@@ -47,7 +48,7 @@ namespace TerraFX.Interop
         [StructLayout(LayoutKind.Explicit)]
         private struct Item
         {
-            [FieldOffset(0)] public UINT NextFreeIndex; // UINT32_MAX means end of list.
+            [FieldOffset(0), NativeTypeName("UINT")] public uint NextFreeIndex; // UINT32_MAX means end of list.
             [FieldOffset(0)] private T __Value_Data;
 
             public byte* Value => (byte*)Unsafe.AsPointer(ref __Value_Data);
@@ -56,13 +57,9 @@ namespace TerraFX.Interop
         private struct ItemBlock
         {
             public Item* pItems;
-            public UINT Capacity;
-            public UINT FirstFreeIndex;
+            [NativeTypeName("UINT")] public uint Capacity;
+            [NativeTypeName("UINT")] public uint FirstFreeIndex;
         }
-
-        private readonly ALLOCATION_CALLBACKS* m_AllocationCallbacks;
-        private readonly UINT m_FirstBlockCapacity;
-        private Vector<ItemBlock> m_ItemBlocks;
 
         private partial ItemBlock* CreateNewBlock();
     }
@@ -71,9 +68,9 @@ namespace TerraFX.Interop
     {
         public partial void Clear()
         {
-            for (size_t i = m_ItemBlocks.size(); i > 0; i--)
+            for (nuint i = m_ItemBlocks.size(); i-- > 0; )
             {
-                D3D12MA_DELETE_ARRAY_NO_DISPOSE(m_AllocationCallbacks, m_ItemBlocks[i]->pItems, (size_t)m_ItemBlocks[i]->Capacity);
+                D3D12MA_DELETE_ARRAY_NO_DISPOSE(m_AllocationCallbacks, m_ItemBlocks[i]->pItems, (nuint)m_ItemBlocks[i]->Capacity);
             }
             m_ItemBlocks.clear(true);
         }
@@ -132,11 +129,11 @@ namespace TerraFX.Interop
 
         private T* Alloc(void** args, void* f, delegate*<void**, void*, T> cctor)
         {
-            for (size_t i = m_ItemBlocks.size(); i > 0; i--)
+            for (nuint i = m_ItemBlocks.size(); i > 0; i--)
             {
                 ItemBlock* block = m_ItemBlocks[i];
                 // This block has some free items: Use first one.
-                if (block->FirstFreeIndex != UINT.MaxValue)
+                if (block->FirstFreeIndex != uint.MaxValue)
                 {
                     Item* pItem = &block->pItems[block->FirstFreeIndex];
                     block->FirstFreeIndex = pItem->NextFreeIndex;
@@ -160,18 +157,18 @@ namespace TerraFX.Interop
         public partial void Free(T* ptr)
         {
             // Search all memory blocks to find ptr.
-            for (size_t i = m_ItemBlocks.size(); i > 0; i--)
+            for (nuint i = m_ItemBlocks.size(); i > 0; i--)
             {
                 ItemBlock* block = m_ItemBlocks[i];
 
                 Item* pItemPtr;
-                memcpy(&pItemPtr, &ptr, (size_t)sizeof(Item));
+                memcpy(&pItemPtr, &ptr, (nuint)sizeof(Item));
 
                 // Check if pItemPtr is in address range of this block.
                 if ((pItemPtr >= block->pItems) && (pItemPtr < block->pItems + block->Capacity))
                 {
                     ptr->Dispose(); // Explicit destructor call.
-                    UINT index = (UINT)(pItemPtr - block->pItems);
+                    uint index = (uint)(pItemPtr - block->pItems);
                     pItemPtr->NextFreeIndex = block->FirstFreeIndex;
                     block->FirstFreeIndex = index;
                     return;
@@ -182,11 +179,11 @@ namespace TerraFX.Interop
 
         private partial ItemBlock* CreateNewBlock()
         {
-            UINT newBlockCapacity = m_ItemBlocks.empty() ?
+            uint newBlockCapacity = m_ItemBlocks.empty() ?
                 m_FirstBlockCapacity : m_ItemBlocks.back()->Capacity * 3 / 2;
 
             ItemBlock newBlock = new() {
-                pItems = D3D12MA_NEW_ARRAY<Item>(m_AllocationCallbacks, (size_t)newBlockCapacity),
+                pItems = D3D12MA_NEW_ARRAY<Item>(m_AllocationCallbacks, (nuint)newBlockCapacity),
                 Capacity = newBlockCapacity,
                 FirstFreeIndex = 0
             };
@@ -194,11 +191,11 @@ namespace TerraFX.Interop
             m_ItemBlocks.push_back(&newBlock);
 
             // Setup singly-linked list of all free items in this block.
-            for (UINT i = 0; i < newBlockCapacity - 1; ++i)
+            for (uint i = 0; i < newBlockCapacity - 1; ++i)
             {
                 newBlock.pItems[i].NextFreeIndex = i + 1;
             }
-            newBlock.pItems[newBlockCapacity - 1].NextFreeIndex = UINT.MaxValue;
+            newBlock.pItems[newBlockCapacity - 1].NextFreeIndex = uint.MaxValue;
             return m_ItemBlocks.back();
         }
     }

@@ -28,6 +28,14 @@ namespace TerraFX.Interop
 
         public void** lpVtbl;
 
+        public readonly AllocatorPimpl* m_Allocator;
+        public readonly D3D12_HEAP_TYPE m_HeapType;
+        public readonly D3D12_HEAP_FLAGS m_HeapFlags;
+        [NativeTypeName("UINT64")] public readonly ulong m_Size;
+        public readonly uint m_Id;
+
+        private ID3D12Heap* m_Heap;
+
         public MemoryBlock(
             AllocatorPimpl* allocator,
             D3D12_HEAP_TYPE heapType,
@@ -56,16 +64,7 @@ namespace TerraFX.Interop
         public uint GetId() { return m_Id; }
         public ID3D12Heap* GetHeap() { return m_Heap; }
 
-        public readonly AllocatorPimpl* m_Allocator;
-        public readonly D3D12_HEAP_TYPE m_HeapType;
-        public readonly D3D12_HEAP_FLAGS m_HeapFlags;
-        [NativeTypeName("UINT64")]
-        public readonly ulong m_Size;
-        public readonly uint m_Id;
-
         public partial HRESULT Init();
-
-        private ID3D12Heap* m_Heap;
     }
 
     internal unsafe partial struct MemoryBlock

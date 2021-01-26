@@ -13,11 +13,6 @@ using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12MemoryAllocator;
 
-using UINT = System.UInt32;
-using uint64_t = System.UInt64;
-using UINT64 = System.UInt64;
-using size_t = nuint;
-
 using SuballocationList = TerraFX.Interop.List<TerraFX.Interop.Suballocation>;
 
 namespace TerraFX.Interop
@@ -66,7 +61,7 @@ namespace TerraFX.Interop
         internal const int D3D12MA_DEBUG_GLOBAL_MUTEX = 0;
 
         // Default size of a block allocated as single ID3D12Heap.
-        internal const uint64_t D3D12MA_DEFAULT_BLOCK_SIZE = (256UL * 1024 * 1024);
+        internal const ulong D3D12MA_DEFAULT_BLOCK_SIZE = (256UL * 1024 * 1024);
 
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
@@ -79,10 +74,10 @@ namespace TerraFX.Interop
         ////////////////////////////////////////////////////////////////////////////////
         // Private globals - CPU memory allocation
 
-        internal static void* DefaultAllocate(size_t Size, size_t Alignment, void* _  /*pUserData*/)
+        internal static void* DefaultAllocate([NativeTypeName("size_t")] nuint Size, [NativeTypeName("size_t")] nuint Alignment, void* _  /*pUserData*/)
         {
             [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-            static extern unsafe void* _aligned_malloc(size_t _Size, size_t _Alignment);
+            static extern unsafe void* _aligned_malloc(nuint _Size, nuint _Alignment);
 
             return _aligned_malloc(Size, Alignment);
         }
@@ -94,7 +89,7 @@ namespace TerraFX.Interop
             _aligned_free(pMemory);
         }
 
-        internal static void* Malloc(ALLOCATION_CALLBACKS* allocs, size_t size, size_t alignment)
+        internal static void* Malloc(ALLOCATION_CALLBACKS* allocs, [NativeTypeName("size_t")] nuint size, [NativeTypeName("size_t")] nuint alignment)
         {
             void* result = allocs->pAllocate(size, alignment, allocs->pUserData);
             D3D12MA_ASSERT((IntPtr)result);
@@ -108,15 +103,15 @@ namespace TerraFX.Interop
         internal static T* Allocate<T>(ALLOCATION_CALLBACKS* allocs)
             where T : unmanaged
         {
-            return (T*)Malloc(allocs, (size_t)sizeof(T), __alignof<T>());
+            return (T*)Malloc(allocs, (nuint)sizeof(T), __alignof<T>());
         }
-        internal static T* AllocateArray<T>(ALLOCATION_CALLBACKS* allocs, size_t count)
+        internal static T* AllocateArray<T>(ALLOCATION_CALLBACKS* allocs, [NativeTypeName("size_t")] nuint count)
             where T : unmanaged
         {
-            return (T*)Malloc(allocs, (size_t)sizeof(T) * count, __alignof<T>());
+            return (T*)Malloc(allocs, (nuint)sizeof(T) * count, __alignof<T>());
         }
 
-        private static unsafe size_t __alignof<T>()
+        private static unsafe nuint __alignof<T>()
             where T : unmanaged
         {
             if (typeof(T) == typeof(byte)) return 1;
@@ -130,7 +125,7 @@ namespace TerraFX.Interop
                 typeof(T) == typeof(ulong) ||
                 typeof(T) == typeof(double)) return 4;
             if (typeof(T) == typeof(nint) ||
-                typeof(T) == typeof(nuint)) return (size_t)sizeof(nint);
+                typeof(T) == typeof(nuint)) return (nuint)sizeof(nint);
             if (typeof(T) == typeof(Allocation)) return 8;
 
             throw new ArgumentException("Invalid __alignof<T> type");
@@ -166,7 +161,7 @@ namespace TerraFX.Interop
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static T* TRY_D3D12MA_NEW_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, size_t count)
+        private static T* TRY_D3D12MA_NEW_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, nuint count)
             where T : unmanaged
         {
             T* p = null;
@@ -184,7 +179,7 @@ namespace TerraFX.Interop
                 p = AllocateArray<T>(allocs, count);
             }
 
-            Unsafe.InitBlock(p, 0, (UINT)(sizeof(T) * (int)count));
+            Unsafe.InitBlock(p, 0, (uint)(sizeof(T) * (int)count));
             return p;
         }
 
@@ -201,14 +196,14 @@ namespace TerraFX.Interop
 
             return TRY_D3D12MA_NEW<T>(allocs);
         }
-        internal static T* D3D12MA_NEW_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, size_t count)
+        internal static T* D3D12MA_NEW_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, nuint count)
             where T : unmanaged
         {
             T* p = AllocateArray<T>(allocs, count);
 
             if (p != null)
             {
-                Unsafe.InitBlock(p, 0, (UINT)(sizeof(T) * (int)count));
+                Unsafe.InitBlock(p, 0, (uint)(sizeof(T) * (int)count));
                 return p;
             }
 
@@ -224,19 +219,19 @@ namespace TerraFX.Interop
                 Free(allocs, memory);
             }
         }
-        internal static void D3D12MA_DELETE_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, T* memory, size_t count)
+        internal static void D3D12MA_DELETE_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, T* memory, [NativeTypeName("size_t")] nuint count)
             where T : unmanaged, IDisposable
         {
             if (memory != null)
             {
-                for (size_t i = count; i > 0; i--)
+                for (nuint i = count; i > 0; i--)
                 {
                     memory[i].Dispose();
                 }
                 Free(allocs, memory);
             }
         }
-        internal static void D3D12MA_DELETE_ARRAY_NO_DISPOSE<T>(ALLOCATION_CALLBACKS* allocs, T* memory, size_t count)
+        internal static void D3D12MA_DELETE_ARRAY_NO_DISPOSE<T>(ALLOCATION_CALLBACKS* allocs, T* memory, [NativeTypeName("size_t")] nuint count)
             where T : unmanaged
         {
             if (memory != null)
@@ -260,12 +255,12 @@ namespace TerraFX.Interop
             }
         }
 
-        internal static void memcpy(void* dst, void* src, size_t size)
+        internal static void memcpy(void* dst, void* src, [NativeTypeName("size_t")] nuint size)
         {
             Buffer.MemoryCopy(src, dst, size, size);
         }
 
-        internal static void ZeroMemory(void* dst, size_t size)
+        internal static void ZeroMemory(void* dst, [NativeTypeName("size_t")] nuint size)
         {
             Unsafe.InitBlock(dst, 0, (uint)size);
         }
@@ -297,24 +292,24 @@ namespace TerraFX.Interop
             return cond;
         }
 
-        internal const UINT NEW_BLOCK_SIZE_SHIFT_MAX = 3;
+        internal const uint NEW_BLOCK_SIZE_SHIFT_MAX = 3;
 
-        internal static size_t D3D12MA_MIN(size_t a, size_t b)
+        internal static nuint D3D12MA_MIN(nuint a, nuint b)
         {
             return a <= b ? a : b;
         }
 
-        internal static uint64_t D3D12MA_MIN(uint64_t a, uint64_t b)
+        internal static ulong D3D12MA_MIN(ulong a, ulong b)
         {
             return a <= b ? a : b;
         }
 
-        internal static size_t D3D12MA_MAX(size_t a, size_t b)
+        internal static nuint D3D12MA_MAX(nuint a, nuint b)
         {
             return a >= b ? a : b;
         }
 
-        internal static uint64_t D3D12MA_MAX(uint64_t a, uint64_t b)
+        internal static ulong D3D12MA_MAX(ulong a, ulong b)
         {
             return a >= b ? a : b;
         }
@@ -332,7 +327,7 @@ namespace TerraFX.Interop
         /// T must be unsigned integer number or signed integer but always nonnegative.
         /// For 0 returns true.
         /// </summary>
-        internal static bool IsPow2(size_t x)
+        internal static bool IsPow2(nuint x)
         {
             return (x & (x - 1)) == 0;
         }
@@ -343,7 +338,7 @@ namespace TerraFX.Interop
 
         // Aligns given value up to nearest multiply of align value. For example: AlignUp(11, 8) = 16.
         // Use types like UINT, uint64_t as T.
-        internal static size_t AlignUp(size_t val, size_t alignment)
+        internal static nuint AlignUp(nuint val, nuint alignment)
         {
             D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
             return (val + alignment - 1) & ~(alignment - 1);
@@ -355,24 +350,25 @@ namespace TerraFX.Interop
         }
         // Aligns given value down to nearest multiply of align value. For example: AlignUp(11, 8) = 8.
         // Use types like UINT, uint64_t as T.
-        internal static size_t AlignDown(size_t val, size_t alignment)
+        internal static nuint AlignDown(nuint val, nuint alignment)
         {
             D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
             return val & ~(alignment - 1);
         }
 
         // Division with mathematical rounding to nearest number.
-        internal static UINT RoundDiv(UINT x, UINT y)
+        internal static uint RoundDiv(uint x, uint y)
         {
-            return (x + (y / (UINT)2)) / y;
+            return (x + (y / 2u)) / y;
         }
-        internal static UINT DivideRoudingUp(UINT x, UINT y)
+        internal static uint DivideRoudingUp(uint x, uint y)
         {
             return (x + y - 1) / y;
         }
 
         // Returns smallest power of 2 greater or equal to v.
-        internal static UINT NextPow2(UINT v)
+        [return: NativeTypeName("UINT")]
+        internal static uint NextPow2([NativeTypeName("UINT")] uint v)
         {
             v--;
             v |= v >> 1;
@@ -383,7 +379,9 @@ namespace TerraFX.Interop
             v++;
             return v;
         }
-        internal static uint64_t NextPow2(uint64_t v)
+
+        [return: NativeTypeName("uint64_t")]
+        internal static ulong NextPow2([NativeTypeName("uint64_t")] ulong v)
         {
             v--;
             v |= v >> 1;
@@ -397,7 +395,8 @@ namespace TerraFX.Interop
         }
 
         // Returns largest power of 2 less or equal to v.
-        internal static UINT PrevPow2(UINT v)
+        [return: NativeTypeName("UINT")]
+        internal static uint PrevPow2([NativeTypeName("UINT")] uint v)
         {
             v |= v >> 1;
             v |= v >> 2;
@@ -407,7 +406,9 @@ namespace TerraFX.Interop
             v = v ^ (v >> 1);
             return v;
         }
-        internal static uint64_t PrevPow2(uint64_t v)
+
+        [return: NativeTypeName("uint64_t")]
+        internal static ulong PrevPow2([NativeTypeName("uint64_t")] ulong v)
         {
             v |= v >> 1;
             v |= v >> 2;
@@ -425,7 +426,7 @@ namespace TerraFX.Interop
         }
 
         // Minimum size of a free suballocation to register it in the free suballocation collection.
-        internal const uint64_t MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER = 16;
+        internal const ulong MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER = 16;
 
         internal interface ICmp<T>
             where T : unmanaged
@@ -436,7 +437,7 @@ namespace TerraFX.Interop
         internal interface ICmp64<T>
             where T : unmanaged
         {
-            bool Invoke(T* lhs, UINT64 rhs);
+            bool Invoke(T* lhs, ulong rhs);
         }
 
         /// <summary>
@@ -452,10 +453,10 @@ namespace TerraFX.Interop
             where CmpLess : struct, ICmp<KeyT>
             where KeyT : unmanaged
         {
-            size_t down = 0, up = (size_t)end - (size_t)beg;
+            nuint down = 0, up = (nuint)end - (nuint)beg;
             while (down < up)
             {
-                size_t mid = (down + up) / 2;
+                nuint mid = (down + up) / 2;
                 if (cmp.Invoke((beg + mid), key))
                 {
                     down = mid + 1;
@@ -469,14 +470,14 @@ namespace TerraFX.Interop
         }
 
         /// <summary>Overload of <see cref="BinaryFindFirstNotLess{CmpLess,KeyT}(KeyT*,KeyT*,KeyT*,in CmpLess)"/> to work around lack of templates.</summary>
-        internal static KeyT* BinaryFindFirstNotLess<CmpLess, KeyT>(KeyT* beg, KeyT* end, UINT64 key, in CmpLess cmp)
+        internal static KeyT* BinaryFindFirstNotLess<CmpLess, KeyT>(KeyT* beg, KeyT* end, ulong key, in CmpLess cmp)
             where CmpLess : struct, ICmp64<KeyT>
             where KeyT : unmanaged
         {
-            size_t down = 0, up = (size_t)end - (size_t)beg;
+            nuint down = 0, up = (nuint)end - (nuint)beg;
             while (down < up)
             {
-                size_t mid = (down + up) / 2;
+                nuint mid = (down + up) / 2;
                 if (cmp.Invoke((beg + mid), key))
                 {
                     down = mid + 1;
@@ -518,19 +519,15 @@ namespace TerraFX.Interop
             }
         }
 
-        internal static UINT HeapTypeToIndex(D3D12_HEAP_TYPE type)
+        [return: NativeTypeName("UINT")]
+        internal static uint HeapTypeToIndex(D3D12_HEAP_TYPE type)
         {
             switch (type)
             {
-                case D3D12_HEAP_TYPE_DEFAULT:
-                    return 0;
-                case D3D12_HEAP_TYPE_UPLOAD:
-                    return 1;
-                case D3D12_HEAP_TYPE_READBACK:
-                    return 2;
-                default:
-                    D3D12MA_ASSERT(0);
-                    return UINT.MaxValue;
+                case D3D12_HEAP_TYPE_DEFAULT: return 0;
+                case D3D12_HEAP_TYPE_UPLOAD: return 1;
+                case D3D12_HEAP_TYPE_READBACK: return 2;
+                default: D3D12MA_ASSERT(0); return UINT_MAX;
             }
         }
 
@@ -564,7 +561,8 @@ namespace TerraFX.Interop
                 statInfo.UnusedBytes / statInfo.UnusedRangeCount : 0;
         }
 
-        internal static uint64_t HeapFlagsToAlignment(D3D12_HEAP_FLAGS flags)
+        [return: NativeTypeName("UINT64")]
+        internal static ulong HeapFlagsToAlignment(D3D12_HEAP_FLAGS flags)
         {
             /*
             Documentation of D3D12_HEAP_DESC structure says:
@@ -577,12 +575,11 @@ namespace TerraFX.Interop
             https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/ns-d3d12-d3d12_heap_desc
             */
 
-            const D3D12_HEAP_FLAGS denyAllTexturesFlags =
-                D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES;
-            bool canContainAnyTextures =
-                (flags & denyAllTexturesFlags) != denyAllTexturesFlags;
-            return canContainAnyTextures ?
-                D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+            const D3D12_HEAP_FLAGS denyAllTexturesFlags = D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES;
+            bool canContainAnyTextures = (flags & denyAllTexturesFlags) != denyAllTexturesFlags;
+            return canContainAnyTextures
+                ? D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT
+                : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
         }
 
         internal static bool IsFormatCompressed(DXGI_FORMAT format)
@@ -610,14 +607,19 @@ namespace TerraFX.Interop
                 case DXGI_FORMAT_BC7_TYPELESS:
                 case DXGI_FORMAT_BC7_UNORM:
                 case DXGI_FORMAT_BC7_UNORM_SRGB:
+                {
                     return true;
+                }
                 default:
+                {
                     return false;
+                }
             }
         }
 
         // Only some formats are supported. For others it returns 0.
-        internal static UINT GetBitsPerPixel(DXGI_FORMAT format)
+        [return: NativeTypeName("UINT")]
+        internal static uint GetBitsPerPixel(DXGI_FORMAT format)
         {
             switch (format)
             {
@@ -625,65 +627,87 @@ namespace TerraFX.Interop
                 case DXGI_FORMAT_R32G32B32A32_FLOAT:
                 case DXGI_FORMAT_R32G32B32A32_UINT:
                 case DXGI_FORMAT_R32G32B32A32_SINT:
+                {
                     return 128;
+                }
                 case DXGI_FORMAT_R32G32B32_TYPELESS:
                 case DXGI_FORMAT_R32G32B32_FLOAT:
                 case DXGI_FORMAT_R32G32B32_UINT:
                 case DXGI_FORMAT_R32G32B32_SINT:
+                {
                     return 96;
+                }
                 case DXGI_FORMAT_R16G16B16A16_TYPELESS:
                 case DXGI_FORMAT_R16G16B16A16_FLOAT:
                 case DXGI_FORMAT_R16G16B16A16_UNORM:
                 case DXGI_FORMAT_R16G16B16A16_UINT:
                 case DXGI_FORMAT_R16G16B16A16_SNORM:
                 case DXGI_FORMAT_R16G16B16A16_SINT:
+                {
                     return 64;
+                }
                 case DXGI_FORMAT_R32G32_TYPELESS:
                 case DXGI_FORMAT_R32G32_FLOAT:
                 case DXGI_FORMAT_R32G32_UINT:
                 case DXGI_FORMAT_R32G32_SINT:
+                {
                     return 64;
+                }
                 case DXGI_FORMAT_R32G8X24_TYPELESS:
                 case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
                 case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
                 case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
+                {
                     return 64;
+                }
                 case DXGI_FORMAT_R10G10B10A2_TYPELESS:
                 case DXGI_FORMAT_R10G10B10A2_UNORM:
                 case DXGI_FORMAT_R10G10B10A2_UINT:
                 case DXGI_FORMAT_R11G11B10_FLOAT:
+                {
                     return 32;
+                }
                 case DXGI_FORMAT_R8G8B8A8_TYPELESS:
                 case DXGI_FORMAT_R8G8B8A8_UNORM:
                 case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
                 case DXGI_FORMAT_R8G8B8A8_UINT:
                 case DXGI_FORMAT_R8G8B8A8_SNORM:
                 case DXGI_FORMAT_R8G8B8A8_SINT:
+                {
                     return 32;
+                }
                 case DXGI_FORMAT_R16G16_TYPELESS:
                 case DXGI_FORMAT_R16G16_FLOAT:
                 case DXGI_FORMAT_R16G16_UNORM:
                 case DXGI_FORMAT_R16G16_UINT:
                 case DXGI_FORMAT_R16G16_SNORM:
                 case DXGI_FORMAT_R16G16_SINT:
+                {
                     return 32;
+                }
                 case DXGI_FORMAT_R32_TYPELESS:
                 case DXGI_FORMAT_D32_FLOAT:
                 case DXGI_FORMAT_R32_FLOAT:
                 case DXGI_FORMAT_R32_UINT:
                 case DXGI_FORMAT_R32_SINT:
+                {
                     return 32;
+                }
                 case DXGI_FORMAT_R24G8_TYPELESS:
                 case DXGI_FORMAT_D24_UNORM_S8_UINT:
                 case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
                 case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
+                {
                     return 32;
+                }
                 case DXGI_FORMAT_R8G8_TYPELESS:
                 case DXGI_FORMAT_R8G8_UNORM:
                 case DXGI_FORMAT_R8G8_UINT:
                 case DXGI_FORMAT_R8G8_SNORM:
                 case DXGI_FORMAT_R8G8_SINT:
+                {
                     return 16;
+                }
                 case DXGI_FORMAT_R16_TYPELESS:
                 case DXGI_FORMAT_R16_FLOAT:
                 case DXGI_FORMAT_D16_UNORM:
@@ -691,44 +715,64 @@ namespace TerraFX.Interop
                 case DXGI_FORMAT_R16_UINT:
                 case DXGI_FORMAT_R16_SNORM:
                 case DXGI_FORMAT_R16_SINT:
+                {
                     return 16;
+                }
                 case DXGI_FORMAT_R8_TYPELESS:
                 case DXGI_FORMAT_R8_UNORM:
                 case DXGI_FORMAT_R8_UINT:
                 case DXGI_FORMAT_R8_SNORM:
                 case DXGI_FORMAT_R8_SINT:
                 case DXGI_FORMAT_A8_UNORM:
+                {
                     return 8;
+                }
                 case DXGI_FORMAT_BC1_TYPELESS:
                 case DXGI_FORMAT_BC1_UNORM:
                 case DXGI_FORMAT_BC1_UNORM_SRGB:
+                {
                     return 4;
+                }
                 case DXGI_FORMAT_BC2_TYPELESS:
                 case DXGI_FORMAT_BC2_UNORM:
                 case DXGI_FORMAT_BC2_UNORM_SRGB:
+                {
                     return 8;
+                }
                 case DXGI_FORMAT_BC3_TYPELESS:
                 case DXGI_FORMAT_BC3_UNORM:
                 case DXGI_FORMAT_BC3_UNORM_SRGB:
+                {
                     return 8;
+                }
                 case DXGI_FORMAT_BC4_TYPELESS:
                 case DXGI_FORMAT_BC4_UNORM:
                 case DXGI_FORMAT_BC4_SNORM:
+                {
                     return 4;
+                }
                 case DXGI_FORMAT_BC5_TYPELESS:
                 case DXGI_FORMAT_BC5_UNORM:
                 case DXGI_FORMAT_BC5_SNORM:
+                {
                     return 8;
+                }
                 case DXGI_FORMAT_BC6H_TYPELESS:
                 case DXGI_FORMAT_BC6H_UF16:
                 case DXGI_FORMAT_BC6H_SF16:
+                {
                     return 8;
+                }
                 case DXGI_FORMAT_BC7_TYPELESS:
                 case DXGI_FORMAT_BC7_UNORM:
                 case DXGI_FORMAT_BC7_UNORM_SRGB:
+                {
                     return 8;
+                }
                 default:
+                {
                     return 0;
+                }
             }
         }
 
@@ -744,9 +788,9 @@ namespace TerraFX.Interop
             if (resourceDesc.DepthOrArraySize != 1)
                 return false;
 
-            UINT sizeX = (UINT)resourceDesc.Width;
-            UINT sizeY = resourceDesc.Height;
-            UINT bitsPerPixel = GetBitsPerPixel(resourceDesc.Format);
+            uint sizeX = (uint)resourceDesc.Width;
+            uint sizeY = resourceDesc.Height;
+            uint bitsPerPixel = GetBitsPerPixel(resourceDesc.Format);
             if (bitsPerPixel == 0)
                 return false;
 
@@ -757,7 +801,7 @@ namespace TerraFX.Interop
                 bitsPerPixel *= 16;
             }
 
-            UINT tileSizeX = 0, tileSizeY = 0;
+            uint tileSizeX = 0, tileSizeY = 0;
             switch (bitsPerPixel)
             {
                 case 8:
@@ -784,7 +828,7 @@ namespace TerraFX.Interop
                     return false;
             }
 
-            UINT tileCount = DivideRoudingUp(sizeX, tileSizeX) * DivideRoudingUp(sizeY, tileSizeY);
+            uint tileCount = DivideRoudingUp(sizeX, tileSizeX) * DivideRoudingUp(sizeY, tileSizeY);
             return tileCount <= 16;
         }
 
@@ -870,7 +914,7 @@ namespace TerraFX.Interop
             return lhs->op_Arrow()->size < rhs->op_Arrow()->size;
         }
 
-        public bool Invoke(SuballocationList.iterator* lhs, UINT64 rhs)
+        public bool Invoke(SuballocationList.iterator* lhs, ulong rhs)
         {
             return lhs->op_Arrow()->size < rhs;
         }

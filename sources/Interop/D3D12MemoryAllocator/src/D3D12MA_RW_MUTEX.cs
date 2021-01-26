@@ -7,6 +7,8 @@ namespace TerraFX.Interop
 {
     internal unsafe struct D3D12MA_RW_MUTEX
     {
+        [NativeTypeName("SRWLOCK")] private RTL_SRWLOCK m_Lock;
+
         public void LockRead() { AcquireSRWLockShared((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock)); }
         public void UnlockRead() { ReleaseSRWLockShared((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock)); }
         public void LockWrite() { AcquireSRWLockExclusive((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock)); }
@@ -17,8 +19,5 @@ namespace TerraFX.Interop
             mutex = default;
             InitializeSRWLock((RTL_SRWLOCK*)Unsafe.AsPointer(ref mutex.m_Lock));
         }
-
-        [NativeTypeName("SRWLOCK")]
-        private RTL_SRWLOCK m_Lock;
     }
 }
