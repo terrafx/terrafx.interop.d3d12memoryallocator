@@ -35,27 +35,39 @@ namespace TerraFX.Interop
         }
 
         public partial void Dispose();
+
         public partial void Clear();
 
         [return: NativeTypeName("size_t")]
         public readonly nuint GetCount() { return m_Count; }
+
         public readonly bool IsEmpty() { return m_Count == 0; }
+
         public readonly Item* Front() { return m_pFront; }
+
         public readonly Item* Back() { return m_pBack; }
 
         public partial Item* PushBack();
+
         public partial Item* PushFront();
+
         public partial Item* PushBack(T* value);
+
         public partial Item* PushFront(T* value);
+
         public partial void PopBack();
+
         public partial void PopFront();
+
 
         // Item can be null - it means PushBack.
         public partial Item* InsertBefore(Item* pItem);
+
         // Item can be null - it means PushFront.
         public partial Item* InsertAfter(Item* pItem);
 
         public partial Item* InsertBefore(Item* pItem, T* value);
+
         public partial Item* InsertAfter(Item* pItem, T* value);
 
         public partial void Remove(Item* pItem);
@@ -117,11 +129,15 @@ namespace TerraFX.Interop
         public readonly nuint size() { return GetCount(); }
 
         public iterator begin() { return new((List<T>*)Unsafe.AsPointer(ref this), Front()); }
+
         public iterator end() { return new((List<T>*)Unsafe.AsPointer(ref this), null); }
 
         public void clear() { Clear(); }
+
         public void push_back(T* value) { PushBack(value); }
+
         public void erase(iterator it) { Remove(it.m_pItem); }
+
         public iterator insert(iterator it, T* value) { return new((List<T>*)Unsafe.AsPointer(ref this), InsertBefore(it.m_pItem, value)); }
     }
 

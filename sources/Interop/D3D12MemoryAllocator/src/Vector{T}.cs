@@ -73,6 +73,7 @@ namespace TerraFX.Interop
 
         [return: NativeTypeName("size_t")]
         public readonly nuint size() { return m_Count; }
+
         public readonly T* data() { return m_pArray; }
 
         public readonly T* this[[NativeTypeName("size_t")] nuint index]
@@ -199,11 +200,12 @@ namespace TerraFX.Interop
         }
 
         public T* begin() { return m_pArray; }
+
         public T* end() { return m_pArray + m_Count; }
 
         [return: NativeTypeName("size_t")]
         public nuint InsertSorted<CmpLess>(T* value, in CmpLess cmp)
-            where CmpLess : struct, ICmp<T>
+            where CmpLess : struct, ICmpLess<T>
         {
             nuint indexToInsert = (nuint)(BinaryFindFirstNotLess(
                 m_pArray,
@@ -215,7 +217,7 @@ namespace TerraFX.Interop
         }
 
         public bool RemoveSorted<CmpLess>(T* value, in CmpLess cmp)
-            where CmpLess : struct, ICmp<T>
+            where CmpLess : struct, ICmpLess<T>
         {
             T* it = BinaryFindFirstNotLess(
                 m_pArray,

@@ -10,8 +10,11 @@ namespace TerraFX.Interop
         [NativeTypeName("SRWLOCK")] private RTL_SRWLOCK m_Lock;
 
         public void LockRead() { AcquireSRWLockShared((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock)); }
+
         public void UnlockRead() { ReleaseSRWLockShared((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock)); }
+
         public void LockWrite() { AcquireSRWLockExclusive((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock)); }
+
         public void UnlockWrite() { ReleaseSRWLockExclusive((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock)); }
 
         public static void Init(out D3D12MA_RW_MUTEX mutex)

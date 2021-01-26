@@ -146,16 +146,24 @@ namespace TerraFX.Interop
             ulong __value;
 
             public readonly new Type GetType() { return (Type)m_Type; }
+
             public readonly D3D12_RESOURCE_DIMENSION GetResourceDimension() { return (D3D12_RESOURCE_DIMENSION)m_ResourceDimension; }
+
             public readonly D3D12_RESOURCE_FLAGS GetResourceFlags() { return (D3D12_RESOURCE_FLAGS)m_ResourceFlags; }
+
             public readonly D3D12_TEXTURE_LAYOUT GetTextureLayout() { return (D3D12_TEXTURE_LAYOUT)m_TextureLayout; }
+
             [return: NativeTypeName("BOOL")]
             public readonly int WasZeroInitialized() { return (int)m_WasZeroInitialized; }
 
             public partial void SetType(Type type);
+
             public partial void SetResourceDimension(D3D12_RESOURCE_DIMENSION resourceDimension);
+
             public partial void SetResourceFlags(D3D12_RESOURCE_FLAGS resourceFlags);
+
             public partial void SetTextureLayout(D3D12_TEXTURE_LAYOUT textureLayout);
+
             public void SetWasZeroInitialized([NativeTypeName("BOOL")] int wasZeroInitialized) { m_WasZeroInitialized = wasZeroInitialized > 0 ? 1 : 0; }
 
             [NativeTypeName("UINT")]
@@ -214,11 +222,16 @@ namespace TerraFX.Interop
         }
 
         public partial void Dispose();
+
         internal partial void InitCommitted(D3D12_HEAP_TYPE heapType);
+
         internal partial void InitPlaced([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong alignment, NormalBlock* block);
+
         internal partial void InitHeap(D3D12_HEAP_TYPE heapType, ID3D12Heap* heap);
-        internal partial void SetResource<D3D12_RESOURCE_DESC_T>(ID3D12Resource* resource, D3D12_RESOURCE_DESC_T* pResourceDesc)
-            where D3D12_RESOURCE_DESC_T : unmanaged;
+
+        internal partial void SetResource<TD3D12_RESOURCE_DESC>(ID3D12Resource* resource, TD3D12_RESOURCE_DESC* pResourceDesc)
+            where TD3D12_RESOURCE_DESC : unmanaged;
+
         internal partial void FreeName();
     }
 
@@ -355,8 +368,8 @@ namespace TerraFX.Interop
             m_Union.m_Heap.heap = heap;
         }
 
-        internal partial void SetResource<D3D12_RESOURCE_DESC_T>(ID3D12Resource* resource, D3D12_RESOURCE_DESC_T* pResourceDesc)
-            where D3D12_RESOURCE_DESC_T : unmanaged
+        internal partial void SetResource<TD3D12_RESOURCE_DESC>(ID3D12Resource* resource, TD3D12_RESOURCE_DESC* pResourceDesc)
+            where TD3D12_RESOURCE_DESC : unmanaged
         {
             D3D12MA_ASSERT(m_Resource == null && pResourceDesc != null);
             m_Resource = resource;

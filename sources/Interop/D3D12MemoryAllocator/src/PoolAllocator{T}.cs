@@ -32,9 +32,13 @@ namespace TerraFX.Interop
         }
 
         public void Dispose() { Clear(); }
+
         public partial void Clear();
+
         public partial T* Alloc();
+
         public partial T* Alloc(void** args, delegate*<void**, T> ctor);
+
         public partial void Free(T* ptr);
 
         [StructLayout(LayoutKind.Explicit)]
@@ -60,7 +64,7 @@ namespace TerraFX.Interop
     {
         public partial void Clear()
         {
-            for (nuint i = m_ItemBlocks.size(); i-- > 0; )
+            for (nuint i = m_ItemBlocks.size(); i-- > 0;)
             {
                 D3D12MA_DELETE_ARRAY_NO_DISPOSE(m_AllocationCallbacks, m_ItemBlocks[i]->pItems, (nuint)m_ItemBlocks[i]->Capacity);
             }
@@ -74,7 +78,7 @@ namespace TerraFX.Interop
 
         public partial T* Alloc(void** args, delegate*<void**, T> ctor)
         {
-            for (nuint i = m_ItemBlocks.size(); i > 0; i--)
+            for (nuint i = m_ItemBlocks.size(); i-- > 0;)
             {
                 ItemBlock* block = m_ItemBlocks[i];
                 // This block has some free items: Use first one.
@@ -102,7 +106,7 @@ namespace TerraFX.Interop
         public partial void Free(T* ptr)
         {
             // Search all memory blocks to find ptr.
-            for (nuint i = m_ItemBlocks.size(); i > 0; i--)
+            for (nuint i = m_ItemBlocks.size(); i-- > 0;)
             {
                 ItemBlock* block = m_ItemBlocks[i];
 

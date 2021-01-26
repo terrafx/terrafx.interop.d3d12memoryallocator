@@ -65,7 +65,7 @@ namespace TerraFX.Interop
             ((delegate*<BlockMetadata*, ulong, void>)lpVtbl[1])((BlockMetadata*)Unsafe.AsPointer(ref this), size);
         }
 
-        // Validates all data structures inside this object. If not valid, returns false.
+        /// <summary>Validates all data structures inside this object. If not valid, returns false.</summary>
         public readonly bool Validate()
         {
             return ((delegate*<BlockMetadata*, bool>)lpVtbl[2])((BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
@@ -93,7 +93,8 @@ namespace TerraFX.Interop
         {
             return ((delegate*<BlockMetadata*, ulong>)lpVtbl[5])((BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
         }
-        // Returns true if this block is empty - contains only single free suballocation.
+
+        /// <summary>Returns true if this block is empty - contains only single free suballocation.</summary>
         public readonly bool IsEmpty() => ((delegate*<BlockMetadata*, bool>)lpVtbl[6])((BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
 
         public readonly void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, VIRTUAL_ALLOCATION_INFO* outInfo)
@@ -101,9 +102,11 @@ namespace TerraFX.Interop
             ((delegate*<BlockMetadata*, ulong, VIRTUAL_ALLOCATION_INFO*, void>)lpVtbl[7])((BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(this)), offset, outInfo);
         }
 
-        // Tries to find a place for suballocation with given parameters inside this block.
-        // If succeeded, fills pAllocationRequest and returns true.
-        // If failed, returns false.
+        /// <summary>
+        /// Tries to find a place for suballocation with given parameters inside this block.
+        /// If succeeded, fills pAllocationRequest and returns true.
+        /// If failed, returns false.
+        /// </summary>
         public bool CreateAllocationRequest(
             [NativeTypeName("UINT64")] ulong allocSize,
             [NativeTypeName("UINT64")] ulong allocAlignment,
@@ -112,7 +115,7 @@ namespace TerraFX.Interop
             return ((delegate*<BlockMetadata*, ulong, ulong, AllocationRequest*, bool>)lpVtbl[8])((BlockMetadata*)Unsafe.AsPointer(ref this), allocSize, allocAlignment, pAllocationRequest);
         }
 
-        // Makes actual allocation based on request. Request must already be checked and valid.
+        /// <summary>Makes actual allocation based on request. Request must already be checked and valid.</summary>
         public void Alloc(
             AllocationRequest* request,
             [NativeTypeName("UINT64")] ulong allocSize,
@@ -125,8 +128,11 @@ namespace TerraFX.Interop
         {
             ((delegate*<BlockMetadata*, ulong, void>)lpVtbl[10])((BlockMetadata*)Unsafe.AsPointer(ref this), offset);
         }
-        // Frees all allocations.
-        // Careful! Don't call it if there are Allocation objects owned by pUserData of of cleared allocations!
+
+        /// <summary>
+        /// Frees all allocations.
+        /// Careful! Don't call it if there are Allocation objects owned by pUserData of of cleared allocations!
+        /// </summary>
         public void Clear()
         {
             ((delegate*<BlockMetadata*, void>)lpVtbl[11])((BlockMetadata*)Unsafe.AsPointer(ref this));
@@ -148,6 +154,7 @@ namespace TerraFX.Interop
         }
 
         public static void Dispose(BlockMetadata* @this) { }
+
         public static void Init(BlockMetadata* @this, ulong size) { @this->m_Size = size; }
 
         public ALLOCATION_CALLBACKS* GetAllocs() { return m_pAllocationCallbacks; }

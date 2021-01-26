@@ -9,6 +9,7 @@ namespace TerraFX.Interop
         [NativeTypeName("std::mutex")] private HANDLE m_Mutex;
 
         public void Lock() { WaitForSingleObject(m_Mutex, INFINITE); }
+
         public void Unlock() { ReleaseMutex(m_Mutex); }
 
         public static void Init(out D3D12MA_MUTEX mutex)

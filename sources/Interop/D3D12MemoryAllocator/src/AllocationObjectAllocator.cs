@@ -18,7 +18,9 @@ namespace TerraFX.Interop
             D3D12MA_MUTEX.Init(out m_Mutex);
             m_Allocator = new(allocationCallbacks, 1024);
         }
+
         public partial Allocation* Allocate(AllocatorPimpl* allocator, ulong size, int wasZeroInitialized);
+
         public partial void Free(Allocation* alloc);
     }
 

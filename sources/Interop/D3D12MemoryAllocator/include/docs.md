@@ -2,7 +2,8 @@
 
 **Version 2.0.0-development** (2020-11-03)
 
-Copyright (c) 2019-2020 Advanced Micro Devices, Inc. All rights reserved. \n
+Copyright (c) 2019-2020 Advanced Micro Devices, Inc. All rights reserved.
+
 License: MIT
 
 Documentation of all members: D3D12MemAlloc.h
@@ -371,18 +372,19 @@ To use this functionality, there is no main "allocator" object.
 You don't need to have D3D12MA::Allocator object created.
 All you need to do is to create a separate D3D12MA::VirtualBlock object for each block of memory you want to be managed by the allocator:
 
--# Fill in D3D12MA::ALLOCATOR_DESC structure.
--# Call D3D12MA::CreateVirtualBlock. Get new D3D12MA::VirtualBlock object.
+- Fill in D3D12MA::ALLOCATOR_DESC structure.
+
+- Call D3D12MA::CreateVirtualBlock. Get new D3D12MA::VirtualBlock object.
 
 Example:
 
-\code
+```cpp
 D3D12MA::VIRTUAL_BLOCK_DESC blockDesc = {};
 blockDesc.Size = 1048576; // 1 MB
 
 D3D12MA::VirtualBlock *block;
 HRESULT hr = CreateVirtualBlock(&blockDesc, &block);
-\endcode
+```
 
 ### Making virtual allocations
 
@@ -394,8 +396,9 @@ It is an offset inside the block where the allocation has been placed, but it al
 
 In order to make an allocation:
 
--# Fill in D3D12MA::VIRTUAL_ALLOCATION_DESC structure.
--# Call D3D12MA::VirtualBlock::Allocate. Get new `UINT64 offset` that identifies the allocation.
+- Fill in D3D12MA::VIRTUAL_ALLOCATION_DESC structure.
+
+- Call D3D12MA::VirtualBlock::Allocate. Get new `UINT64 offset` that identifies the allocation.
 
 Example:
 

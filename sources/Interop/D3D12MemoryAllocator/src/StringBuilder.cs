@@ -19,7 +19,6 @@ namespace TerraFX.Interop
 
         public void Dispose() { m_Data.Dispose(); }
 
-
         [return: NativeTypeName("size_t")]
         public readonly nuint GetLength() { return m_Data.size(); }
 
@@ -27,10 +26,15 @@ namespace TerraFX.Interop
         public readonly char* GetData() { return m_Data.data(); }
 
         public void Add([NativeTypeName("WCHAR")] char ch) { m_Data.push_back(&ch); }
+
         public partial void Add([NativeTypeName("LPCWSTR")] char* str);
+
         public void Add(string str) { fixed (char* p = str) Add(p); }
+
         public void AddNewLine() { Add('\n'); }
+
         public partial void AddNumber([NativeTypeName("UINT")] uint num);
+
         public partial void AddNumber([NativeTypeName("UINT64")] ulong num);
     }
 

@@ -25,25 +25,38 @@ namespace TerraFX.Interop
         public partial void Dispose();
 
         public partial void BeginObject(bool singleLine = false);
+
         public partial void EndObject();
 
         public partial void BeginArray(bool singleLine = false);
+
         public partial void EndArray();
 
         public partial void WriteString([NativeTypeName("LPCWSTR")] char* pStr);
+
         public void WriteString(string str) { fixed (char* p = str) WriteString(p); }
+
         public partial void BeginString([NativeTypeName("LPCWSTR")] char* pStr = null);
+
         public partial void ContinueString([NativeTypeName("LPCWSTR")] char* pStr);
+
         public void ContinueString(string str) { fixed (char* p = str) ContinueString(p); }
+
         public partial void ContinueString([NativeTypeName("UINT")] uint num);
+
         public partial void ContinueString([NativeTypeName("UINT64")] ulong num);
+
         public partial void AddAllocationToObject(Allocation* alloc);
+
         // void ContinueString_Pointer(const void* ptr);
         public partial void EndString([NativeTypeName("LPCWSTR")] char* pStr = null);
 
         public partial void WriteNumber([NativeTypeName("UINT")] uint num);
+
         public partial void WriteNumber([NativeTypeName("UINT64")] ulong num);
+
         public partial void WriteBool(bool b);
+
         public partial void WriteNull();
 
         private const string INDENT = "  ";
@@ -53,6 +66,7 @@ namespace TerraFX.Interop
             COLLECTION_TYPE_OBJECT,
             COLLECTION_TYPE_ARRAY,
         };
+
         struct StackItem
         {
             public CollectionType type;
@@ -61,6 +75,7 @@ namespace TerraFX.Interop
         };
 
         private partial void BeginValue(bool isString);
+
         private partial void WriteIndent(bool oneLess = false);
     }
 

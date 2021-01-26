@@ -20,12 +20,6 @@ using PoolVectorType = TerraFX.Interop.Vector<TerraFX.Interop.Ptr<TerraFX.Intero
 
 namespace TerraFX.Interop
 {
-    public static partial class D3D12MemoryAllocator
-    {
-        // Define this macro to 0 to disable usage of DXGI 1.4 (needed for IDXGIAdapter3 and query for memory budget).
-        internal static readonly uint D3D12MA_DXGI_1_4 = 1;
-    }
-
     ////////////////////////////////////////////////////////////////////////////////
     // Private class AllocatorPimpl definition
 
@@ -103,18 +97,26 @@ namespace TerraFX.Interop
 
         [return: NativeTypeName("HRESULT")]
         public partial int Init(ALLOCATOR_DESC* desc);
+
         public partial void Dispose();
 
         public ID3D12Device* GetDevice() { return m_Device; }
+
         public ID3D12Device4* GetDevice4() { return m_Device4; }
+
         public ID3D12Device8* GetDevice8() { return m_Device8; }
 
         // Shortcut for "Allocation Callbacks", because this function is called so often.
         public readonly ALLOCATION_CALLBACKS* GetAllocs() { return (ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref Unsafe.AsRef(m_AllocationCallbacks)); }
+
         public readonly D3D12_FEATURE_DATA_D3D12_OPTIONS* GetD3D12Options() { return (D3D12_FEATURE_DATA_D3D12_OPTIONS*)Unsafe.AsPointer(ref Unsafe.AsRef(m_D3D12Options)); }
+
         public readonly bool SupportsResourceHeapTier2() { return m_D3D12Options.ResourceHeapTier >= D3D12_RESOURCE_HEAP_TIER_2; }
+
         public readonly bool UseMutex() { return m_UseMutex; }
+
         public AllocationObjectAllocator* GetAllocationObjectAllocator() { return (AllocationObjectAllocator*)Unsafe.AsPointer(ref m_AllocationObjectAllocator); }
+
         public readonly partial bool HeapFlagsFulfillResourceHeapTier(D3D12_HEAP_FLAGS flags);
 
         [return: NativeTypeName("HRESULT")]
@@ -178,14 +180,22 @@ namespace TerraFX.Interop
             D3D12_HEAP_FLAGS heapFlags,
             [NativeTypeName("UINT64")] ulong minBytes);
 
-        // Unregisters allocation from the collection of dedicated allocations.
-        // Allocation object must be deleted externally afterwards.
+        /// <summary>
+        /// Unregisters allocation from the collection of dedicated allocations.
+        /// Allocation object must be deleted externally afterwards.
+        /// </summary>
         public partial void FreeCommittedMemory(Allocation* allocation);
-        // Unregisters allocation from the collection of placed allocations.
-        // Allocation object must be deleted externally afterwards.
+
+        /// <summary>
+        /// Unregisters allocation from the collection of placed allocations.
+        /// Allocation object must be deleted externally afterwards.
+        /// </summary>
         public partial void FreePlacedMemory(Allocation* allocation);
-        // Unregisters allocation from the collection of dedicated allocations and destroys associated heap.
-        // Allocation object must be deleted externally afterwards.
+
+        /// <summary>
+        /// Unregisters allocation from the collection of dedicated allocations and destroys associated heap.
+        /// Allocation object must be deleted externally afterwards.
+        /// </summary>
         public partial void FreeHeapMemory(Allocation* allocation);
 
         public partial void SetCurrentFrameIndex([NativeTypeName("UINT")] uint frameIndex);
@@ -196,6 +206,7 @@ namespace TerraFX.Interop
         public partial void CalculateStats(Stats* outStats);
 
         public partial void GetBudget(Budget* outGpuBudget, Budget* outCpuBudget);
+
         public partial void GetBudgetForHeapType(Budget* outBudget, D3D12_HEAP_TYPE heapType);
 
         public partial void BuildStatsString([NativeTypeName("WCHAR**")] char** ppStatsString, [NativeTypeName("BOOL")] int DetailedMap);
@@ -206,8 +217,8 @@ namespace TerraFX.Interop
         /// Heuristics that decides whether a resource should better be placed in its own,
         /// dedicated allocation(committed resource rather than placed resource).
         /// </summary>
-        internal static partial bool PrefersCommittedAllocation<D3D12_RESOURCE_DESC_T>(D3D12_RESOURCE_DESC_T* resourceDesc)
-            where D3D12_RESOURCE_DESC_T : unmanaged;
+        internal static partial bool PrefersCommittedAllocation<TD3D12_RESOURCE_DESC>(TD3D12_RESOURCE_DESC* resourceDesc)
+            where TD3D12_RESOURCE_DESC : unmanaged;
 
         // Allocates and registers new committed resource with implicit heap, as dedicated allocation.
         // Creates and returns Allocation object.
@@ -281,46 +292,54 @@ namespace TerraFX.Interop
         /// </summary>
         [return: NativeTypeName("UINT")]
         private partial uint CalcDefaultPoolCount();
+
         [return: NativeTypeName("UINT")]
-        private partial uint CalcDefaultPoolIndex<D3D12_RESOURCE_DESC_T>(ALLOCATION_DESC* allocDesc, D3D12_RESOURCE_DESC_T* resourceDesc)
-            where D3D12_RESOURCE_DESC_T : unmanaged;
-        // This one returns UINT32_MAX if nonstandard heap flags are used and index cannot be calculcated.
+        private partial uint CalcDefaultPoolIndex<TD3D12_RESOURCE_DESC>(ALLOCATION_DESC* allocDesc, TD3D12_RESOURCE_DESC* resourceDesc)
+            where TD3D12_RESOURCE_DESC : unmanaged;
+
+        /// <summary>This one returns UINT32_MAX if nonstandard heap flags are used and index cannot be calculcated.</summary>
         [return: NativeTypeName("UINT")]
         private static partial uint CalcDefaultPoolIndex(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, bool supportsResourceHeapTier2);
+
         [return: NativeTypeName("UINT")]
         private uint CalcDefaultPoolIndex(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags)
         {
             return CalcDefaultPoolIndex(heapType, heapFlags, SupportsResourceHeapTier2());
         }
+
         [return: NativeTypeName("UINT")]
         uint CalcDefaultPoolIndex(ALLOCATION_DESC* allocDesc)
         {
             return CalcDefaultPoolIndex(allocDesc->HeapType, allocDesc->ExtraHeapFlags);
         }
+
         partial void CalcDefaultPoolParams(D3D12_HEAP_TYPE* outHeapType, D3D12_HEAP_FLAGS* outHeapFlags, [NativeTypeName("UINT")] uint index);
 
-        // Registers Allocation object in m_pCommittedAllocations.
+        /// <summary>Registers Allocation object in m_pCommittedAllocations.</summary>
         partial void RegisterCommittedAllocation(Allocation* alloc, D3D12_HEAP_TYPE heapType);
-        // Unregisters Allocation object from m_pCommittedAllocations.
+
+        /// <summary>Unregisters Allocation object from m_pCommittedAllocations.</summary>
         partial void UnregisterCommittedAllocation(Allocation* alloc, D3D12_HEAP_TYPE heapType);
 
-        // Registers Pool object in m_pPools.
+        /// <summary>Registers Pool object in m_pPools.</summary>
         internal partial void RegisterPool(Pool* pool, D3D12_HEAP_TYPE heapType);
-        // Unregisters Pool object from m_pPools.
+
+        /// <summary>Unregisters Pool object from m_pPools.</summary>
         internal partial void UnregisterPool(Pool* pool, D3D12_HEAP_TYPE heapType);
 
         [return: NativeTypeName("HRESULT")]
         private partial int UpdateD3D12Budget();
 
         private partial D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfoNative(D3D12_RESOURCE_DESC* resourceDesc);
+
         private partial D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfoNative(D3D12_RESOURCE_DESC1* resourceDesc);
 
-        private partial D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo<D3D12_RESOURCE_DESC_T>(D3D12_RESOURCE_DESC_T* inOutResourceDesc)
-            where D3D12_RESOURCE_DESC_T : unmanaged;
+        private partial D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo<TD3D12_RESOURCE_DESC>(TD3D12_RESOURCE_DESC* inOutResourceDesc)
+            where TD3D12_RESOURCE_DESC : unmanaged;
 
         private partial bool NewAllocationWithinBudget(D3D12_HEAP_TYPE heapType, [NativeTypeName("UINT64")] ulong size);
 
-        // Writes object { } with data of given budget.
+        /// <summary>Writes object { } with data of given budget.</summary>
         private static partial void WriteBudgetToJson(JsonWriter* json, Budget* budget);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -979,8 +998,8 @@ namespace TerraFX.Interop
             }
         }
 
-        internal static partial bool PrefersCommittedAllocation<D3D12_RESOURCE_DESC_T>(D3D12_RESOURCE_DESC_T* resourceDesc)
-            where D3D12_RESOURCE_DESC_T : unmanaged
+        internal static partial bool PrefersCommittedAllocation<TD3D12_RESOURCE_DESC>(TD3D12_RESOURCE_DESC* resourceDesc)
+            where TD3D12_RESOURCE_DESC : unmanaged
         {
             // Intentional. It may change in the future.
             return false;
@@ -1277,8 +1296,8 @@ namespace TerraFX.Interop
             }
         }
 
-        private partial uint CalcDefaultPoolIndex<D3D12_RESOURCE_DESC_T>(ALLOCATION_DESC* allocDesc, D3D12_RESOURCE_DESC_T* resourceDesc)
-            where D3D12_RESOURCE_DESC_T : unmanaged
+        private partial uint CalcDefaultPoolIndex<TD3D12_RESOURCE_DESC>(ALLOCATION_DESC* allocDesc, TD3D12_RESOURCE_DESC* resourceDesc)
+            where TD3D12_RESOURCE_DESC : unmanaged
         {
             D3D12_HEAP_FLAGS extraHeapFlags = allocDesc->ExtraHeapFlags & ~GetExtraHeapFlagsToIgnore();
             if (extraHeapFlags != 0)
@@ -1877,8 +1896,8 @@ namespace TerraFX.Interop
             return m_Device8->GetResourceAllocationInfo2(0, 1, resourceDesc, &info1Unused);
         }
 
-        private partial D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo<D3D12_RESOURCE_DESC_T>(D3D12_RESOURCE_DESC_T* inOutResourceDesc)
-            where D3D12_RESOURCE_DESC_T : unmanaged
+        private partial D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo<TD3D12_RESOURCE_DESC>(TD3D12_RESOURCE_DESC* inOutResourceDesc)
+            where TD3D12_RESOURCE_DESC : unmanaged
         {
             /* Optional optimization: Microsoft documentation says:
             https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-getresourceallocationinfo
@@ -1902,7 +1921,7 @@ namespace TerraFX.Interop
                 if (pInOutResourceDesc->Alignment == 0 &&
                     pInOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D &&
                     (pInOutResourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) == 0 &&
-                    (D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 1 || CanUseSmallAlignment(in *pInOutResourceDesc)))
+                    (D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 1 || CanUseSmallAlignment(pInOutResourceDesc)))
                 {
                     /*
                     The algorithm here is based on Microsoft sample: "Small Resources Sample"

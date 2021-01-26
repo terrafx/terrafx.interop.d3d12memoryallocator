@@ -44,25 +44,6 @@ namespace TerraFX.Interop
             where T : unmanaged
             => Debug.Assert(!EqualityComparer<T>.Default.Equals(expr, default));
 
-        /// <summary>
-        /// Minimum alignment of all allocations, in bytes.
-        /// Set to more than 1 for debugging purposes only.Must be power of two.
-        /// </summary>
-        internal const int D3D12MA_DEBUG_ALIGNMENT = 1;
-
-        // Minimum margin before and after every allocation, in bytes.
-        // Set nonzero for debugging purposes only.
-        internal const int D3D12MA_DEBUG_MARGIN = 0;
-
-        /// <summary>
-        /// Set this to 1 for debugging purposes only, to enable single mutex protecting all
-        /// entry calls to the library.Can be useful for debugging multithreading issues.
-        /// </summary>
-        internal const int D3D12MA_DEBUG_GLOBAL_MUTEX = 0;
-
-        // Default size of a block allocated as single ID3D12Heap.
-        internal const ulong D3D12MA_DEFAULT_BLOCK_SIZE = (256UL * 1024 * 1024);
-
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
         //
@@ -81,6 +62,7 @@ namespace TerraFX.Interop
 
             return _aligned_malloc(Size, Alignment);
         }
+
         internal static void DefaultFree(void* pMemory, void* _ /*pUserData*/)
         {
             [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
@@ -95,6 +77,7 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT((IntPtr)result);
             return result;
         }
+
         internal static void Free(ALLOCATION_CALLBACKS* allocs, void* memory)
         {
             allocs->pFree(memory, allocs->pUserData);
@@ -105,6 +88,7 @@ namespace TerraFX.Interop
         {
             return (T*)Malloc(allocs, (nuint)sizeof(T), __alignof<T>());
         }
+
         internal static T* AllocateArray<T>(ALLOCATION_CALLBACKS* allocs, [NativeTypeName("size_t")] nuint count)
             where T : unmanaged
         {
@@ -224,7 +208,7 @@ namespace TerraFX.Interop
         {
             if (memory != null)
             {
-                for (nuint i = count; i > 0; i--)
+                for (nuint i = count; i-- > 0;)
                 {
                     memory[i].Dispose();
                 }
@@ -331,42 +315,32 @@ namespace TerraFX.Interop
         {
             return (x & (x - 1)) == 0;
         }
+
         internal static bool IsPow2(ulong x)
         {
             return (x & (x - 1)) == 0;
         }
 
-        // Aligns given value up to nearest multiply of align value. For example: AlignUp(11, 8) = 16.
-        // Use types like UINT, uint64_t as T.
+        /// <summary>Aligns given value up to nearest multiply of align value. For example: AlignUp(11, 8) = 16.</summary>
         internal static nuint AlignUp(nuint val, nuint alignment)
         {
             D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
             return (val + alignment - 1) & ~(alignment - 1);
         }
+
+        /// <summary>Aligns given value up to nearest multiply of align value. For example: AlignUp(11, 8) = 16.</summary>
         internal static ulong AlignUp(ulong val, ulong alignment)
         {
             D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
             return (val + alignment - 1) & ~(alignment - 1);
         }
-        // Aligns given value down to nearest multiply of align value. For example: AlignUp(11, 8) = 8.
-        // Use types like UINT, uint64_t as T.
-        internal static nuint AlignDown(nuint val, nuint alignment)
-        {
-            D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
-            return val & ~(alignment - 1);
-        }
 
-        // Division with mathematical rounding to nearest number.
-        internal static uint RoundDiv(uint x, uint y)
-        {
-            return (x + (y / 2u)) / y;
-        }
         internal static uint DivideRoudingUp(uint x, uint y)
         {
             return (x + y - 1) / y;
         }
 
-        // Returns smallest power of 2 greater or equal to v.
+        /// <summary>Returns smallest power of 2 greater or equal to v.</summary>
         [return: NativeTypeName("UINT")]
         internal static uint NextPow2([NativeTypeName("UINT")] uint v)
         {
@@ -380,6 +354,7 @@ namespace TerraFX.Interop
             return v;
         }
 
+        /// <summary>Returns smallest power of 2 greater or equal to v.</summary>
         [return: NativeTypeName("uint64_t")]
         internal static ulong NextPow2([NativeTypeName("uint64_t")] ulong v)
         {
@@ -394,7 +369,7 @@ namespace TerraFX.Interop
             return v;
         }
 
-        // Returns largest power of 2 less or equal to v.
+        /// <summary>Returns largest power of 2 less or equal to v.</summary>
         [return: NativeTypeName("UINT")]
         internal static uint PrevPow2([NativeTypeName("UINT")] uint v)
         {
@@ -407,6 +382,7 @@ namespace TerraFX.Interop
             return v;
         }
 
+        /// <summary>Returns largest power of 2 less or equal to v.</summary>
         [return: NativeTypeName("uint64_t")]
         internal static ulong PrevPow2([NativeTypeName("uint64_t")] ulong v)
         {
@@ -425,16 +401,13 @@ namespace TerraFX.Interop
             return (pStr == null) || (*pStr == '\0');
         }
 
-        // Minimum size of a free suballocation to register it in the free suballocation collection.
-        internal const ulong MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER = 16;
-
-        internal interface ICmp<T>
+        internal interface ICmpLess<T>
             where T : unmanaged
         {
             bool Invoke(T* lhs, T* rhs);
         }
 
-        internal interface ICmp64<T>
+        internal interface ICmpLess64<T>
             where T : unmanaged
         {
             bool Invoke(T* lhs, ulong rhs);
@@ -449,9 +422,9 @@ namespace TerraFX.Interop
         /// new element with value(key) should be inserted.
         /// </para>
         /// </summary>
-        internal static KeyT* BinaryFindFirstNotLess<CmpLess, KeyT>(KeyT* beg, KeyT* end, KeyT* key, in CmpLess cmp)
-            where CmpLess : struct, ICmp<KeyT>
-            where KeyT : unmanaged
+        internal static TKey* BinaryFindFirstNotLess<TCmpLess, TKey>(TKey* beg, TKey* end, TKey* key, in TCmpLess cmp)
+            where TCmpLess : struct, ICmpLess<TKey>
+            where TKey : unmanaged
         {
             nuint down = 0, up = (nuint)end - (nuint)beg;
             while (down < up)
@@ -469,10 +442,10 @@ namespace TerraFX.Interop
             return beg + down;
         }
 
-        /// <summary>Overload of <see cref="BinaryFindFirstNotLess{CmpLess,KeyT}(KeyT*,KeyT*,KeyT*,in CmpLess)"/> to work around lack of templates.</summary>
-        internal static KeyT* BinaryFindFirstNotLess<CmpLess, KeyT>(KeyT* beg, KeyT* end, ulong key, in CmpLess cmp)
-            where CmpLess : struct, ICmp64<KeyT>
-            where KeyT : unmanaged
+        /// <summary>Overload of <see cref="BinaryFindFirstNotLess{TCmpLess,TKey}(TKey*,TKey*,TKey*,in TCmpLess)"/> to work around lack of templates.</summary>
+        internal static TKey* BinaryFindFirstNotLess<TCmpLess, TKey>(TKey* beg, TKey* end, ulong key, in TCmpLess cmp)
+            where TCmpLess : struct, ICmpLess64<TKey>
+            where TKey : unmanaged
         {
             nuint down = 0, up = (nuint)end - (nuint)beg;
             while (down < up)
@@ -494,14 +467,13 @@ namespace TerraFX.Interop
         /// Performs binary search and returns iterator to an element that is equal to `key`,
         /// according to comparison `cmp`.
         /// <para>Cmp should return true if first argument is less than second argument.</para>
-        /// <para>Returned value is the found element, if present in the collection or end if not
-        /// found.</para>
+        /// <para>Returned value is the found element, if present in the collection or end if not found.</para>
         /// </summary>
-        internal static KeyT* BinaryFindSorted<CmpLess, KeyT>(KeyT* beg, KeyT* end, KeyT* value, in CmpLess cmp)
-            where CmpLess : struct, ICmp<KeyT>
-            where KeyT : unmanaged
+        internal static TKey* BinaryFindSorted<TCmpLess, TKey>(TKey* beg, TKey* end, TKey* value, in TCmpLess cmp)
+            where TCmpLess : struct, ICmpLess<TKey>
+            where TKey : unmanaged
         {
-            KeyT* it = BinaryFindFirstNotLess(beg, end, value, cmp);
+            TKey* it = BinaryFindFirstNotLess(beg, end, value, cmp);
             if (it == end ||
                 (!cmp.Invoke(it, value) && !cmp.Invoke(value, it)))
             {
@@ -510,7 +482,7 @@ namespace TerraFX.Interop
             return end;
         }
 
-        internal readonly struct PointerLess<T> : ICmp<T>
+        internal readonly struct PointerLess<T> : ICmpLess<T>
             where T : unmanaged
         {
             public bool Invoke(T* lhs, T* rhs)
@@ -617,7 +589,7 @@ namespace TerraFX.Interop
             }
         }
 
-        // Only some formats are supported. For others it returns 0.
+        /// <summary>Only some formats are supported. For others it returns 0.</summary>
         [return: NativeTypeName("UINT")]
         internal static uint GetBitsPerPixel(DXGI_FORMAT format)
         {
@@ -777,31 +749,31 @@ namespace TerraFX.Interop
         }
 
         // This algorithm is overly conservative.
-        internal static bool CanUseSmallAlignment(in D3D12_RESOURCE_DESC resourceDesc)
+        internal static bool CanUseSmallAlignment(D3D12_RESOURCE_DESC* resourceDesc)
         {
-            if (resourceDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D)
+            if (resourceDesc->Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D)
                 return false;
-            if ((resourceDesc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0)
+            if ((resourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0)
                 return false;
-            if (resourceDesc.SampleDesc.Count > 1)
+            if (resourceDesc->SampleDesc.Count > 1)
                 return false;
-            if (resourceDesc.DepthOrArraySize != 1)
+            if (resourceDesc->DepthOrArraySize != 1)
                 return false;
 
-            uint sizeX = (uint)resourceDesc.Width;
-            uint sizeY = resourceDesc.Height;
-            uint bitsPerPixel = GetBitsPerPixel(resourceDesc.Format);
+            uint sizeX = (uint)resourceDesc->Width;
+            uint sizeY = resourceDesc->Height;
+            uint bitsPerPixel = GetBitsPerPixel(resourceDesc->Format);
             if (bitsPerPixel == 0)
                 return false;
 
-            if (IsFormatCompressed(resourceDesc.Format))
+            if (IsFormatCompressed(resourceDesc->Format))
             {
                 sizeX = DivideRoudingUp(sizeX / 4, 1u);
                 sizeY = DivideRoudingUp(sizeY / 4, 1u);
                 bitsPerPixel *= 16;
             }
 
-            uint tileSizeX = 0, tileSizeY = 0;
+            uint tileSizeX, tileSizeY;
             switch (bitsPerPixel)
             {
                 case 8:
@@ -891,7 +863,7 @@ namespace TerraFX.Interop
     }
 
     // Comparator for offsets.
-    internal unsafe struct SuballocationOffsetLess : ICmp<Suballocation>
+    internal unsafe struct SuballocationOffsetLess : ICmpLess<Suballocation>
     {
         public bool Invoke(Suballocation* lhs, Suballocation* rhs)
         {
@@ -899,7 +871,7 @@ namespace TerraFX.Interop
         }
     }
 
-    internal unsafe struct SuballocationOffsetGreater : ICmp<Suballocation>
+    internal unsafe struct SuballocationOffsetGreater : ICmpLess<Suballocation>
     {
         public bool Invoke(Suballocation* lhs, Suballocation* rhs)
         {
@@ -907,7 +879,7 @@ namespace TerraFX.Interop
         }
     }
 
-    internal unsafe struct SuballocationItemSizeLess : ICmp<SuballocationList.iterator>, ICmp64<SuballocationList.iterator>
+    internal unsafe struct SuballocationItemSizeLess : ICmpLess<SuballocationList.iterator>, ICmpLess64<SuballocationList.iterator>
     {
         public bool Invoke(SuballocationList.iterator* lhs, SuballocationList.iterator* rhs)
         {

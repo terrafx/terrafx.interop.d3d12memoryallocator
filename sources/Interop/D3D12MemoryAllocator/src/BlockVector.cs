@@ -60,11 +60,14 @@ namespace TerraFX.Interop
 
         public partial void Dispose();
 
+
         [return: NativeTypeName("HRESULT")]
         public partial int CreateMinBlocks();
 
+
         [return: NativeTypeName("UINT")]
         public readonly uint GetHeapType() { return (uint)m_HeapType; }
+
         [return: NativeTypeName("UINT64")]
         public readonly ulong GetPreferredBlockSize() { return m_PreferredBlockSize; }
 
@@ -110,20 +113,24 @@ namespace TerraFX.Interop
         public partial int SetMinBytes([NativeTypeName("UINT64")] ulong minBytes);
 
         public partial void AddStats(StatInfo* outStats);
+
         public partial void AddStats(Stats* outStats);
 
         public partial void WriteBlockInfoToJson(JsonWriter* json);
 
         [return: NativeTypeName("UINT64")]
         private readonly partial ulong CalcSumBlockSize();
+
         [return: NativeTypeName("UINT64")]
         private readonly partial ulong CalcMaxBlockSize();
 
-        // Finds and removes given block from vector.
+        /// <summary>Finds and removes given block from vector.</summary>
         partial void Remove(NormalBlock* pBlock);
 
-        // Performs single step in sorting m_Blocks. They may not be fully sorted
-        // after this call.
+        /// <summary>
+        /// Performs single step in sorting m_Blocks. They may not be fully sorted
+        /// after this call.
+        /// </summary>
         partial void IncrementallySortBlocks();
 
         [return: NativeTypeName("HRESULT")]
@@ -149,7 +156,7 @@ namespace TerraFX.Interop
     {
         public partial void Dispose()
         {
-            for (nuint i = m_Blocks.size(); i > 0; i--)
+            for (nuint i = m_Blocks.size(); i-- > 0;)
             {
                 D3D12MA_DELETE(m_hAllocator->GetAllocs(), m_Blocks[i]->Value);
             }
@@ -539,8 +546,6 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(0);
         }
 
-        // Performs single step in sorting m_Blocks. They may not be fully sorted
-        // after this call.
         partial void IncrementallySortBlocks()
         {
             // Bubble sort only until first swap.

@@ -46,12 +46,13 @@ namespace TerraFX.Interop
         }
 
         public partial void Dispose();
+
         [return: NativeTypeName("HRESULT")]
         public partial int Init();
 
         public readonly BlockVector* GetBlockVector() { return m_BlockVector; }
 
-        // Validates all data structures inside this object. If not valid, returns false.
+        /// <summary>Validates all data structures inside this object. If not valid, returns false.</summary>
         public readonly partial bool Validate();
     }
 

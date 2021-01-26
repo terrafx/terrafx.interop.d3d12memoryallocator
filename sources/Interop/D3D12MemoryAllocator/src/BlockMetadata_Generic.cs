@@ -58,6 +58,7 @@ namespace TerraFX.Interop
         }
 
         public partial void Dispose();
+
         public partial void Init([NativeTypeName("UINT64")] ulong size);
 
         public readonly partial bool Validate();
@@ -67,8 +68,10 @@ namespace TerraFX.Interop
 
         [return: NativeTypeName("UINT64")]
         public readonly ulong GetSumFreeSize() { return GetSumFreeSize((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this))); }
+
         [return: NativeTypeName("UINT64")]
         public readonly partial ulong GetUnusedRangeSizeMax();
+
         public readonly partial bool IsEmpty();
 
         public readonly partial void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, VIRTUAL_ALLOCATION_INFO* outInfo);
@@ -84,17 +87,21 @@ namespace TerraFX.Interop
             void* userData);
 
         public partial void FreeAtOffset([NativeTypeName("UINT64")] ulong offset);
+
         public partial void Clear();
 
         public partial void SetAllocationUserData([NativeTypeName("UINT64")] ulong offset, void* userData);
 
         public partial void CalcAllocationStatInfo(StatInfo* outInfo);
+
         public partial void WriteAllocationInfoToJson(JsonWriter* json);
 
         public partial bool ValidateFreeSuballocationList();
 
-        // Checks if requested suballocation with given parameters can be placed in given pFreeSuballocItem.
-        // If yes, fills pOffset and returns true. If no, returns false.
+        /// <summary>
+        /// Checks if requested suballocation with given parameters can be placed in given pFreeSuballocItem.
+        /// If yes, fills pOffset and returns true. If no, returns false.
+        /// </summary>
         public partial bool CheckAllocation(
             [NativeTypeName("UINT64")] ulong allocSize,
             [NativeTypeName("UINT64")] ulong allocAlignment,
@@ -103,17 +110,27 @@ namespace TerraFX.Interop
             [NativeTypeName("UINT64*")] ulong* pSumFreeSize,
             [NativeTypeName("UINT64*")] ulong* pSumItemSize,
             [NativeTypeName("BOOL")] int* pZeroInitialized);
-        // Given free suballocation, it merges it with following one, which must also be free.
+
+        /// <summary>Given free suballocation, it merges it with following one, which must also be free.</summary>
         public partial void MergeFreeWithNext(SuballocationList.iterator item);
-        // Releases given suballocation, making it free.
-        // Merges it with adjacent free suballocations if applicable.
-        // Returns iterator to new free suballocation at this place.
+
+        /// <summary>
+        /// Releases given suballocation, making it free.
+        /// Merges it with adjacent free suballocations if applicable.
+        /// Returns iterator to new free suballocation at this place.
+        /// </summary>
         public partial SuballocationList.iterator FreeSuballocation(SuballocationList.iterator suballocItem);
-        // Given free suballocation, it inserts it into sorted list of
-        // m_FreeSuballocationsBySize if it's suitable.
+
+        /// <summary>
+        /// Given free suballocation, it inserts it into sorted list of
+        /// m_FreeSuballocationsBySize if it's suitable.
+        /// </summary>
         public partial void RegisterFreeSuballocation(SuballocationList.iterator item);
-        // Given free suballocation, it removes it from sorted list of
-        // m_FreeSuballocationsBySize if it's suitable.
+
+        /// <summary>
+        /// Given free suballocation, it removes it from sorted list of
+        /// m_FreeSuballocationsBySize if it's suitable.
+        /// </summary>
         public partial void UnregisterFreeSuballocation(SuballocationList.iterator item);
     }
 

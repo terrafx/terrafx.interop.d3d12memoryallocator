@@ -40,10 +40,13 @@ namespace TerraFX.Interop
 
         [return: NativeTypeName("HRESULT")]
         public partial int Init();
+
         public partial void Dispose();
 
         public readonly AllocatorPimpl* GetAllocator() { return m_Allocator; }
+
         public readonly POOL_DESC* GetDesc() { return (POOL_DESC*)Unsafe.AsPointer(ref Unsafe.AsRef(m_Desc)); }
+
         public BlockVector* GetBlockVector() { return m_BlockVector; }
 
         [return: NativeTypeName("HRESULT")]
@@ -52,6 +55,7 @@ namespace TerraFX.Interop
         public partial void CalculateStats(StatInfo* outStats);
 
         public partial void SetName([NativeTypeName("LPCWSTR")] char* Name);
+
         [return: NativeTypeName("LPCWSTR")]
         public char* GetName() { return m_Name; }
 
