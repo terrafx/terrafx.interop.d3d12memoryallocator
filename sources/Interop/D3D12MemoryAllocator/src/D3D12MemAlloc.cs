@@ -801,6 +801,31 @@ namespace TerraFX.Interop
                 type == D3D12_HEAP_TYPE_UPLOAD ||
                 type == D3D12_HEAP_TYPE_READBACK;
         }
+
+        public static partial int CreateAllocator(ALLOCATOR_DESC* pDesc, Allocator** ppAllocator)
+        {
+            if (pDesc == null || ppAllocator == null || pDesc->pDevice == null || pDesc->pAdapter == null ||
+                !(pDesc->PreferredBlockSize == 0 || (pDesc->PreferredBlockSize >= 16 && pDesc->PreferredBlockSize < 0x10000000000UL)))
+            {
+                D3D12MA_ASSERT(0);
+                return E_INVALIDARG;
+            }
+
+            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+
+            ALLOCATION_CALLBACKS allocationCallbacks;
+            SetupAllocationCallbacks(&allocationCallbacks, pDesc->pAllocationCallbacks);
+
+            *ppAllocator = D3D12MA_NEW<Allocator>(&allocationCallbacks);
+            **ppAllocator = new(&allocationCallbacks, pDesc);
+            HRESULT hr = (*ppAllocator)->m_Pimpl->Init(pDesc);
+            if (FAILED(hr))
+            {
+                D3D12MA_DELETE(&allocationCallbacks, *ppAllocator);
+                *ppAllocator = null;
+            }
+            return hr;
+        }
     }
 
     // Comparator for offsets.
