@@ -49,5 +49,14 @@ namespace TerraFX.Interop
                 Interlocked.Increment(ref Unsafe.As<T, uint64_t>(ref value));
             throw null!;
         }
+
+        public T Store(T value)
+        {
+            if (typeof(T) == typeof(UINT))
+                Interlocked.Exchange(ref Unsafe.As<T, UINT>(ref this.value), Unsafe.As<T, UINT>(ref value));
+            else if (typeof(T) == typeof(uint64_t))
+                Interlocked.Exchange(ref Unsafe.As<T, uint64_t>(ref this.value), Unsafe.As<T, uint64_t>(ref value));
+            throw null!;
+        }
     }
 }

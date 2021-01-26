@@ -45,14 +45,12 @@ namespace TerraFX.Interop
         public partial void Free(T* ptr);
 
         [StructLayout(LayoutKind.Explicit)]
-        private struct Item : IDisposable
+        private struct Item
         {
             [FieldOffset(0)] public UINT NextFreeIndex; // UINT32_MAX means end of list.
             [FieldOffset(0)] private T __Value_Data;
 
             public byte* Value => (byte*)Unsafe.AsPointer(ref __Value_Data);
-
-            public void Dispose() { }
         }
 
         private struct ItemBlock
@@ -75,7 +73,7 @@ namespace TerraFX.Interop
         {
             for (size_t i = m_ItemBlocks.size(); i > 0; i--)
             {
-                D3D12MA_DELETE_ARRAY(m_AllocationCallbacks, m_ItemBlocks[i]->pItems, (size_t)m_ItemBlocks[i]->Capacity);
+                D3D12MA_DELETE_ARRAY_NO_DISPOSE(m_AllocationCallbacks, m_ItemBlocks[i]->pItems, (size_t)m_ItemBlocks[i]->Capacity);
             }
             m_ItemBlocks.clear(true);
         }

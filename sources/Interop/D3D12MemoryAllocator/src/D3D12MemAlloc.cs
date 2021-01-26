@@ -49,6 +49,12 @@ namespace TerraFX.Interop
             where T : unmanaged
             => Debug.Assert(!EqualityComparer<T>.Default.Equals(expr, default));
 
+        /// <summary>
+        /// Minimum alignment of all allocations, in bytes.
+        /// Set to more than 1 for debugging purposes only.Must be power of two.
+        /// </summary>
+        internal const int D3D12MA_DEBUG_ALIGNMENT = 1;
+
         // Minimum margin before and after every allocation, in bytes.
         // Set nonzero for debugging purposes only.
         internal const int D3D12MA_DEBUG_MARGIN = 0;
@@ -230,6 +236,14 @@ namespace TerraFX.Interop
                 Free(allocs, memory);
             }
         }
+        internal static void D3D12MA_DELETE_ARRAY_NO_DISPOSE<T>(ALLOCATION_CALLBACKS* allocs, T* memory, size_t count)
+            where T : unmanaged
+        {
+            if (memory != null)
+            {
+                Free(allocs, memory);
+            }
+        }
 
         internal static void SetupAllocationCallbacks(ALLOCATION_CALLBACKS* outAllocs, ALLOCATION_CALLBACKS* allocationCallbacks)
         {
@@ -255,6 +269,10 @@ namespace TerraFX.Interop
         {
             Unsafe.InitBlock(dst, 0, (uint)size);
         }
+
+        [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [return: NativeTypeName("size_t")]
+        internal static extern unsafe nuint wcslen([NativeTypeName("wchar_t const*")] char* _String);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Private globals - basic facilities
@@ -318,10 +336,19 @@ namespace TerraFX.Interop
         {
             return (x & (x - 1)) == 0;
         }
+        internal static bool IsPow2(ulong x)
+        {
+            return (x & (x - 1)) == 0;
+        }
 
         // Aligns given value up to nearest multiply of align value. For example: AlignUp(11, 8) = 16.
         // Use types like UINT, uint64_t as T.
         internal static size_t AlignUp(size_t val, size_t alignment)
+        {
+            D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
+            return (val + alignment - 1) & ~(alignment - 1);
+        }
+        internal static ulong AlignUp(ulong val, ulong alignment)
         {
             D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
             return (val + alignment - 1) & ~(alignment - 1);
@@ -482,9 +509,10 @@ namespace TerraFX.Interop
             return end;
         }
 
-        internal readonly struct PointerLess : ICmp<byte>
+        internal readonly struct PointerLess<T> : ICmp<T>
+            where T : unmanaged
         {
-            public bool Invoke(byte* lhs, byte* rhs)
+            public bool Invoke(T* lhs, T* rhs)
             {
                 return lhs < rhs;
             }
@@ -506,20 +534,12 @@ namespace TerraFX.Interop
             }
         }
 
-        internal static char*[] HeapTypeNames = new[]
+        internal static string[] HeapTypeNames = new[]
         {
-            L("DEFAULT"),
-            L("UPLOAD"),
-            L("READBACK")
+            "DEFAULT",
+            "UPLOAD",
+            "READBACK"
         };
-
-        private static char* L(string text)
-        {
-            char* p = (char*)Marshal.AllocHGlobal(sizeof(char) * text.Length + 1);
-            text.AsSpan().CopyTo(new(p, text.Length));
-            p[text.Length] = '\0';
-            return p;
-        }
 
         // Stat helper functions
 

@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
-using static TerraFX.Interop.D3D12MemoryAllocator;
 
 using UINT = System.UInt32;
 using uint64_t = System.UInt64;
@@ -14,6 +13,28 @@ using BOOL = System.Int32;
 
 namespace TerraFX.Interop
 {
+    public static partial class D3D12MemoryAllocator
+    {
+        /*
+        When defined to value other than 0, the library will try to use
+        D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT or D3D12_SMALL_MSAA_RESOURCE_PLACEMENT_ALIGNMENT
+        for created textures when possible, which can save memory because some small textures
+        may get their alignment 4K and their size a multiply of 4K instead of 64K.
+
+        #define D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT 0
+            Disables small texture alignment.
+        #define D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT 1
+            Enables conservative algorithm that will use small alignment only for some textures
+            that are surely known to support it.
+        #define D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT 2
+            Enables query for small alignment to D3D12 (based on Microsoft sample) which will
+            enable small alignment for more textures, but will also generate D3D Debug Layer
+            error #721 on call to ID3D12Device::GetResourceAllocationInfo, which you should just
+            ignore.
+        */
+        public static readonly int D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT = 1;
+    }
+
     /// <summary>Custom callbacks to CPU memory allocation functions.</summary>
     public unsafe struct ALLOCATION_CALLBACKS
     {
@@ -85,7 +106,7 @@ namespace TerraFX.Interop
         /// Custom pool to place the new resource in. Optional.
         /// <para>When not NULL, the resource will be created inside specified custom pool. It will then never be created as committed.</para>
         /// </summary>
-        void* CustomPool; // TODO
+        internal Pool* CustomPool;
     }
 
     /// <summary>
@@ -320,70 +341,6 @@ namespace TerraFX.Interop
         /// <para>Set to same value as D3D12MA::POOL_DESC::MinBlockCount to have fixed amount of memory allocated throughout whole lifetime of this pool.</para>
         /// </summary>
         public UINT MaxBlockCount;
-    }
-
-    /// <summary>
-    /// Custom memory pool
-    /// <para>
-    /// Represents a separate set of heaps (memory blocks) that can be used to create
-    /// D3D12MA::Allocation-s and resources in it.Usually there is no need to create custom
-    /// pools - creating resources in default pool is sufficient.
-    /// </para>
-    /// <para>To create custom pool, fill D3D12MA::POOL_DESC and call D3D12MA::Allocator::CreatePool.</para>
-    /// </summary>
-    public unsafe struct Pool : IDisposable
-    {
-        internal Pool(Allocator* allocator, POOL_DESC* desc)
-        {
-            // TODO
-        }
-
-        public partial void Dispose();
-
-        /// <summary>
-        /// Deletes pool object, frees D3D12 heaps (memory blocks) managed by it. Allocations and resources must already be released!
-        /// <para>
-        /// It doesn't delete allocations and resources created in this pool. They must be all
-        /// released before calling this function!
-        /// </para>
-        /// </summary>
-        public partial void Release();
-
-        /// <summary>
-        /// Returns copy of parameters of the pool.
-        /// <para>These are the same parameters as passed to D3D12MA::Allocator::CreatePool.</para>
-        /// </summary>
-        public partial POOL_DESC GetDesc();
-
-        /// <summary>
-        /// Sets the minimum number of bytes that should always be allocated (reserved) in this pool.
-        /// <para>See also: \subpage reserving_memory.</para>
-        /// </summary>
-        public partial long SetMinBytes(ulong minBytes);
-
-        /// <summary>Retrieves statistics from the current state of this pool.</summary>
-        public partial void CalculateStats(StatInfo* pStats);
-
-        /// <summary>
-        /// Associates a name with the pool. This name is for use in debug diagnostics and tools.
-        /// <para>
-        /// Internal copy of the string is made, so the memory pointed by the argument can be
-        /// changed of freed immediately after this call.
-        /// </para>
-        /// </summary>
-        /// <param name="Name">`Name` can be null.</param>
-        public partial void SetName(char* Name);
-
-        /// <summary>
-        /// Returns the name associated with the pool object.
-        /// <para>Returned string points to an internal copy.</para>
-        /// <para>If no name was associated with the allocation, returns NULL.</para>
-        /// </summary>
-        public partial char* GetName();
-
-        internal void D3D12MA_DELETE<T>(ALLOCATION_CALLBACKS* callbacks, T* data);
-
-        internal PoolPimpl* m_Pimpl;
     }
 
     /// <summary>Bit flags to be used with ALLOCATOR_DESC::Flags.</summary>
@@ -794,9 +751,10 @@ namespace TerraFX.Interop
         public partial void FreeStatsString(char* pStatsString);
 
         internal long CreateAllocator(ALLOCATION_DESC* desc, Allocator** pResult);
-        internal void D3D12MA_DELETE(ALLOCATION_CALLBACKS* callbacks, T* data);
+        internal partial void D3D12MA_DELETE<T>(ALLOCATION_CALLBACKS* callbacks, T* data)
+            where T : unmanaged;
 
-        AllocatorPimpl* m_Pimpl;
+        internal AllocatorPimpl* m_Pimpl;
     }
 
     /// <summary>Parameters of created D3D12MA::VirtualBlock object to be passed to CreateVirtualBlock().</summary>

@@ -7,18 +7,21 @@ using UINT = System.UInt32;
 using UINT64 = System.UInt64;
 using size_t = nuint;
 using WCHAR = System.Char;
+using System;
 
 namespace TerraFX.Interop
 {
     ////////////////////////////////////////////////////////////////////////////////
     // Private class StringBuilder
 
-    internal unsafe partial struct StringBuilder
+    internal unsafe partial struct StringBuilder : IDisposable
     {
         public StringBuilder(ALLOCATION_CALLBACKS* allocationCallbacks)
         {
             m_Data = new(allocationCallbacks);
         }
+
+        public void Dispose() { m_Data.Dispose(); }
 
         public size_t GetLength() { return m_Data.size(); }
         public WCHAR* GetData() { return m_Data.data(); }
@@ -37,9 +40,6 @@ namespace TerraFX.Interop
     {
         public partial void Add(WCHAR* str)
         {
-            [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-            static extern size_t wcslen(WCHAR* _String);
-
             size_t len = wcslen(str);
             if (len > 0)
             {

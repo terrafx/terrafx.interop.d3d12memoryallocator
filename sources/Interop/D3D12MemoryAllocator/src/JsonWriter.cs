@@ -35,6 +35,7 @@ namespace TerraFX.Interop
         public void WriteString(string str) { fixed (WCHAR* p = str) WriteString(p); }
         public partial void BeginString(WCHAR* pStr = null);
         public partial void ContinueString(WCHAR* pStr);
+        public void ContinueString(string str) { fixed (WCHAR* p = str) ContinueString(p); }
         public partial void ContinueString(UINT num);
         public partial void ContinueString(UINT64 num);
         public partial void AddAllocationToObject(Allocation* alloc);
