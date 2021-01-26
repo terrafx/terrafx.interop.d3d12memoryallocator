@@ -826,6 +826,24 @@ namespace TerraFX.Interop
             }
             return hr;
         }
+
+        public static partial int CreateVirtualBlock(VIRTUAL_BLOCK_DESC* pDesc, VirtualBlock** ppVirtualBlock)
+        {
+            if (pDesc == null || ppVirtualBlock == null)
+            {
+                D3D12MA_ASSERT(0);
+                return E_INVALIDARG;
+            }
+
+            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+
+            ALLOCATION_CALLBACKS allocationCallbacks;
+            SetupAllocationCallbacks(&allocationCallbacks, pDesc->pAllocationCallbacks);
+
+            *ppVirtualBlock = D3D12MA_NEW<VirtualBlock>(&allocationCallbacks);
+            **ppVirtualBlock = new(&allocationCallbacks, pDesc);
+            return S_OK;
+        }
     }
 
     // Comparator for offsets.

@@ -51,56 +51,7 @@ namespace TerraFX.Interop
         /// Creates new D3D12MA::VirtualBlock object and returns it through `ppVirtualBlock`.
         /// <para>Note you don't need to create D3D12MA::Allocator to use virtual blocks.</para>
         /// </summary>
-        public static HRESULT CreateVirtualBlock(VIRTUAL_BLOCK_DESC* pDesc, VirtualBlock** ppVirtualBlock);
-    }
-
-    /// <summary>
-    /// Represents pure allocation algorithm and a data structure with allocations in some memory block, without actually allocating any GPU memory.
-    /// <para>
-    /// This class allows to use the core algorithm of the library custom allocations e.g. CPU memory or
-    /// sub-allocation regions inside a single GPU buffer.
-    /// </para>
-    /// <para>
-    /// To create this object, fill in D3D12MA::VIRTUAL_BLOCK_DESC and call CreateVirtualBlock().
-    /// To destroy it, call its method VirtualBlock::Release().
-    /// </para>
-    /// </summary>
-    public unsafe struct VirtualBlock
-    {
-        /// <summary>
-        /// Destroys this object and frees it from memory.
-        /// <para>You need to free all the allocations within this block or call Clear() before destroying it.</para>
-        /// </summary>
-        public partial void Release();
-
-        /// <summary>Returns true if the block is empty - contains 0 allocations.</summary>
-        public partial BOOL IsEmpty();
-
-        /// <summary>Returns information about an allocation at given offset - its size and custom pointer.</summary>
-        public partial void GetAllocationInfo(uint64_t offset, VIRTUAL_ALLOCATION_INFO* pInfo);
-
-        /// <summary>Creates new allocation.</summary>
-        /// <param name="pOffset">Offset of the new allocation, which can also be treated as an unique identifier of the allocation within this block. `UINT64_MAX` if allocation failed.</param>
-        /// <returns>`S_OK` if allocation succeeded, `E_OUTOFMEMORY` if it failed.</returns>
-        public partial HRESULT Allocate(VIRTUAL_ALLOCATION_DESC* pDesc, uint64_t* pOffset);
-
-        /// <summary>Frees the allocation at given offset.</summary>
-        public partial void FreeAllocation(uint64_t offset);
-
-        /// <summary>Frees all the allocations.</summary>
-        public partial void Clear();
-
-        /// <summary>Changes custom pointer for an allocation at given offset to a new value.</summary>
-        public partial void SetAllocationUserData(uint64_t offset, void* pUserData);
-
-        /// <summary>Retrieves statistics from the current state of the block.</summary>
-        public partial void CalculateStats(StatInfo* pInfo);
-
-        /// <summary>Builds and returns statistics as a string in JSON format, including the list of allocations with their parameters.</summary>
-        /// <param name="ppStatsString">Must be freed using VirtualBlock::FreeStatsString.</param>
-        public partial void BuildStatsString(char** ppStatsString);
-
-        /// <summary>Frees memory of a string returned from VirtualBlock::BuildStatsString.</summary>
-        public partial void FreeStatsString(char* pStatsString);
+        [return: NativeTypeName("HRESULT")]
+        public static partial int CreateVirtualBlock(VIRTUAL_BLOCK_DESC* pDesc, VirtualBlock** ppVirtualBlock);
     }
 }
