@@ -1947,5 +1947,5 @@ namespace TerraFX.Interop
             }
             json->EndObject();
         }
-    };
+    }
 }
