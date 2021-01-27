@@ -1,7 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static TerraFX.Interop.D3D12_HEAP_TYPE;
@@ -26,13 +25,33 @@ namespace TerraFX.Interop
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
 
-        [Conditional("DEBUG")]
-        internal static void D3D12MA_ASSERT(bool cond) => Debug.Assert(cond);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void D3D12MA_ASSERT(bool cond, [CallerArgumentExpression("cond")] string assertion = "", [CallerFilePath] string fname = "", [CallerLineNumber] uint line = 0, [CallerMemberName] string func = "")
+        {
+            if ((D3D12MA_DEBUG_LEVEL > 0) && !cond)
+            {
+                D3D12MA_ASSERT_FAIL(assertion, fname, line, func);
+            }
+        }
 
         // Assert that will be called very often, like inside data structures e.g. operator[].
         // Making it non-empty can make program slow.
-        [Conditional("DEBUG")]
-        internal static void D3D12MA_HEAVY_ASSERT(bool expr) => Debug.Assert(expr);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void D3D12MA_HEAVY_ASSERT(bool cond, [CallerArgumentExpression("cond")] string assertion = "", [CallerFilePath] string fname = "", [CallerLineNumber] uint line = 0, [CallerMemberName] string func = "")
+        {
+            if ((D3D12MA_DEBUG_LEVEL > 1) && !cond)
+            {
+                D3D12MA_ASSERT_FAIL(assertion, fname, line, func);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void D3D12MA_ASSERT_FAIL(string assertion, string fname, uint line, string func)
+        {
+            Console.WriteLine($"D3D12MemoryAllocator: assertion failed.\n at \"{fname}\":{line}, \"{func ?? ""}\"\n assertion: \"{assertion}\"");
+            Environment.Exit(-1);
+
+        }
 
         private static uint get_app_context_data(string name, uint defaultValue)
         {

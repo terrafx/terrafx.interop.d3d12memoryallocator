@@ -8,8 +8,4 @@
     <TargetFrameworks>net5.0</TargetFrameworks>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="TerraFX.Interop.Windows" Version="10.0.19041-beta2-496362405" />
-  </ItemGroup>
-
 </Project>

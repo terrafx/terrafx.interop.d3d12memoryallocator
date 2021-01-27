@@ -4,6 +4,28 @@ namespace TerraFX.Interop
 {
     public static unsafe partial class D3D12MemoryAllocator
     {
+#if DEBUG
+        private const bool IsDebug = true;
+#else
+        private const bool IsDebug = false;
+#endif
+
+        /// <summary>
+        /// When defined to value other than 0, the library will execute debug assertions throughout
+        /// the codebase. There are two different levels available, with different performance impacts.
+        /// By default, RELEASE build of the library have all assertions disabled.
+        /// <code>
+        /// #define D3D12MA_DEBUG_LEVEL 0
+        ///     All assertions are disabled.
+        /// #define D3D12MA_DEBUG_LEVEL 1
+        ///     Enable basic assertions.
+        /// #define D3D12MA_DEBUG_LEVEL 2
+        ///     Enable all assertions, including those in hot paths. This guarantees maximum assertion
+        ///     coverage, but it might have a noticeable impact on performance when using the library.
+        /// </code>
+        /// </summary>
+        public static readonly uint D3D12MA_DEBUG_LEVEL = get_app_context_data(nameof(D3D12MA_DEBUG_LEVEL), IsDebug ? 2 : 0);
+
         /// <summary>
         /// When defined to value other than 0, the library will try to use
         /// D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT or D3D12_SMALL_MSAA_RESOURCE_PLACEMENT_ALIGNMENT

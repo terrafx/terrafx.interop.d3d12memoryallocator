@@ -9,9 +9,4 @@ namespace TerraFX.Interop.UnitTests
         public Allocator* allocator;
         public ALLOCATOR_FLAGS allocatorFlags;
     }
-
-    internal unsafe static partial class D3D12MemAllocTests
-    {
-        public static partial void Test(TestContext* ctx);
-    }
 }

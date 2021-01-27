@@ -1514,7 +1514,7 @@ namespace TerraFX.Interop.UnitTests
             TestDevice8(ctx);
         }
 
-        public static partial void Test(TestContext* ctx)
+        public static void Test(TestContext* ctx)
         {
             Console.WriteLine("TESTS BEGIN");
 
