@@ -57,10 +57,10 @@ namespace TerraFX.Interop
 
         /// <summary>Builds and returns statistics as a string in JSON format, including the list of allocations with their parameters.</summary>
         /// <param name="ppStatsString">Must be freed using VirtualBlock::FreeStatsString.</param>
-        public partial void BuildStatsString([NativeTypeName("WCHAR**")] char** ppStatsString);
+        public partial void BuildStatsString([NativeTypeName("WCHAR**")] ushort** ppStatsString);
 
         /// <summary>Frees memory of a string returned from VirtualBlock::BuildStatsString.</summary>
-        public partial void FreeStatsString([NativeTypeName("WCHAR*")] char* pStatsString);
+        public partial void FreeStatsString([NativeTypeName("WCHAR*")] ushort* pStatsString);
 
         internal VirtualBlock(ALLOCATION_CALLBACKS* allocationCallbacks, VIRTUAL_BLOCK_DESC* desc)
         {
@@ -171,7 +171,7 @@ namespace TerraFX.Interop
             m_Pimpl->m_Metadata.CalcAllocationStatInfo(pInfo);
         }
 
-        public partial void BuildStatsString(char** ppStatsString)
+        public partial void BuildStatsString(ushort** ppStatsString)
         {
             D3D12MA_ASSERT(ppStatsString != null);
 
@@ -185,13 +185,13 @@ namespace TerraFX.Interop
             } // Scope for JsonWriter
 
             nuint length = sb.GetLength();
-            char* result = AllocateArray<char>(&m_Pimpl->m_AllocationCallbacks, length + 1);
-            memcpy(result, sb.GetData(), length * sizeof(char));
+            ushort* result = AllocateArray<ushort>(&m_Pimpl->m_AllocationCallbacks, length + 1);
+            memcpy(result, sb.GetData(), length * sizeof(ushort));
             result[length] = '\0';
             *ppStatsString = result;
         }
 
-        public partial void FreeStatsString(char* pStatsString)
+        public partial void FreeStatsString(ushort* pStatsString)
         {
             if (pStatsString != null)
             {

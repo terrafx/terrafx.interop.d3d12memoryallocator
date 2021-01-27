@@ -10,7 +10,7 @@ namespace TerraFX.Interop
 
     internal unsafe partial struct StringBuilder : IDisposable
     {
-        [NativeTypeName("Vector<WCHAR>")] private Vector<char> m_Data;
+        [NativeTypeName("Vector<WCHAR>")] private Vector<ushort> m_Data;
 
         public StringBuilder(ALLOCATION_CALLBACKS* allocationCallbacks)
         {
@@ -23,13 +23,13 @@ namespace TerraFX.Interop
         public readonly nuint GetLength() { return m_Data.size(); }
 
         [return: NativeTypeName("LPCWSTR")]
-        public readonly char* GetData() { return m_Data.data(); }
+        public readonly ushort* GetData() { return m_Data.data(); }
 
-        public void Add([NativeTypeName("WCHAR")] char ch) { m_Data.push_back(&ch); }
+        public void Add([NativeTypeName("WCHAR")] ushort ch) { m_Data.push_back(&ch); }
 
-        public partial void Add([NativeTypeName("LPCWSTR")] char* str);
+        public partial void Add([NativeTypeName("LPCWSTR")] ushort* str);
 
-        public void Add(string str) { fixed (char* p = str) Add(p); }
+        public void Add(string str) { fixed (void* p = str) Add((ushort*)p); }
 
         public void AddNewLine() { Add('\n'); }
 
@@ -40,25 +40,25 @@ namespace TerraFX.Interop
 
     internal unsafe partial struct StringBuilder
     {
-        public partial void Add(char* str)
+        public partial void Add(ushort* str)
         {
             nuint len = wcslen(str);
             if (len > 0)
             {
                 nuint oldCount = m_Data.size();
                 m_Data.resize(oldCount + len);
-                memcpy(m_Data.data() + oldCount, str, len * sizeof(char));
+                memcpy(m_Data.data() + oldCount, str, len * sizeof(ushort));
             }
         }
 
         public partial void AddNumber(uint num)
         {
-            char* buf = stackalloc char[11];
+            ushort* buf = stackalloc ushort[11];
             buf[10] = '\0';
-            char* p = &buf[10];
+            ushort* p = &buf[10];
             do
             {
-                *--p = (char)('0' + (num % 10));
+                *--p = (ushort)('0' + (num % 10));
                 num /= 10;
             }
             while (num > 0);
@@ -67,12 +67,12 @@ namespace TerraFX.Interop
 
         public partial void AddNumber(ulong num)
         {
-            char* buf = stackalloc char[21];
+            ushort* buf = stackalloc ushort[21];
             buf[20] = '\0';
-            char* p = &buf[20];
+            ushort* p = &buf[20];
             do
             {
-                *--p = (char)('0' + (num % 10));
+                *--p = (ushort)('0' + (num % 10));
                 num /= 10;
             }
             while (num > 0);

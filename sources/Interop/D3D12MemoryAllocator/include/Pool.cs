@@ -52,7 +52,7 @@ namespace TerraFX.Interop
         /// </para>
         /// </summary>
         /// <param name="Name">`Name` can be null.</param>
-        public partial void SetName([NativeTypeName("LPCWSTR")] char* Name);
+        public partial void SetName([NativeTypeName("LPCWSTR")] ushort* Name);
 
         /// <summary>
         /// Returns the name associated with the pool object.
@@ -60,7 +60,7 @@ namespace TerraFX.Interop
         /// <para>If no name was associated with the allocation, returns NULL.</para>
         /// </summary>
         [return: NativeTypeName("LPCWSTR")]
-        public partial char* GetName();
+        public partial ushort* GetName();
 
         internal Pool(Allocator* allocator, POOL_DESC* desc)
         {
@@ -112,13 +112,13 @@ namespace TerraFX.Interop
             m_Pimpl->CalculateStats(pStats);
         }
 
-        public partial void SetName(char* Name)
+        public partial void SetName(ushort* Name)
         {
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
             m_Pimpl->SetName(Name);
         }
 
-        public partial char* GetName()
+        public partial ushort* GetName()
         {
             return m_Pimpl->GetName();
         }

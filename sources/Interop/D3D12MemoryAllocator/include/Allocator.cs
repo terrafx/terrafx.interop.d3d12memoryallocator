@@ -250,10 +250,10 @@ namespace TerraFX.Interop
         /// </summary>
         /// <param name="ppStatsString">Must be freed using Allocator::FreeStatsString.</param>
         /// <param name="DetailedMap">`TRUE` to include full list of allocations (can make the string quite long), `FALSE` to only return statistics.</param>
-        public partial void BuildStatsString([NativeTypeName("WCHAR**")] char** ppStatsString, [NativeTypeName("BOOL")] int DetailedMap);
+        public partial void BuildStatsString([NativeTypeName("WCHAR**")] ushort** ppStatsString, [NativeTypeName("BOOL")] int DetailedMap);
 
         /// <summary>Frees memory of a string returned from Allocator::BuildStatsString.</summary>
-        public partial void FreeStatsString([NativeTypeName("WCHAR*")] char* pStatsString);
+        public partial void FreeStatsString([NativeTypeName("WCHAR*")] ushort* pStatsString);
 
         internal Allocator(ALLOCATION_CALLBACKS* allocationCallbacks, ALLOCATOR_DESC* desc)
         {
@@ -471,14 +471,14 @@ namespace TerraFX.Interop
             m_Pimpl->GetBudget(pGpuBudget, pCpuBudget);
         }
 
-        public partial void BuildStatsString(char** ppStatsString, int DetailedMap)
+        public partial void BuildStatsString(ushort** ppStatsString, int DetailedMap)
         {
             D3D12MA_ASSERT(ppStatsString != null);
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
             m_Pimpl->BuildStatsString(ppStatsString, DetailedMap);
         }
 
-        public partial void FreeStatsString(char* pStatsString)
+        public partial void FreeStatsString(ushort* pStatsString)
         {
             if (pStatsString != null)
             {

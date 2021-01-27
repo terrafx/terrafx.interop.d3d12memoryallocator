@@ -14,7 +14,7 @@ namespace TerraFX.Interop
         public AllocatorPimpl* m_Allocator; // Externally owned object
         public POOL_DESC m_Desc;
         public BlockVector* m_BlockVector; // Owned object
-        [NativeTypeName("wchar_t*")] public char* m_Name;
+        [NativeTypeName("wchar_t*")] public ushort* m_Name;
 
         public PoolPimpl(AllocatorPimpl* allocator, POOL_DESC* desc)
         {
@@ -54,10 +54,10 @@ namespace TerraFX.Interop
 
         public partial void CalculateStats(StatInfo* outStats);
 
-        public partial void SetName([NativeTypeName("LPCWSTR")] char* Name);
+        public partial void SetName([NativeTypeName("LPCWSTR")] ushort* Name);
 
         [return: NativeTypeName("LPCWSTR")]
-        public char* GetName() { return m_Name; }
+        public ushort* GetName() { return m_Name; }
 
         public partial void FreeName();
     }
@@ -86,15 +86,15 @@ namespace TerraFX.Interop
             PostProcessStatInfo(ref *outStats);
         }
 
-        public partial void SetName(char* Name)
+        public partial void SetName(ushort* Name)
         {
             FreeName();
 
             if (Name != null)
             {
                 nuint nameCharCount = wcslen(Name) + 1;
-                m_Name = D3D12MA_NEW_ARRAY<char>(m_Allocator->GetAllocs(), nameCharCount);
-                memcpy(m_Name, Name, nameCharCount * sizeof(char));
+                m_Name = D3D12MA_NEW_ARRAY<ushort>(m_Allocator->GetAllocs(), nameCharCount);
+                memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
             }
         }
 

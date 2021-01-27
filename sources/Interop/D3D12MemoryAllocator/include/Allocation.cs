@@ -25,7 +25,7 @@ namespace TerraFX.Interop
         [NativeTypeName("UINT64")] internal ulong m_Size;
         internal ID3D12Resource* m_Resource;
         [NativeTypeName("UINT")] internal uint m_CreationFrameIndex;
-        [NativeTypeName("wchar_t*")] internal char* m_Name;
+        [NativeTypeName("wchar_t*")] internal ushort* m_Name;
         internal _Anonymous_e__Union m_Union;
         internal PackedData m_PackedData;
 
@@ -78,7 +78,7 @@ namespace TerraFX.Interop
         /// <para>Internal copy of the string is made, so the memory pointed by the argument can be changed of freed immediately after this call.</para>
         /// </summary>
         /// <param name="Name">`Name` can be null.</param>
-        public partial void SetName([NativeTypeName("LPCWSTR")] char* Name);
+        public partial void SetName([NativeTypeName("LPCWSTR")] ushort* Name);
 
         /// <summary>
         /// Returns the name associated with the allocation object.
@@ -87,7 +87,7 @@ namespace TerraFX.Interop
         /// </summary>
         /// <returns>The name associated with the allocation object.</returns>
         [return: NativeTypeName("LPCWSTR")]
-        public readonly char* GetName() { return m_Name; }
+        public readonly ushort* GetName() { return m_Name; }
 
         /// <summary>
         /// Returns `TRUE` if the memory of the allocation was filled with zeros when the allocation was created.
@@ -119,22 +119,22 @@ namespace TerraFX.Interop
         [StructLayout(LayoutKind.Explicit)]
         internal struct _Anonymous_e__Union
         {
-            [FieldOffset(0)] public m_Committed_t m_Committed;
-            [FieldOffset(0)] public m_Placed_t m_Placed;
-            [FieldOffset(0)] public m_Heap_t m_Heap;
+            [FieldOffset(0)] public _m_Committed_e__Struct m_Committed;
+            [FieldOffset(0)] public _m_Placed_e__Struct m_Placed;
+            [FieldOffset(0)] public _m_Heap_e__Struct m_Heap;
 
-            public struct m_Committed_t
+            public struct _m_Committed_e__Struct
             {
                 public D3D12_HEAP_TYPE heapType;
             }
 
-            public struct m_Placed_t
+            public struct _m_Placed_e__Struct
             {
                 [NativeTypeName("UINT64")] public ulong offset;
                 public NormalBlock* block;
             }
 
-            public struct m_Heap_t
+            public struct _m_Heap_e__Struct
             {
                 public D3D12_HEAP_TYPE heapType;
                 public ID3D12Heap* heap;
@@ -331,15 +331,15 @@ namespace TerraFX.Interop
             }
         }
 
-        public partial void SetName(char* Name)
+        public partial void SetName(ushort* Name)
         {
             FreeName();
 
             if (Name != null)
             {
                 nuint nameCharCount = wcslen(Name) + 1;
-                m_Name = D3D12MA_NEW_ARRAY<char>(m_Allocator->GetAllocs(), nameCharCount);
-                memcpy(m_Name, Name, nameCharCount * sizeof(char));
+                m_Name = D3D12MA_NEW_ARRAY<ushort>(m_Allocator->GetAllocs(), nameCharCount);
+                memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
             }
         }
 

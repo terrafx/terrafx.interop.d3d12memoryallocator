@@ -32,15 +32,15 @@ namespace TerraFX.Interop
 
         public partial void EndArray();
 
-        public partial void WriteString([NativeTypeName("LPCWSTR")] char* pStr);
+        public partial void WriteString([NativeTypeName("LPCWSTR")] ushort* pStr);
 
-        public void WriteString(string str) { fixed (char* p = str) WriteString(p); }
+        public void WriteString(string str) { fixed (void* p = str) WriteString((ushort*)p); }
 
-        public partial void BeginString([NativeTypeName("LPCWSTR")] char* pStr = null);
+        public partial void BeginString([NativeTypeName("LPCWSTR")] ushort* pStr = null);
 
-        public partial void ContinueString([NativeTypeName("LPCWSTR")] char* pStr);
+        public partial void ContinueString([NativeTypeName("LPCWSTR")] ushort* pStr);
 
-        public void ContinueString(string str) { fixed (char* p = str) ContinueString(p); }
+        public void ContinueString(string str) { fixed (void* p = str) ContinueString((ushort*)p); }
 
         public partial void ContinueString([NativeTypeName("UINT")] uint num);
 
@@ -49,7 +49,7 @@ namespace TerraFX.Interop
         public partial void AddAllocationToObject(Allocation* alloc);
 
         // void ContinueString_Pointer(const void* ptr);
-        public partial void EndString([NativeTypeName("LPCWSTR")] char* pStr = null);
+        public partial void EndString([NativeTypeName("LPCWSTR")] ushort* pStr = null);
 
         public partial void WriteNumber([NativeTypeName("UINT")] uint num);
 
@@ -138,13 +138,13 @@ namespace TerraFX.Interop
             m_Stack.pop_back();
         }
 
-        public partial void WriteString(char* pStr)
+        public partial void WriteString(ushort* pStr)
         {
             BeginString(pStr);
             EndString();
         }
 
-        public partial void BeginString(char* pStr)
+        public partial void BeginString(ushort* pStr)
         {
             D3D12MA_ASSERT(!m_InsideString);
 
@@ -157,12 +157,12 @@ namespace TerraFX.Interop
             }
         }
 
-        public partial void ContinueString(char* pStr)
+        public partial void ContinueString(ushort* pStr)
         {
             D3D12MA_ASSERT(m_InsideString);
             D3D12MA_ASSERT(pStr != null);
 
-            for (char* p = pStr; *p != 0; ++p)
+            for (ushort* p = pStr; *p != 0; ++p)
             {
                 // the strings we encode are assumed to be in UTF-16LE format, the native
                 // windows wide character unicode format. In this encoding unicode code
@@ -195,9 +195,9 @@ namespace TerraFX.Interop
                                 uint hexDigit = (val & 0xF000) >> 12;
                                 val <<= 4;
                                 if (hexDigit < 10)
-                                    m_SB->Add((char)('0' + hexDigit));
+                                    m_SB->Add((ushort)('0' + hexDigit));
                                 else
-                                    m_SB->Add((char)('A' + hexDigit));
+                                    m_SB->Add((ushort)('A' + hexDigit));
                             }
                         }
                         break;
@@ -217,7 +217,7 @@ namespace TerraFX.Interop
             m_SB->AddNumber(num);
         }
 
-        public partial void EndString(char* pStr)
+        public partial void EndString(ushort* pStr)
         {
             D3D12MA_ASSERT(m_InsideString);
 
@@ -331,7 +331,7 @@ namespace TerraFX.Interop
             }
             WriteString("Size");
             WriteNumber(alloc->GetSize());
-            char* name = alloc->GetName();
+            ushort* name = alloc->GetName();
             if (name != null)
             {
                 WriteString("Name");

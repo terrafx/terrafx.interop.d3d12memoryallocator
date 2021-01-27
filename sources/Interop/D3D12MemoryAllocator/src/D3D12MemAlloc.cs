@@ -278,7 +278,7 @@ namespace TerraFX.Interop
 
         [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: NativeTypeName("size_t")]
-        internal static extern unsafe nuint wcslen([NativeTypeName("wchar_t const*")] char* _String);
+        internal static extern unsafe nuint wcslen([NativeTypeName("wchar_t const*")] ushort* _String);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Private globals - basic facilities

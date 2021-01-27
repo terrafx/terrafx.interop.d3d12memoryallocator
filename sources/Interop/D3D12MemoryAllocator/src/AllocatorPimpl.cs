@@ -209,9 +209,9 @@ namespace TerraFX.Interop
 
         public partial void GetBudgetForHeapType(Budget* outBudget, D3D12_HEAP_TYPE heapType);
 
-        public partial void BuildStatsString([NativeTypeName("WCHAR**")] char** ppStatsString, [NativeTypeName("BOOL")] int DetailedMap);
+        public partial void BuildStatsString([NativeTypeName("WCHAR**")] ushort** ppStatsString, [NativeTypeName("BOOL")] int DetailedMap);
 
-        public partial void FreeStatsString([NativeTypeName("WCHAR*")] char* pStatsString);
+        public partial void FreeStatsString([NativeTypeName("WCHAR*")] ushort* pStatsString);
 
         /// <summary>
         /// Heuristics that decides whether a resource should better be placed in its own,
@@ -1719,7 +1719,7 @@ namespace TerraFX.Interop
             " + texture RT or DS",
         };
 
-        public partial void BuildStatsString(char** ppStatsString, int DetailedMap)
+        public partial void BuildStatsString(ushort** ppStatsString, int DetailedMap)
         {
             using StringBuilder sb = new(GetAllocs());
             {
@@ -1831,13 +1831,13 @@ namespace TerraFX.Interop
             }
 
             nuint length = sb.GetLength();
-            char* result = AllocateArray<char>(GetAllocs(), length + 1);
-            memcpy(result, sb.GetData(), length * sizeof(char));
+            ushort* result = AllocateArray<ushort>(GetAllocs(), length + 1);
+            memcpy(result, sb.GetData(), length * sizeof(ushort));
             result[length] = '\0';
             *ppStatsString = result;
         }
 
-        public partial void FreeStatsString(char* pStatsString)
+        public partial void FreeStatsString(ushort* pStatsString)
         {
             D3D12MA_ASSERT(pStatsString != null);
             Free(GetAllocs(), pStatsString);
