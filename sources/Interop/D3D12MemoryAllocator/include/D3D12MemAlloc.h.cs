@@ -22,37 +22,37 @@ namespace TerraFX.Interop
         ///     ignore.
         /// </code>
         /// </summary>
-        public static readonly int D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT = 1;
-
-        /// <summary>Number of D3D12 memory heap types supported.</summary>
-        [NativeTypeName("UINT")] public const uint HEAP_TYPE_COUNT = 3;
+        public static readonly uint D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT = get_app_context_data(nameof(D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT), 1);
 
         /// <summary>
         /// Minimum alignment of all allocations, in bytes.
         /// Set to more than 1 for debugging purposes only.Must be power of two.
         /// </summary>
-        internal const int D3D12MA_DEBUG_ALIGNMENT = 1;
+        public static readonly uint D3D12MA_DEBUG_ALIGNMENT = get_app_context_data(nameof(D3D12MA_DEBUG_ALIGNMENT), 1);
 
         /// <summary>
         /// Minimum margin before and after every allocation, in bytes.
         /// Set nonzero for debugging purposes only.
         /// </summary>
-        internal const int D3D12MA_DEBUG_MARGIN = 0;
+        public static readonly uint D3D12MA_DEBUG_MARGIN = get_app_context_data(nameof(D3D12MA_DEBUG_MARGIN), 0);
 
         /// <summary>
         /// Set this to 1 for debugging purposes only, to enable single mutex protecting all
         /// entry calls to the library.Can be useful for debugging multithreading issues.
         /// </summary>
-        internal const int D3D12MA_DEBUG_GLOBAL_MUTEX = 0;
+        public static readonly uint D3D12MA_DEBUG_GLOBAL_MUTEX = get_app_context_data(nameof(D3D12MA_DEBUG_GLOBAL_MUTEX), 0);
+
+        /// <summary>Define this macro to 0 to disable usage of DXGI 1.4 (needed for IDXGIAdapter3 and query for memory budget).</summary>
+        public static readonly uint D3D12MA_DXGI_1_4 = get_app_context_data(nameof(D3D12MA_DXGI_1_4), 1);
+
+        /// <summary>Number of D3D12 memory heap types supported.</summary>
+        [NativeTypeName("UINT")] internal const uint HEAP_TYPE_COUNT = 3;
 
         /// <summary>Default size of a block allocated as single ID3D12Heap.</summary>
         internal const ulong D3D12MA_DEFAULT_BLOCK_SIZE = (256UL * 1024 * 1024);
 
         /// <summary>Minimum size of a free suballocation to register it in the free suballocation collection.</summary>
         internal const ulong MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER = 16;
-
-        /// <summary>Define this macro to 0 to disable usage of DXGI 1.4 (needed for IDXGIAdapter3 and query for memory budget).</summary>
-        internal static readonly uint D3D12MA_DXGI_1_4 = 1;
 
         /// <summary>
         /// Creates new main D3D12MA::Allocator object and returns it through `ppAllocator`.

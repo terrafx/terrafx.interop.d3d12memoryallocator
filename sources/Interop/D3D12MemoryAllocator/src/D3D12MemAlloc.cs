@@ -34,6 +34,24 @@ namespace TerraFX.Interop
         [Conditional("DEBUG")]
         internal static void D3D12MA_HEAVY_ASSERT(bool expr) => Debug.Assert(expr);
 
+        private static uint get_app_context_data(string name, uint defaultValue)
+        {
+            var data = AppContext.GetData(name);
+
+            if (data is uint value)
+            {
+                return value;
+            }
+            else if ((data is string s) && uint.TryParse(s, out var result))
+            {
+                return result;
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
         //
