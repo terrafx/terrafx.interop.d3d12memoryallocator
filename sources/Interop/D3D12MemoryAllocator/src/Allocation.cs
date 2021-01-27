@@ -212,7 +212,7 @@ namespace TerraFX.Interop
             m_CreationFrameIndex = allocator->GetCurrentFrameIndex();
             m_Name = null;
 
-            D3D12MA_ASSERT(allocator);
+            D3D12MA_ASSERT(allocator != null);
 
             m_PackedData.SetType(TYPE_COUNT);
             m_PackedData.SetResourceDimension(D3D12_RESOURCE_DIMENSION_UNKNOWN);
@@ -310,7 +310,7 @@ namespace TerraFX.Interop
                 case TYPE_PLACED:
                     return m_Union.m_Placed.offset;
                 default:
-                    D3D12MA_ASSERT(0);
+                    D3D12MA_ASSERT(false);
                     return 0;
             }
         }
@@ -326,7 +326,7 @@ namespace TerraFX.Interop
                 case TYPE_HEAP:
                     return m_Union.m_Heap.heap;
                 default:
-                    D3D12MA_ASSERT(0);
+                    D3D12MA_ASSERT(false);
                     return null;
             }
         }

@@ -54,7 +54,7 @@ namespace TerraFX.Interop
             m_FreeSuballocationsBySize = new(allocationCallbacks);
             m_ZeroInitializedRange = default;
 
-            D3D12MA_ASSERT(allocationCallbacks);
+            D3D12MA_ASSERT(allocationCallbacks != null);
         }
 
         public partial void Dispose();
@@ -415,7 +415,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
-            D3D12MA_ASSERT(0);
+            D3D12MA_ASSERT(false);
         }
 
         public static bool CreateAllocationRequest(
@@ -425,7 +425,7 @@ namespace TerraFX.Interop
             AllocationRequest* pAllocationRequest)
         {
             D3D12MA_ASSERT(allocSize > 0);
-            D3D12MA_ASSERT(pAllocationRequest);
+            D3D12MA_ASSERT(pAllocationRequest != null);
             D3D12MA_HEAVY_ASSERT(@this->Validate());
 
             // There is not enough total free space in this block to fullfill the request: Early return.
@@ -544,7 +544,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
-            D3D12MA_ASSERT(0);
+            D3D12MA_ASSERT(false);
         }
 
         public static void Clear(BlockMetadata_Generic* @this)
@@ -757,7 +757,7 @@ namespace TerraFX.Interop
                     }
                     D3D12MA_ASSERT((@this->m_FreeSuballocationsBySize[index]->op_Arrow()->size == item.op_Arrow()->size));
                 }
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
             }
 
             //D3D12MA_HEAVY_ASSERT(ValidateFreeSuballocationList());
@@ -776,7 +776,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
-            D3D12MA_ASSERT(0);
+            D3D12MA_ASSERT(false);
         }
 
         public static void CalcAllocationStatInfo(BlockMetadata_Generic* @this, StatInfo* outInfo)
@@ -856,7 +856,7 @@ namespace TerraFX.Interop
                 else
                 {
                     Allocation* alloc = (Allocation*)suballoc->userData;
-                    D3D12MA_ASSERT(alloc);
+                    D3D12MA_ASSERT(alloc != null);
                     json->AddAllocationToObject(alloc);
                 }
                 json->EndObject();

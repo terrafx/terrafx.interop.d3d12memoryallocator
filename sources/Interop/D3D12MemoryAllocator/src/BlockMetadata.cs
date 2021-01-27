@@ -52,7 +52,7 @@ namespace TerraFX.Interop
             m_IsVirtual = isVirtual;
             m_pAllocationCallbacks = allocationCallbacks;
 
-            D3D12MA_ASSERT(allocationCallbacks);
+            D3D12MA_ASSERT(allocationCallbacks != null);
         }
 
         public void Dispose()

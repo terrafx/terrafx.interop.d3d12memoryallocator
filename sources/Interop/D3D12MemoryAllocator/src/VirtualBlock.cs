@@ -111,7 +111,7 @@ namespace TerraFX.Interop
         {
             if (pDesc == null || pOffset == null || pDesc->Size == 0 || !IsPow2(pDesc->Alignment))
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
 
@@ -163,7 +163,7 @@ namespace TerraFX.Interop
 
         public partial void CalculateStats(StatInfo* pInfo)
         {
-            D3D12MA_ASSERT(pInfo);
+            D3D12MA_ASSERT(pInfo != null);
 
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
 

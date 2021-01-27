@@ -107,7 +107,7 @@ namespace TerraFX.Interop
 
         public partial void CalculateStats(StatInfo* pStats)
         {
-            D3D12MA_ASSERT(pStats);
+            D3D12MA_ASSERT(pStats != null);
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
             m_Pimpl->CalculateStats(pStats);
         }

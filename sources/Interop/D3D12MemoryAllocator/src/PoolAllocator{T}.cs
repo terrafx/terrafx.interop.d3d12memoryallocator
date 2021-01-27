@@ -123,7 +123,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
-            D3D12MA_ASSERT(0);
+            D3D12MA_ASSERT(false);
         }
 
         private partial ItemBlock* CreateNewBlock()

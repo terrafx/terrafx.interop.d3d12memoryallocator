@@ -160,7 +160,7 @@ namespace TerraFX.Interop
         public partial void ContinueString(char* pStr)
         {
             D3D12MA_ASSERT(m_InsideString);
-            D3D12MA_ASSERT(pStr);
+            D3D12MA_ASSERT(pStr != null);
 
             for (char* p = pStr; *p != 0; ++p)
             {
@@ -326,7 +326,7 @@ namespace TerraFX.Interop
                     WriteString("TEXTURE3D");
                     break;
                 default:
-                    D3D12MA_ASSERT(0);
+                    D3D12MA_ASSERT(false);
                     break;
             }
             WriteString("Size");

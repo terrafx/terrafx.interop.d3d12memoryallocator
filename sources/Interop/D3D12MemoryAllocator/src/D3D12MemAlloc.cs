@@ -1,7 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -28,21 +27,12 @@ namespace TerraFX.Interop
         ////////////////////////////////////////////////////////////////////////////////
 
         [Conditional("DEBUG")]
-        internal static void D3D12MA_ASSERT<T>(T cond)
-            where T : unmanaged
-            => Debug.Assert(!EqualityComparer<T>.Default.Equals(cond, default));
-
-        [Conditional("DEBUG")]
-        internal static void D3D12MA_ASSERT<T>(T* cond)
-            where T : unmanaged
-            => Debug.Assert(cond != null);
+        internal static void D3D12MA_ASSERT(bool cond) => Debug.Assert(cond);
 
         // Assert that will be called very often, like inside data structures e.g. operator[].
         // Making it non-empty can make program slow.
         [Conditional("DEBUG")]
-        internal static void D3D12MA_HEAVY_ASSERT<T>(T expr)
-            where T : unmanaged
-            => Debug.Assert(!EqualityComparer<T>.Default.Equals(expr, default));
+        internal static void D3D12MA_HEAVY_ASSERT(bool expr) => Debug.Assert(expr);
 
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
@@ -74,7 +64,7 @@ namespace TerraFX.Interop
         internal static void* Malloc(ALLOCATION_CALLBACKS* allocs, [NativeTypeName("size_t")] nuint size, [NativeTypeName("size_t")] nuint alignment)
         {
             void* result = allocs->pAllocate(size, alignment, allocs->pUserData);
-            D3D12MA_ASSERT((IntPtr)result);
+            D3D12MA_ASSERT(result != null);
             return result;
         }
 
@@ -272,7 +262,7 @@ namespace TerraFX.Interop
         internal static bool D3D12MA_VALIDATE(bool cond)
         {
             if (!cond)
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
             return cond;
         }
 
@@ -499,7 +489,7 @@ namespace TerraFX.Interop
                 case D3D12_HEAP_TYPE_DEFAULT: return 0;
                 case D3D12_HEAP_TYPE_UPLOAD: return 1;
                 case D3D12_HEAP_TYPE_READBACK: return 2;
-                default: D3D12MA_ASSERT(0); return UINT_MAX;
+                default: D3D12MA_ASSERT(false); return UINT_MAX;
             }
         }
 
@@ -823,7 +813,7 @@ namespace TerraFX.Interop
             if (pDesc == null || ppAllocator == null || pDesc->pDevice == null || pDesc->pAdapter == null ||
                 !(pDesc->PreferredBlockSize == 0 || (pDesc->PreferredBlockSize >= 16 && pDesc->PreferredBlockSize < 0x10000000000UL)))
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
 
@@ -847,7 +837,7 @@ namespace TerraFX.Interop
         {
             if (pDesc == null || ppVirtualBlock == null)
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
 

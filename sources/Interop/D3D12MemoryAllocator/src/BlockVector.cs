@@ -253,7 +253,7 @@ namespace TerraFX.Interop
                 for (nuint blockIndex = 0; blockIndex < m_Blocks.size(); ++blockIndex)
                 {
                     NormalBlock* pCurrBlock = *m_Blocks[blockIndex];
-                    D3D12MA_ASSERT(pCurrBlock);
+                    D3D12MA_ASSERT(pCurrBlock != null);
                     HRESULT hr = AllocateFromBlock(
                         pCurrBlock,
                         size,
@@ -543,7 +543,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
-            D3D12MA_ASSERT(0);
+            D3D12MA_ASSERT(false);
         }
 
         partial void IncrementallySortBlocks()
@@ -704,7 +704,7 @@ namespace TerraFX.Interop
             for (nuint i = 0; i < m_Blocks.size(); ++i)
             {
                 NormalBlock* pBlock = *m_Blocks[i];
-                D3D12MA_ASSERT(pBlock);
+                D3D12MA_ASSERT(pBlock != null);
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());
                 StatInfo blockStatInfo;
                 pBlock->m_pMetadata->CalcAllocationStatInfo(&blockStatInfo);
@@ -722,7 +722,7 @@ namespace TerraFX.Interop
             for (nuint i = 0; i < m_Blocks.size(); ++i)
             {
                 NormalBlock* pBlock = *m_Blocks[i];
-                D3D12MA_ASSERT(pBlock);
+                D3D12MA_ASSERT(pBlock != null);
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());
                 StatInfo blockStatInfo;
                 pBlock->m_pMetadata->CalcAllocationStatInfo(&blockStatInfo);
@@ -740,7 +740,7 @@ namespace TerraFX.Interop
             for (nuint i = 0, count = m_Blocks.size(); i < count; ++i)
             {
                 NormalBlock* pBlock = *m_Blocks[i];
-                D3D12MA_ASSERT(pBlock);
+                D3D12MA_ASSERT(pBlock != null);
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());
                 json->BeginString();
                 json->ContinueString(pBlock->@base.GetId());

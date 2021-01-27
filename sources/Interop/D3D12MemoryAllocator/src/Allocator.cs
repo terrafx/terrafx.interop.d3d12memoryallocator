@@ -299,7 +299,7 @@ namespace TerraFX.Interop
         {
             if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
@@ -318,7 +318,7 @@ namespace TerraFX.Interop
         {
             if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
@@ -337,7 +337,7 @@ namespace TerraFX.Interop
         {
             if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
@@ -367,7 +367,7 @@ namespace TerraFX.Interop
         {
             if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
@@ -382,7 +382,7 @@ namespace TerraFX.Interop
         {
             if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
@@ -400,7 +400,7 @@ namespace TerraFX.Interop
         {
             if (pAllocation == null || pResourceDesc == null || ppvResource == null)
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
@@ -415,12 +415,12 @@ namespace TerraFX.Interop
                 !IsHeapTypeValid(pPoolDesc->HeapType) ||
                 (pPoolDesc->MaxBlockCount > 0 && pPoolDesc->MaxBlockCount < pPoolDesc->MinBlockCount))
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
             if (!m_Pimpl->HeapFlagsFulfillResourceHeapTier(pPoolDesc->HeapFlags))
             {
-                D3D12MA_ASSERT(0);
+                D3D12MA_ASSERT(false);
                 return E_INVALIDARG;
             }
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
@@ -456,7 +456,7 @@ namespace TerraFX.Interop
 
         public partial void CalculateStats(Stats* pStats)
         {
-            D3D12MA_ASSERT(pStats);
+            D3D12MA_ASSERT(pStats != null);
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
             m_Pimpl->CalculateStats(pStats);
         }
