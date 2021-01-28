@@ -15,9 +15,9 @@ namespace TerraFX.Interop
     /// <summary>
     /// Represents single memory allocation.
     /// <para>It may be either implicit memory heap dedicated to a single resource or a specific region of a bigger heap plus unique offset.</para>
-    /// <para>To create such object, fill structure D3D12MA::ALLOCATION_DESC and call function Allocator::CreateResource.</para>
+    /// <para>To create such object, fill structure <see cref="ALLOCATION_DESC"/> and call function <see cref="Allocator.CreateResource"/>.</para>
     /// <para>The object remembers size and some other information. To retrieve this information, use methods of this class.</para>
-    /// <para>The object also remembers `ID3D12Resource` and "owns" a reference to it, so it calls `Release()` on the resource when destroyed.</para>
+    /// <para>The object also remembers <see cref="ID3D12Resource"/> and "owns" a reference to it, so it calls <see cref="IUnknown.Release"/> on the resource when destroyed.</para>
     /// </summary>
     public unsafe struct Allocation : IDisposable
     {
@@ -48,7 +48,7 @@ namespace TerraFX.Interop
                 return;
             }
 
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
             SAFE_RELEASE(ref m_Resource);
 
@@ -82,10 +82,10 @@ namespace TerraFX.Interop
         /// Returns offset in bytes from the start of memory heap.
         /// <para>
         /// You usually don't need to use this offset. If you create a buffer or a texture together with the allocation using function
-        /// D3D12MA::Allocator::CreateResource, functions that operate on that resource refer to the beginning of the resource, not entire memory heap.
+        /// <see cref="Allocator.CreateResource"/>, functions that operate on that resource refer to the beginning of the resource, not entire memory heap.
         /// </para>
         /// </summary>
-        /// <returns>If the Allocation represents committed resource with implicit heap, returns 0.</returns>
+        /// <returns>If the <see cref="Allocation"/> represents committed resource with implicit heap, returns 0.</returns>
         [return: NativeTypeName("UINT64")]
         public readonly ulong GetOffset()
         {
@@ -112,11 +112,11 @@ namespace TerraFX.Interop
 
         /// <summary>
         /// Returns size in bytes of the allocation.
-        /// <para>- If you created a buffer or a texture together with the allocation using function D3D12MA::Allocator::CreateResource, this is the size of the resource returned by `ID3D12Device::GetResourceAllocationInfo`.</para>
+        /// <para>- If you created a buffer or a texture together with the allocation using function <see cref="Allocator.CreateResource"/>, this is the size of the resource returned by <see cref="ID3D12Device.GetResourceAllocationInfo"/>.</para>
         /// <para>- For allocations made out of bigger memory blocks, this also is the size of the memory region assigned exclusively to this allocation.</para>
         /// <para>
         /// - For resources created as committed, this value may not be accurate. DirectX implementation may optimize memory usage internally so that you may
-        /// even observe regions of `ID3D12Resource::GetGPUVirtualAddress()` + Allocation::GetSize() to overlap in memory and still work correctly.
+        /// even observe regions of <see cref="ID3D12Resource.GetGPUVirtualAddress"/> + <see cref="GetSize"/> to overlap in memory and still work correctly.
         /// </para>
         /// </summary>
         /// <returns>The size in bytes of the allocation.</returns>
@@ -132,7 +132,7 @@ namespace TerraFX.Interop
 
         /// <summary>
         /// Returns memory heap that the resource is created in.
-        /// <para>If the Allocation represents committed resource with implicit heap, returns NULL.</para>
+        /// <para>If the <see cref="Allocation"/> represents committed resource with implicit heap, returns <see langword="null"/>.</para>
         /// </summary>
         /// <returns>The memory heap that the resource is created in.</returns>
         public readonly ID3D12Heap* GetHeap()
@@ -146,7 +146,7 @@ namespace TerraFX.Interop
 
                 case TYPE_PLACED:
                 {
-                    return m_Placed.block->@base.GetHeap();
+                    return m_Placed.block->GetHeap();
                 }
 
                 case TYPE_HEAP:
@@ -189,18 +189,18 @@ namespace TerraFX.Interop
         public readonly ushort* GetName() => m_Name;
 
         /// <summary>
-        /// Returns `TRUE` if the memory of the allocation was filled with zeros when the allocation was created.
-        /// <para>Returns `TRUE` only if the allocator is sure that the entire memory where the allocation was created was filled with zeros at the moment the allocation was made.</para>
+        /// Returns <see langword="true"/> if the memory of the allocation was filled with zeros when the allocation was created.
+        /// <para>Returns <see langword="true"/> only if the allocator is sure that the entire memory where the allocation was created was filled with zeros at the moment the allocation was made.</para>
         /// <para>
-        /// Returns `FALSE` if the memory could potentially contain garbage data.
-        /// If it's a render-target or depth-stencil texture, it then needs proper initialization with `ClearRenderTargetView`, `ClearDepthStencilView`, `DiscardResource`,
-        /// or a copy operation, as described on page: [ID3D12Device::CreatePlacedResource method - Notes on the required resource initialization] (https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-createplacedresource#notes-on-the-required-resource-initialization).
+        /// Returns <see langword="false"/> if the memory could potentially contain garbage data.
+        /// If it's a render-target or depth-stencil texture, it then needs proper initialization with <see cref="ID3D12GraphicsCommandList.ClearRenderTargetView"/>, <see cref="ID3D12GraphicsCommandList.ClearDepthStencilView"/>, <see cref="ID3D12GraphicsCommandList.DiscardResource"/>,
+        /// or a copy operation, as described on page: <see href="https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-createplacedresource#notes-on-the-required-resource-initialization">"<see cref="ID3D12Device.CreatePlacedResource"/> method - Notes on the required resource initialization"</see>.
         /// Please note that rendering a fullscreen triangle or quad to the texture as a render target is not a proper way of initialization!
         /// </para>
         /// <para>
         /// See also articles:
-        /// ["Coming to DirectX 12: More control over memory allocation"] (https://devblogs.microsoft.com/directx/coming-to-directx-12-more-control-over-memory-allocation/),
-        /// ["Initializing DX12 Textures After Allocation and Aliasing"] (https://asawicki.info/news_1724_initializing_dx12_textures_after_allocation_and_aliasing).
+        /// <see href="https://devblogs.microsoft.com/directx/coming-to-directx-12-more-control-over-memory-allocation/">"Coming to DirectX 12: More control over memory allocation"</see>
+        /// <see href="https://asawicki.info/news_1724_initializing_dx12_textures_after_allocation_and_aliasing">"Initializing DX12 Textures After Allocation and Aliasing"</see>
         /// </para>
         /// </summary>
         /// <returns>Whether the memory of the allocation was filled with zeros.</returns>
@@ -236,9 +236,14 @@ namespace TerraFX.Interop
         [StructLayout(LayoutKind.Explicit)]
         internal struct _Anonymous_e__Union
         {
-            [FieldOffset(0)] public _m_Committed_e__Struct m_Committed;
-            [FieldOffset(0)] public _m_Placed_e__Struct m_Placed;
-            [FieldOffset(0)] public _m_Heap_e__Struct m_Heap;
+            [FieldOffset(0)]
+            public _m_Committed_e__Struct m_Committed;
+
+            [FieldOffset(0)]
+            public _m_Placed_e__Struct m_Placed;
+
+            [FieldOffset(0)]
+            public _m_Heap_e__Struct m_Heap;
 
             public struct _m_Committed_e__Struct
             {
@@ -247,7 +252,9 @@ namespace TerraFX.Interop
 
             public struct _m_Placed_e__Struct
             {
-                [NativeTypeName("UINT64")] public ulong offset;
+                [NativeTypeName("UINT64")]
+                public ulong offset;
+
                 public NormalBlock* block;
             }
 

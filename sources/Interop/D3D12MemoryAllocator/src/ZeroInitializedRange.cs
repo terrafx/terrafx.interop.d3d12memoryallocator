@@ -5,9 +5,7 @@ using static TerraFX.Interop.D3D12MemoryAllocator;
 namespace TerraFX.Interop
 {
     /// <summary>
-    /// Keeps track of the range of bytes that are surely initialized with zeros.
-    /// Everything outside of it is considered uninitialized memory that may contain
-    /// garbage data.
+    /// Keeps track of the range of bytes that are surely initialized with zeros. Everything outside of it is considered uninitialized memory that may contain garbage data.
     /// <para>The range is left-inclusive.</para>
     /// </summary>
     internal struct ZeroInitializedRange

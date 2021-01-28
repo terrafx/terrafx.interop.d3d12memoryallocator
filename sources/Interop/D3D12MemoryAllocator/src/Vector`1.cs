@@ -6,11 +6,8 @@ using static TerraFX.Interop.D3D12MemoryAllocator;
 
 namespace TerraFX.Interop
 {
-    /// <summary>
-    /// Dynamically resizing continuous array. Class with interface similar to std::vector.
-    /// T must be POD because constructors and destructors are not called and memcpy is
-    /// used for these objects.
-    /// </summary>
+    /// <summary>Dynamically resizing continuous array. Class with interface similar to <c>std::vector</c>.</summary>
+    /// <typeparam name="T">Must be POD because constructors and destructors are not called and <see cref="memcpy"/> is used for these objects.</typeparam>
     internal unsafe struct Vector<T> : IDisposable
         where T : unmanaged
     {

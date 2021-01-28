@@ -7,11 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace TerraFX.Interop
 {
-    /// <summary>
-    /// Represents a single block of device memory (heap) with all the data about its
-    /// regions(aka suballocations, Allocation), assigned and free.
-    /// Thread-safety: This class must be externally synchronized.
-    /// </summary>
+    /// <summary>Represents a single block of device memory (heap) with all the data about its regions(aka suballocations, Allocation), assigned and free. Thread-safety: This class must be externally synchronized.</summary>
     internal unsafe struct NormalBlock : /* MemoryBlock, */ IDisposable
     {
         private static void** SharedLpVtbl = InitLpVtbl();
@@ -28,18 +24,12 @@ namespace TerraFX.Interop
 
         private BlockVector* m_BlockVector;
 
-        public NormalBlock(
-            AllocatorPimpl* allocator,
-            BlockVector* blockVector,
-            D3D12_HEAP_TYPE heapType,
-            D3D12_HEAP_FLAGS heapFlags,
-            [NativeTypeName("UINT64")] ulong size,
-            [NativeTypeName("UINT")] uint id)
+        public NormalBlock(AllocatorPimpl* allocator, BlockVector* blockVector, D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
         {
             @base = new MemoryBlock(allocator, heapType, heapFlags, size, id);
             @base.lpVtbl = SharedLpVtbl;
             m_pMetadata = null;
-            m_BlockVector = null;
+            m_BlockVector = blockVector;
         }
 
         public void Dispose()
@@ -62,6 +52,13 @@ namespace TerraFX.Interop
 
             return hr;
         }
+
+        public ID3D12Heap* GetHeap() => @base.m_Heap;
+
+        public D3D12_HEAP_TYPE GetHeapType() => @base.m_HeapType;
+
+        [return: NativeTypeName("UINT")]
+        public uint GetId() => @base.m_Id;
 
         public readonly BlockVector* GetBlockVector() => m_BlockVector;
 

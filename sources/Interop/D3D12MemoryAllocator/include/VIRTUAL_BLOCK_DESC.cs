@@ -2,7 +2,7 @@
 
 namespace TerraFX.Interop
 {
-    /// <summary>Parameters of created D3D12MA::VirtualBlock object to be passed to CreateVirtualBlock().</summary>
+    /// <summary>Parameters of created <see cref="VirtualBlock"/> object to be passed to <see cref="D3D12MemoryAllocator.CreateVirtualBlock"/>.</summary>
     public unsafe struct VIRTUAL_BLOCK_DESC
     {
         /// <summary>

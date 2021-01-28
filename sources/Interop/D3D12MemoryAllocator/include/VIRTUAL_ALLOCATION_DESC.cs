@@ -2,7 +2,7 @@
 
 namespace TerraFX.Interop
 {
-    /// <summary>Parameters of created virtual allocation to be passed to VirtualBlock::Allocate().</summary>
+    /// <summary>Parameters of created virtual allocation to be passed to <see cref="VirtualBlock.Allocate"/>.</summary>
     public unsafe struct VIRTUAL_ALLOCATION_DESC
     {
         /// <summary>

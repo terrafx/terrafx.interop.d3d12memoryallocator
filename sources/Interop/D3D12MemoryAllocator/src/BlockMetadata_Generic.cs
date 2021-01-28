@@ -99,10 +99,7 @@ namespace TerraFX.Interop
             GetAllocationInfo((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)), offset, outInfo);
         }
 
-        public bool CreateAllocationRequest(
-            [NativeTypeName("UINT64")] ulong allocSize,
-            [NativeTypeName("UINT64")] ulong allocAlignment,
-            AllocationRequest* pAllocationRequest)
+        public bool CreateAllocationRequest([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, AllocationRequest* pAllocationRequest)
         {
             return CreateAllocationRequest(
                 (BlockMetadata_Generic*)Unsafe.AsPointer(ref this),
@@ -111,10 +108,7 @@ namespace TerraFX.Interop
                 pAllocationRequest);
         }
 
-        public void Alloc(
-            AllocationRequest* request,
-            [NativeTypeName("UINT64")] ulong allocSize,
-            void* userData)
+        public void Alloc(AllocationRequest* request, [NativeTypeName("UINT64")] ulong allocSize, void* userData)
         {
             Alloc(
                 (BlockMetadata_Generic*)Unsafe.AsPointer(ref this),
@@ -153,18 +147,8 @@ namespace TerraFX.Interop
             return ValidateFreeSuballocationList((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
         }
 
-        /// <summary>
-        /// Checks if requested suballocation with given parameters can be placed in given pFreeSuballocItem.
-        /// If yes, fills pOffset and returns true. If no, returns false.
-        /// </summary>
-        public bool CheckAllocation(
-            [NativeTypeName("UINT64")] ulong allocSize,
-            [NativeTypeName("UINT64")] ulong allocAlignment,
-            SuballocationList.iterator suballocItem,
-            [NativeTypeName("UINT64*")] ulong* pOffset,
-            [NativeTypeName("UINT64*")] ulong* pSumFreeSize,
-            [NativeTypeName("UINT64*")] ulong* pSumItemSize,
-            [NativeTypeName("BOOL")] int* pZeroInitialized)
+        /// <summary>Checks if requested suballocation with given parameters can be placed in given pFreeSuballocItem. If yes, fills pOffset and returns true. If no, returns false.</summary>
+        public bool CheckAllocation([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, SuballocationList.iterator suballocItem, [NativeTypeName("UINT64*")] ulong* pOffset, [NativeTypeName("UINT64*")] ulong* pSumFreeSize, [NativeTypeName("UINT64*")] ulong* pSumItemSize, [NativeTypeName("BOOL")] int* pZeroInitialized)
         {
             return CheckAllocation(
                 (BlockMetadata_Generic*)Unsafe.AsPointer(ref this),
@@ -183,29 +167,19 @@ namespace TerraFX.Interop
             MergeFreeWithNext((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), item);
         }
 
-        /// <summary>
-        /// Releases given suballocation, making it free.
-        /// Merges it with adjacent free suballocations if applicable.
-        /// Returns iterator to new free suballocation at this place.
-        /// </summary>
+        /// <summary>Releases given suballocation, making it free. Merges it with adjacent free suballocations if applicable. Returns iterator to new free suballocation at this place.</summary>
         public SuballocationList.iterator FreeSuballocation(SuballocationList.iterator suballocItem)
         {
             return FreeSuballocation((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), suballocItem);
         }
 
-        /// <summary>
-        /// Given free suballocation, it inserts it into sorted list of
-        /// m_FreeSuballocationsBySize if it's suitable.
-        /// </summary>
+        /// <summary>Given free suballocation, it inserts it into sorted list of <see cref="m_FreeSuballocationsBySize"/> if it's suitable.</summary>
         public void RegisterFreeSuballocation(SuballocationList.iterator item)
         {
             RegisterFreeSuballocation((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), item);
         }
 
-        /// <summary>
-        /// Given free suballocation, it removes it from sorted list of
-        /// m_FreeSuballocationsBySize if it's suitable.
-        /// </summary>
+        /// <summary>Given free suballocation, it removes it from sorted list of <see cref="m_FreeSuballocationsBySize"/> if it's suitable.</summary>
         public void UnregisterFreeSuballocation(SuballocationList.iterator item)
         {
             UnregisterFreeSuballocation((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), item);
@@ -367,11 +341,7 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(false); // "Not found!"
         }
 
-        public static bool CreateAllocationRequest(
-            BlockMetadata_Generic* @this,
-            ulong allocSize,
-            ulong allocAlignment,
-            AllocationRequest* pAllocationRequest)
+        public static bool CreateAllocationRequest(BlockMetadata_Generic* @this, ulong allocSize, ulong allocAlignment, AllocationRequest* pAllocationRequest)
         {
             D3D12MA_ASSERT(allocSize > 0);
             D3D12MA_ASSERT(pAllocationRequest != null);
@@ -414,11 +384,7 @@ namespace TerraFX.Interop
             return false;
         }
 
-        public static void Alloc(
-            BlockMetadata_Generic* @this,
-            AllocationRequest* request,
-            ulong allocSize,
-            void* userData)
+        public static void Alloc(BlockMetadata_Generic* @this, AllocationRequest* request, ulong allocSize, void* userData)
         {
             D3D12MA_ASSERT(request->item != @this->m_Suballocations.end());
             Suballocation* suballoc = request->item.op_Arrow();
@@ -532,15 +498,7 @@ namespace TerraFX.Interop
             return true;
         }
 
-        public static bool CheckAllocation(
-            BlockMetadata_Generic* @this,
-            ulong allocSize,
-            ulong allocAlignment,
-            SuballocationList.iterator suballocItem,
-            ulong* pOffset,
-            ulong* pSumFreeSize,
-            ulong* pSumItemSize,
-            int* pZeroInitialized)
+        public static bool CheckAllocation(BlockMetadata_Generic* @this, ulong allocSize, ulong allocAlignment, SuballocationList.iterator suballocItem, ulong* pOffset, ulong* pSumFreeSize, ulong* pSumItemSize, int* pZeroInitialized)
         {
             D3D12MA_ASSERT(allocSize > 0);
             D3D12MA_ASSERT(suballocItem != @this->m_Suballocations.end());
@@ -567,9 +525,7 @@ namespace TerraFX.Interop
             // Apply D3D12MA_DEBUG_MARGIN at the beginning.
             if (D3D12MA_DEBUG_MARGIN > 0)
             {
-#pragma warning disable CS0162
                 *pOffset += D3D12MA_DEBUG_MARGIN;
-#pragma warning restore CS0162
             }
 
             // Apply alignment.

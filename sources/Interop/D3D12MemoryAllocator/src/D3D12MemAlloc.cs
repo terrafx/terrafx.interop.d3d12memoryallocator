@@ -2,7 +2,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using static TerraFX.Interop.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.DXGI_FORMAT;
@@ -72,12 +71,24 @@ namespace TerraFX.Interop
         }
 
         /// <summary>Creates a new <see cref="D3D12MA_MUTEX"/> when <see cref="D3D12MA_DEBUG_GLOBAL_MUTEX"/> is set, otherwise a <see langword="null"/> one.</summary>
-        private static D3D12MA_MUTEX InitDebugGlobalMutex()
+        private static D3D12MA_MUTEX* InitDebugGlobalMutex()
         {
             if (D3D12MA_DEBUG_GLOBAL_MUTEX > 0)
-                return D3D12MA_MUTEX.Init();
+            {
+                D3D12MA_MUTEX* pMutex = (D3D12MA_MUTEX*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MemoryAllocator), sizeof(D3D12MA_MUTEX));
+                D3D12MA_MUTEX.Init(out *pMutex);
+                return pMutex;
+            }
             else
-                return default;
+            {
+                return null;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static MutexLock D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK()
+        {
+            return new MutexLock(g_DebugGlobalMutex, true);
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -93,17 +104,11 @@ namespace TerraFX.Interop
 
         internal static void* DefaultAllocate([NativeTypeName("size_t")] nuint Size, [NativeTypeName("size_t")] nuint Alignment, void* _  /*pUserData*/)
         {
-            [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-            static extern unsafe void* _aligned_malloc(nuint _Size, nuint _Alignment);
-
             return _aligned_malloc(Size, Alignment);
         }
 
         internal static void DefaultFree(void* pMemory, void* _ /*pUserData*/)
         {
-            [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-            static extern unsafe void _aligned_free(void* _Block);
-
             _aligned_free(pMemory);
         }
 
@@ -150,9 +155,6 @@ namespace TerraFX.Interop
 
             throw new ArgumentException("Invalid __alignof<T> type");
         }
-
-        [DllImport("libc", CallingConvention = CallingConvention.Cdecl, EntryPoint = "?get_new_handler@std@@YAP6AXXZXZ", ExactSpelling = true)]
-        private static extern delegate* unmanaged[Cdecl]<void> win32_std_get_new_handler();
 
         // out of memory
         private const int ENOMEM = 12;
@@ -282,7 +284,7 @@ namespace TerraFX.Interop
             if (allocationCallbacks is not null)
             {
                 *outAllocs = *allocationCallbacks;
-                D3D12MA_ASSERT(outAllocs->pAllocate is not null && outAllocs->pFree is not null);
+                D3D12MA_ASSERT((outAllocs->pAllocate != null) && (outAllocs->pFree != null));
             }
             else
             {
@@ -292,19 +294,10 @@ namespace TerraFX.Interop
             }
         }
 
-        internal static void memcpy(void* dst, void* src, [NativeTypeName("size_t")] nuint size)
-        {
-            Buffer.MemoryCopy(src, dst, size, size);
-        }
-
         internal static void ZeroMemory(void* dst, [NativeTypeName("size_t")] nuint size)
         {
-            Unsafe.InitBlock(dst, 0, (uint)size);
+            memset(dst, 0, size);
         }
-
-        [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        [return: NativeTypeName("size_t")]
-        internal static extern unsafe nuint wcslen([NativeTypeName("wchar_t const*")] ushort* _String);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Private globals - basic facilities
@@ -338,7 +331,10 @@ namespace TerraFX.Interop
         internal static bool D3D12MA_VALIDATE(bool cond)
         {
             if (!cond)
+            {
                 D3D12MA_ASSERT(false);
+            }
+
             return cond;
         }
 
@@ -372,11 +368,7 @@ namespace TerraFX.Interop
             *b = tmp;
         }
 
-        /// <summary>
-        /// Returns true if given number is a power of two.
-        /// T must be unsigned integer number or signed integer but always nonnegative.
-        /// For 0 returns true.
-        /// </summary>
+        /// <summary>Returns true if given number is a power of two. T must be unsigned integer number or signed integer but always nonnegative. For 0 returns true.</summary>
         internal static bool IsPow2(nuint x)
         {
             return (x & (x - 1)) == 0;
@@ -480,13 +472,9 @@ namespace TerraFX.Interop
         }
 
         /// <summary>
-        /// Performs binary search and returns iterator to first element that is greater or
-        /// equal to `key`, according to comparison `cmp`.
-        /// <para>Cmp should return true if first argument is less than second argument.</para>
-        /// <para>
-        /// Returned value is the found element, if present in the collection or place where
-        /// new element with value(key) should be inserted.
-        /// </para>
+        /// Performs binary search and returns iterator to first element that is greater or equal to <paramref name="key"/>, according to comparison <paramref name="cmp"/>.
+        /// <para><paramref name="cmp"/> should return true if first argument is less than second argument.</para>
+        /// <para>Returned value is the found element, if present in the collection or place where new element with value (<paramref name="key"/>) should be inserted.</para>
         /// </summary>
         internal static TKey* BinaryFindFirstNotLess<TCmpLess, TKey>(TKey* beg, TKey* end, TKey* key, in TCmpLess cmp)
             where TCmpLess : struct, ICmpLess<TKey>
@@ -532,9 +520,8 @@ namespace TerraFX.Interop
         }
 
         /// <summary>
-        /// Performs binary search and returns iterator to an element that is equal to `key`,
-        /// according to comparison `cmp`.
-        /// <para>Cmp should return true if first argument is less than second argument.</para>
+        /// Performs binary search and returns iterator to an element that is equal to <paramref name="value"/>, according to comparison <paramref name="cmp"/>.
+        /// <para><paramref name="cmp"/> should return true if first argument is less than second argument.</para>
         /// <para>Returned value is the found element, if present in the collection or end if not found.</para>
         /// </summary>
         internal static TKey* BinaryFindSorted<TCmpLess, TKey>(TKey* beg, TKey* end, TKey* value, in TCmpLess cmp)
@@ -576,7 +563,7 @@ namespace TerraFX.Interop
             }
         }
 
-        internal static string[] HeapTypeNames = new[]
+        internal static readonly string[] HeapTypeNames = new[]
         {
             "DEFAULT",
             "UPLOAD",
@@ -846,19 +833,33 @@ namespace TerraFX.Interop
         internal static bool CanUseSmallAlignment(D3D12_RESOURCE_DESC* resourceDesc)
         {
             if (resourceDesc->Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D)
+            {
                 return false;
+            }
+
             if ((resourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0)
+            {
                 return false;
+            }
+
             if (resourceDesc->SampleDesc.Count > 1)
+            {
                 return false;
+            }
+
             if (resourceDesc->DepthOrArraySize != 1)
+            {
                 return false;
+            }
 
             uint sizeX = (uint)resourceDesc->Width;
             uint sizeY = resourceDesc->Height;
             uint bitsPerPixel = GetBitsPerPixel(resourceDesc->Format);
+
             if (bitsPerPixel == 0)
+            {
                 return false;
+            }
 
             if (IsFormatCompressed(resourceDesc->Format))
             {
@@ -928,14 +929,14 @@ namespace TerraFX.Interop
 
         public static partial int CreateAllocator(ALLOCATOR_DESC* pDesc, Allocator** ppAllocator)
         {
-            if (pDesc == null || ppAllocator == null || pDesc->pDevice == null || pDesc->pAdapter == null ||
-                !(pDesc->PreferredBlockSize == 0 || (pDesc->PreferredBlockSize >= 16 && pDesc->PreferredBlockSize < 0x10000000000UL)))
+            if ((pDesc == null) || (ppAllocator == null) || (pDesc->pDevice == null) || (pDesc->pAdapter == null) ||
+                !((pDesc->PreferredBlockSize == 0) || ((pDesc->PreferredBlockSize >= 16) && (pDesc->PreferredBlockSize < 0x10000000000UL))))
             {
                 D3D12MA_ASSERT(false); // "Invalid arguments passed to CreateAllocator."
                 return E_INVALIDARG;
             }
 
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
             ALLOCATION_CALLBACKS allocationCallbacks;
             SetupAllocationCallbacks(&allocationCallbacks, pDesc->pAllocationCallbacks);
@@ -943,6 +944,7 @@ namespace TerraFX.Interop
             *ppAllocator = D3D12MA_NEW<Allocator>(&allocationCallbacks);
             **ppAllocator = new Allocator(&allocationCallbacks, pDesc);
             HRESULT hr = (*ppAllocator)->m_Pimpl->Init(pDesc);
+
             if (FAILED(hr))
             {
                 D3D12MA_DELETE(&allocationCallbacks, *ppAllocator);
@@ -960,7 +962,7 @@ namespace TerraFX.Interop
                 return E_INVALIDARG;
             }
 
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
             ALLOCATION_CALLBACKS allocationCallbacks;
             SetupAllocationCallbacks(&allocationCallbacks, pDesc->pAllocationCallbacks);

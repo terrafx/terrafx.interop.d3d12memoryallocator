@@ -12,9 +12,8 @@ namespace TerraFX.Interop
         /// <summary>
         /// Sum size of all allocations created in particular heap type, in bytes.
         /// <para>
-        /// Always less or equal than `BlockBytes`.
-        /// Difference `BlockBytes - AllocationBytes` is the amount of memory allocated but unused -
-        /// available for new allocations or wasted due to fragmentation.
+        /// Always less or equal than <see cref="BlockBytes"/>. Difference <c>BlockBytes - AllocationBytes</c> is
+        /// the amount of memory allocated but unused - available for new allocations or wasted due to fragmentation.
         /// </para>
         /// </summary>
         [NativeTypeName("UINT64")]
@@ -22,9 +21,9 @@ namespace TerraFX.Interop
 
         /// <summary>
         /// Estimated current memory usage of the program, in bytes.
-        /// <para>Fetched from system using `IDXGIAdapter3::QueryVideoMemoryInfo` if enabled.</para>
+        /// <para>Fetched from system using <see cref="IDXGIAdapter3.QueryVideoMemoryInfo"/> if enabled.</para>
         /// <para>
-        /// It might be different than `BlockBytes` (usually higher) due to additional implicit objects
+        /// It might be different than <see cref="BlockBytes"/> (usually higher) due to additional implicit objects
         /// also occupying the memory, like swapchain, pipeline state objects, descriptor heaps, command lists, or
         /// memory blocks allocated outside of this library, if any.
         /// </para>
@@ -34,11 +33,11 @@ namespace TerraFX.Interop
 
         /// <summary>
         /// Estimated amount of memory available to the program, in bytes.
-        /// <para>Fetched from system using `IDXGIAdapter3::QueryVideoMemoryInfo` if enabled.</para>
+        /// <para>Fetched from system using <see cref="IDXGIAdapter3.QueryVideoMemoryInfo"/> if enabled.</para>
         /// <para>
-        /// It might be different (most probably smaller) than memory sizes reported in `DXGI_ADAPTER_DESC` due to factors
+        /// It might be different (most probably smaller) than memory sizes reported in <see cref="DXGI_ADAPTER_DESC"/> due to factors
         /// external to the program, like other programs also consuming system resources.
-        /// Difference `BudgetBytes - UsageBytes` is the amount of additional memory that can probably
+        /// Difference <c>BudgetBytes - UsageBytes</c> is the amount of additional memory that can probably
         /// be allocated without problems. Exceeding the budget may result in various problems.
         /// </para>
         /// </summary>

@@ -1,13 +1,17 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using static TerraFX.Interop.Windows;
+using static TerraFX.Interop.D3D12_HEAP_TYPE;
+using static TerraFX.Interop.D3D12_HEAP_FLAGS;
+
 namespace TerraFX.Interop
 {
-    /// <summary>Parameters of created D3D12MA::Pool object. To be used with D3D12MA::Allocator::CreatePool.</summary>
+    /// <summary>Parameters of created <see cref="Pool"/> object. To be used with <see cref="Allocator.CreatePool"/>.</summary>
     public struct POOL_DESC
     {
         /// <summary>
         /// The type of memory heap where allocations of this pool should be placed.
-        /// <para>It must be one of: `D3D12_HEAP_TYPE_DEFAULT`, `D3D12_HEAP_TYPE_UPLOAD`, `D3D12_HEAP_TYPE_READBACK`.</para>
+        /// <para>It must be one of: <see cref="D3D12_HEAP_TYPE_DEFAULT"/>, <see cref="D3D12_HEAP_TYPE_UPLOAD"/>, <see cref="D3D12_HEAP_TYPE_READBACK"/>.</para>
         /// </summary>
         public D3D12_HEAP_TYPE HeapType;
 
@@ -15,10 +19,10 @@ namespace TerraFX.Interop
         /// Heap flags to be used when allocating heaps of this pool.
         /// <para>
         /// It should contain one of these values, depending on type of resources you are going to create in this heap:
-        /// `D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS`,
-        /// `D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES`,
-        /// `D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES`.
-        /// Except if ResourceHeapTier = 2, then it may be `D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES` = 0.
+        /// <see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS"/>,
+        /// <see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES"/>,
+        /// <see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES"/>.
+        /// Except if <c>ResourceHeapTier = 2</c>, then it may be <see cref="D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES"/> <c>= 0</c>.
         /// </para>
         /// <para>You can specify additional flags if needed.</para>
         /// </summary>
@@ -44,8 +48,8 @@ namespace TerraFX.Interop
 
         /// <summary>
         /// Maximum number of heaps (memory blocks) that can be allocated in this pool. Optional.
-        /// <para>Set to 0 to use default, which is `UINT64_MAX`, which means no limit.</para>
-        /// <para>Set to same value as D3D12MA::POOL_DESC::MinBlockCount to have fixed amount of memory allocated throughout whole lifetime of this pool.</para>
+        /// <para>Set to 0 to use default, which is <see cref="UINT64_MAX"/>, which means no limit.</para>
+        /// <para>Set to same value as <see cref="MinBlockCount"/> to have fixed amount of memory allocated throughout whole lifetime of this pool.</para>
         /// </summary>
         [NativeTypeName("UINT")]
         public uint MaxBlockCount;

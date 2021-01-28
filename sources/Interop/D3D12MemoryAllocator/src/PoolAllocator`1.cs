@@ -7,13 +7,8 @@ using static TerraFX.Interop.D3D12MemoryAllocator;
 
 namespace TerraFX.Interop
 {
-    /// <summary>
-    /// Allocator for objects of type T using a list of arrays (pools) to speed up
-    /// allocation.Number of elements that can be allocated is not bounded because
-    /// allocator can create multiple blocks.
-    /// T should be POD because constructor and destructor is not called in Alloc or
-    /// Free.
-    /// </summary>
+    /// <summary>Allocator for objects of type T using a list of arrays (pools) to speed up allocation.Number of elements that can be allocated is not bounded because allocator can create multiple blocks.</summary>
+    /// <typeparam name="T">Should be POD because constructor and destructor is not called in <see cref="Alloc()"/> or <see cref="Free"/>.</typeparam>
     internal unsafe struct PoolAllocator<T> : IDisposable
         where T : unmanaged, IDisposable
     {
@@ -105,8 +100,11 @@ namespace TerraFX.Interop
         [StructLayout(LayoutKind.Explicit)]
         private struct Item
         {
-            [FieldOffset(0), NativeTypeName("UINT")] public uint NextFreeIndex; // UINT32_MAX means end of list.
-            [FieldOffset(0)] private T __Value_Data;
+            [FieldOffset(0), NativeTypeName("UINT")]
+            public uint NextFreeIndex; // UINT32_MAX means end of list.
+
+            [FieldOffset(0)]
+            private T __Value_Data;
 
             public byte* Value => (byte*)Unsafe.AsPointer(ref __Value_Data);
         }
@@ -114,8 +112,12 @@ namespace TerraFX.Interop
         private struct ItemBlock
         {
             public Item* pItems;
-            [NativeTypeName("UINT")] public uint Capacity;
-            [NativeTypeName("UINT")] public uint FirstFreeIndex;
+
+            [NativeTypeName("UINT")]
+            public uint Capacity;
+
+            [NativeTypeName("UINT")]
+            public uint FirstFreeIndex;
         }
 
         private ItemBlock* CreateNewBlock()

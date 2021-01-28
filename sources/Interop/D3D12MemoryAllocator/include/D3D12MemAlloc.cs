@@ -9,15 +9,15 @@ namespace TerraFX.Interop
         internal const uint HEAP_TYPE_COUNT = 3;
 
         /// <summary>
-        /// Creates new main D3D12MA::Allocator object and returns it through `ppAllocator`.
-        /// <para>You normally only need to call it once and keep a single Allocator object for your `ID3D12Device`.</para>
+        /// Creates new main <see cref="Allocator"/> object and returns it through <paramref name="ppAllocator"/>.
+        /// <para>You normally only need to call it once and keep a single Allocator object for your <see cref="ID3D12Device"/>.</para>
         /// </summary>
         [return: NativeTypeName("HRESULT")]
         public static partial int CreateAllocator([NativeTypeName("const ALLOCATOR_DESC*")] ALLOCATOR_DESC* pDesc, Allocator** ppAllocator);
 
         /// <summary>
-        /// Creates new D3D12MA::VirtualBlock object and returns it through `ppVirtualBlock`.
-        /// <para>Note you don't need to create D3D12MA::Allocator to use virtual blocks.</para>
+        /// Creates new <see cref="VirtualBlock"/> object and returns it through <paramref name="ppVirtualBlock"/>.
+        /// <para>Note you don't need to create <see cref="Allocator"/> to use virtual blocks.</para>
         /// </summary>
         [return: NativeTypeName("HRESULT")]
         public static partial int CreateVirtualBlock([NativeTypeName("const VIRTUAL_BLOCK_DESC*")] VIRTUAL_BLOCK_DESC* pDesc, VirtualBlock** ppVirtualBlock);

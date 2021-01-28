@@ -6,10 +6,7 @@ using static TerraFX.Interop.D3D12MemoryAllocator;
 
 namespace TerraFX.Interop
 {
-    /// <summary>
-    /// Data structure used for bookkeeping of allocations and unused ranges of memory
-    /// in a single ID3D12Heap memory block.
-    /// </summary>
+    /// <summary>Data structure used for bookkeeping of allocations and unused ranges of memory in a single ID3D12Heap memory block.</summary>
     internal unsafe struct BlockMetadata : IDisposable
     {
         private static void** SharedLpVtbl = InitLpVtbl();
@@ -101,24 +98,14 @@ namespace TerraFX.Interop
             ((delegate*<BlockMetadata*, ulong, VIRTUAL_ALLOCATION_INFO*, void>)lpVtbl[7])((BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(this)), offset, outInfo);
         }
 
-        /// <summary>
-        /// Tries to find a place for suballocation with given parameters inside this block.
-        /// If succeeded, fills pAllocationRequest and returns true.
-        /// If failed, returns false.
-        /// </summary>
-        public bool CreateAllocationRequest(
-            [NativeTypeName("UINT64")] ulong allocSize,
-            [NativeTypeName("UINT64")] ulong allocAlignment,
-            AllocationRequest* pAllocationRequest)
+        /// <summary>Tries to find a place for suballocation with given parameters inside this block. If succeeded, fills pAllocationRequest and returns true. If failed, returns false.</summary>
+        public bool CreateAllocationRequest([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, AllocationRequest* pAllocationRequest)
         {
             return ((delegate*<BlockMetadata*, ulong, ulong, AllocationRequest*, bool>)lpVtbl[8])((BlockMetadata*)Unsafe.AsPointer(ref this), allocSize, allocAlignment, pAllocationRequest);
         }
 
         /// <summary>Makes actual allocation based on request. Request must already be checked and valid.</summary>
-        public void Alloc(
-            AllocationRequest* request,
-            [NativeTypeName("UINT64")] ulong allocSize,
-            void* userData)
+        public void Alloc(AllocationRequest* request, [NativeTypeName("UINT64")] ulong allocSize, void* userData)
         {
             ((delegate*<BlockMetadata*, AllocationRequest*, ulong, void*, void>)lpVtbl[9])((BlockMetadata*)Unsafe.AsPointer(ref this), request, allocSize, userData);
         }
@@ -128,10 +115,7 @@ namespace TerraFX.Interop
             ((delegate*<BlockMetadata*, ulong, void>)lpVtbl[10])((BlockMetadata*)Unsafe.AsPointer(ref this), offset);
         }
 
-        /// <summary>
-        /// Frees all allocations.
-        /// Careful! Don't call it if there are Allocation objects owned by pUserData of of cleared allocations!
-        /// </summary>
+        /// <summary>Frees all allocations. Careful! Don't call it if there are Allocation objects owned by pUserData of of cleared allocations!</summary>
         public void Clear()
         {
             ((delegate*<BlockMetadata*, void>)lpVtbl[11])((BlockMetadata*)Unsafe.AsPointer(ref this));

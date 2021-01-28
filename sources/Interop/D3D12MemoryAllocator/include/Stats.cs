@@ -1,7 +1,9 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace TerraFX.Interop
 {
@@ -11,35 +13,25 @@ namespace TerraFX.Interop
         /// <summary>Total statistics from all heap types.</summary>
         public StatInfo Total;
 
-        /// <summary>
-        /// One StatInfo for each type of heap located at the following indices:
-        /// 0 - DEFAULT, 1 - UPLOAD, 2 - READBACK.
-        /// </summary>
-        public __Stats_Values HeapType;
+        /// <summary>One StatInfo for each type of heap located at the following indices: 0 - DEFAULT, 1 - UPLOAD, 2 - READBACK.</summary>
+        [NativeTypeName("StatInfo HeapType[HEAP_TYPE_COUNT]")]
+        public __Stats_e__FixedBuffer HeapType;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public struct __Stats_Values
+        public struct __Stats_e__FixedBuffer
         {
-            private StatInfo _HeapType0;
-            private StatInfo _HeapType1;
-            private StatInfo _HeapType2;
+            public StatInfo _HeapType0;
+            public StatInfo _HeapType1;
+            public StatInfo _HeapType2;
 
-            public unsafe ref StatInfo this[int index]
+            public ref StatInfo this[int index]
             {
-                get
-                {
-                    fixed (__Stats_Values* p = &this)
-                    {
-                        switch (index)
-                        {
-                            case 0: return ref p->_HeapType0;
-                            case 1: return ref p->_HeapType1;
-                            case 2: return ref p->_HeapType2;
-                            default: return ref Unsafe.NullRef<StatInfo>();
-                        }
-                    }
-                }
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => ref AsSpan()[index];
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Span<StatInfo> AsSpan() => MemoryMarshal.CreateSpan(ref _HeapType0, 3);
         }
     }
 }

@@ -333,7 +333,10 @@ namespace TerraFX.Interop
         struct StackItem
         {
             public CollectionType type;
-            [NativeTypeName("UINT")] public uint valueCount;
+
+            [NativeTypeName("UINT")]
+            public uint valueCount;
+
             public bool singleLineMode;
         };
 

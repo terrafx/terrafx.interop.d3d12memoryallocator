@@ -9,8 +9,7 @@ using static TerraFX.Interop.ALLOCATION_FLAGS;
 namespace TerraFX.Interop
 {
     /// <summary>
-    /// Sequence of NormalBlock. Represents memory blocks allocated for a specific
-    /// heap type and possibly resource type(if only Tier 1 is supported).
+    /// Sequence of NormalBlock. Represents memory blocks allocated for a specific heap type and possibly resource type(if only Tier 1 is supported).
     /// <para>Synchronized internally with a mutex.</para>
     /// </summary>
     internal unsafe struct BlockVector : IDisposable
@@ -46,14 +45,7 @@ namespace TerraFX.Interop
         [NativeTypeName("UINT")]
         uint m_NextBlockId;
 
-        public BlockVector(
-            AllocatorPimpl* hAllocator,
-            D3D12_HEAP_TYPE heapType,
-            D3D12_HEAP_FLAGS heapFlags,
-            [NativeTypeName("UINT64")] ulong preferredBlockSize,
-            [NativeTypeName("size_t")] nuint minBlockCount,
-            [NativeTypeName("size_t")] nuint maxBlockCount,
-            bool explicitBlockSize)
+        public BlockVector(AllocatorPimpl* hAllocator, D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize)
         {
             m_hAllocator = hAllocator;
             m_HeapType = heapType;
@@ -107,12 +99,7 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        public int Allocate(
-            [NativeTypeName("UINT64")] ulong size,
-            [NativeTypeName("UINT64")] ulong alignment,
-            ALLOCATION_DESC* allocDesc,
-            [NativeTypeName("size_t")] nuint allocationCount,
-            Allocation** pAllocations)
+        public int Allocate([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, ALLOCATION_DESC* allocDesc, [NativeTypeName("size_t")] nuint allocationCount, Allocation** pAllocations)
         {
             nuint allocIndex;
             HRESULT hr = S_OK;
@@ -158,10 +145,8 @@ namespace TerraFX.Interop
                 budgetExceeded = budget.UsageBytes >= budget.BudgetBytes;
             }
 
-            // Scope for lock.
+            using (MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex()))
             {
-                using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
-
                 NormalBlock* pBlock = hAllocation->m_Placed.block;
 
                 pBlock->m_pMetadata->FreeAtOffset(hAllocation->GetOffset());
@@ -212,23 +197,14 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        public int CreateResource(
-            [NativeTypeName("UINT64")] ulong size,
-            [NativeTypeName("UINT64")] ulong alignment,
-            ALLOCATION_DESC* allocDesc,
-            D3D12_RESOURCE_DESC* resourceDesc,
-            D3D12_RESOURCE_STATES InitialResourceState,
-            D3D12_CLEAR_VALUE* pOptimizedClearValue,
-            Allocation** ppAllocation,
-            Guid* riidResource,
-            void** ppvResource)
+        public int CreateResource([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, ALLOCATION_DESC* allocDesc, D3D12_RESOURCE_DESC* resourceDesc, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
             HRESULT hr = Allocate(size, alignment, allocDesc, 1, ppAllocation);
             if (SUCCEEDED(hr))
             {
                 ID3D12Resource* res = null;
                 hr = m_hAllocator->GetDevice()->CreatePlacedResource(
-                    (*ppAllocation)->m_Placed.block->@base.GetHeap(),
+                    (*ppAllocation)->m_Placed.block->GetHeap(),
                     (*ppAllocation)->GetOffset(),
                     resourceDesc,
                     InitialResourceState,
@@ -262,17 +238,7 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        public int CreateResource2(
-            [NativeTypeName("UINT64")] ulong size,
-            [NativeTypeName("UINT64")] ulong alignment,
-            ALLOCATION_DESC* allocDesc,
-            D3D12_RESOURCE_DESC1* resourceDesc,
-            D3D12_RESOURCE_STATES InitialResourceState,
-            D3D12_CLEAR_VALUE* pOptimizedClearValue,
-            ID3D12ProtectedResourceSession *pProtectedSession,
-            Allocation** ppAllocation,
-            Guid* riidResource,
-            void** ppvResource)
+        public int CreateResource2([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, ALLOCATION_DESC* allocDesc, D3D12_RESOURCE_DESC1* resourceDesc, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession *pProtectedSession, Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
             D3D12MA_ASSERT(pProtectedSession == null); // "Should never get here. pProtectedSession != NULL currently requires committed resources."
 
@@ -287,7 +253,7 @@ namespace TerraFX.Interop
             {
                 ID3D12Resource* res = null;
                 hr = device8->CreatePlacedResource1(
-                    (*ppAllocation)->m_Placed.block->@base.GetHeap(),
+                    (*ppAllocation)->m_Placed.block->GetHeap(),
                     (*ppAllocation)->GetOffset(),
                     resourceDesc,
                     InitialResourceState,
@@ -450,7 +416,7 @@ namespace TerraFX.Interop
                 D3D12MA_ASSERT(pBlock != null);
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());
                 json->BeginString();
-                json->ContinueString(pBlock->@base.GetId());
+                json->ContinueString(pBlock->GetId());
                 json->EndString();
 
                 pBlock->m_pMetadata->WriteAllocationInfoToJson(json);
@@ -502,10 +468,7 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(false);
         }
 
-        /// <summary>
-        /// Performs single step in sorting m_Blocks. They may not be fully sorted
-        /// after this call.
-        /// </summary>
+        /// <summary>Performs single step in sorting m_Blocks. They may not be fully sorted after this call.</summary>
         void IncrementallySortBlocks()
         {
             // Bubble sort only until first swap.
@@ -520,11 +483,7 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        private int AllocatePage(
-            [NativeTypeName("UINT64")] ulong size,
-            [NativeTypeName("UINT64")] ulong alignment,
-            ALLOCATION_DESC* allocDesc,
-            Allocation** pAllocation)
+        private int AllocatePage([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, ALLOCATION_DESC* allocDesc, Allocation** pAllocation)
         {
             // Early reject: requested allocation size is larger that maximum block size for this block vector.
             if (size + 2 * D3D12MA_DEBUG_MARGIN > m_PreferredBlockSize)
@@ -643,12 +602,7 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        private int AllocateFromBlock(
-            NormalBlock* pBlock,
-            [NativeTypeName("UINT64")] ulong size,
-            [NativeTypeName("UINT64")] ulong alignment,
-            ALLOCATION_FLAGS allocFlags,
-            Allocation** pAllocation)
+        private int AllocateFromBlock(NormalBlock* pBlock, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, ALLOCATION_FLAGS allocFlags, Allocation** pAllocation)
         {
             AllocationRequest currRequest = default;
             if (pBlock->m_pMetadata->CreateAllocationRequest(

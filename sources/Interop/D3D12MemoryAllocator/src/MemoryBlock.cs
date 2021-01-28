@@ -7,11 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace TerraFX.Interop
 {
-    /// <summary>
-    /// Represents a single block of device memory (heap).
-    /// Base class for inheritance.
-    /// Thread-safety: This class must be externally synchronized.
-    /// </summary>
+    /// <summary>Represents a single block of device memory (heap). Base class for inheritance. Thread-safety: This class must be externally synchronized.</summary>
     internal unsafe struct MemoryBlock : IDisposable
     {
         private static void** SharedLpVtbl = InitLpVtbl();
@@ -34,14 +30,9 @@ namespace TerraFX.Interop
 
         public readonly uint m_Id;
 
-        private ID3D12Heap* m_Heap;
+        internal ID3D12Heap* m_Heap;
 
-        public MemoryBlock(
-            AllocatorPimpl* allocator,
-            D3D12_HEAP_TYPE heapType,
-            D3D12_HEAP_FLAGS heapFlags,
-            [NativeTypeName("UINT64")] ulong size,
-            [NativeTypeName("UINT")] uint id)
+        public MemoryBlock(AllocatorPimpl* allocator, D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
         {
             lpVtbl = SharedLpVtbl;
 

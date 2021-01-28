@@ -2,10 +2,7 @@
 
 namespace TerraFX.Interop
 {
-    /// <summary>
-    /// Represents a region of NormalBlock that is either assigned and returned as
-    /// allocated memory block or free.
-    /// </summary>
+    /// <summary>Represents a region of <see cref="NormalBlock"/> that is either assigned and returned as allocated memory block or free.</summary>
     internal unsafe struct Suballocation
     {
         [NativeTypeName("UINT64")]
