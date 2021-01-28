@@ -6,9 +6,6 @@ using static TerraFX.Interop.D3D12MemoryAllocator;
 
 namespace TerraFX.Interop
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class BlockMetadata and derived classes - declarations
-
     /// <summary>
     /// Data structure used for bookkeeping of allocations and unused ranges of memory
     /// in a single ID3D12Heap memory block.
@@ -40,7 +37,9 @@ namespace TerraFX.Interop
 
         public void** lpVtbl;
 
-        [NativeTypeName("UINT64")] public ulong m_Size;
+        [NativeTypeName("UINT64")]
+        public ulong m_Size;
+
         public bool m_IsVirtual;
         public readonly ALLOCATION_CALLBACKS* m_pAllocationCallbacks;
 

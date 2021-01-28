@@ -8,7 +8,6 @@ using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.D3D12_TEXTURE_LAYOUT;
 using static TerraFX.Interop.Allocation.Type;
-using System.Runtime.Intrinsics.X86;
 
 namespace TerraFX.Interop
 {
@@ -22,10 +21,18 @@ namespace TerraFX.Interop
     public unsafe partial struct Allocation : IDisposable
     {
         internal AllocatorPimpl* m_Allocator;
-        [NativeTypeName("UINT64")] internal ulong m_Size;
+
+        [NativeTypeName("UINT64")]
+        internal ulong m_Size;
+
         internal ID3D12Resource* m_Resource;
-        [NativeTypeName("UINT")] internal uint m_CreationFrameIndex;
-        [NativeTypeName("wchar_t*")] internal ushort* m_Name;
+
+        [NativeTypeName("UINT")]
+        internal uint m_CreationFrameIndex;
+
+        [NativeTypeName("wchar_t*")]
+        internal ushort* m_Name;
+
         internal _Anonymous_e__Union m_Union;
         internal PackedData m_PackedData;
 
@@ -33,7 +40,34 @@ namespace TerraFX.Interop
         /// Deletes this object.
         /// <para>This function must be used instead of destructor, which is private. There is no reference counting involved.</para>
         /// </summary>
-        public partial void Release();
+        public void Release()
+        {
+            if (Unsafe.IsNullRef(ref this))
+            {
+                return;
+            }
+
+            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+
+            SAFE_RELEASE(&((Allocation*)Unsafe.AsPointer(ref this))->m_Resource);
+
+            switch (m_PackedData.GetType())
+            {
+                case TYPE_COMMITTED:
+                    m_Allocator->FreeCommittedMemory((Allocation*)Unsafe.AsPointer(ref this));
+                    break;
+                case TYPE_PLACED:
+                    m_Allocator->FreePlacedMemory((Allocation*)Unsafe.AsPointer(ref this));
+                    break;
+                case TYPE_HEAP:
+                    m_Allocator->FreeHeapMemory((Allocation*)Unsafe.AsPointer(ref this));
+                    break;
+            }
+
+            FreeName();
+
+            m_Allocator->GetAllocationObjectAllocator()->Free((Allocation*)Unsafe.AsPointer(ref this));
+        }
 
         /// <summary>
         /// Returns offset in bytes from the start of memory heap.
@@ -44,7 +78,20 @@ namespace TerraFX.Interop
         /// </summary>
         /// <returns>If the Allocation represents committed resource with implicit heap, returns 0.</returns>
         [return: NativeTypeName("UINT64")]
-        public readonly partial ulong GetOffset();
+        public readonly ulong GetOffset()
+        {
+            switch (m_PackedData.GetType())
+            {
+                case TYPE_COMMITTED:
+                case TYPE_HEAP:
+                    return 0;
+                case TYPE_PLACED:
+                    return m_Union.m_Placed.offset;
+                default:
+                    D3D12MA_ASSERT(false);
+                    return 0;
+            }
+        }
 
         /// <summary>
         /// Returns size in bytes of the allocation.
@@ -57,28 +104,52 @@ namespace TerraFX.Interop
         /// </summary>
         /// <returns>The size in bytes of the allocation.</returns>
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetSize() { return m_Size; }
+        public readonly ulong GetSize() => m_Size;
 
         /// <summary>
         /// Returns D3D12 resource associated with this object.
         /// <para>Calling this method doesn't increment resource's reference counter.</para>
         /// </summary>
         /// <returns>The D3D12 resource.</returns>
-        public readonly ID3D12Resource* GetResource() { return m_Resource; }
+        public readonly ID3D12Resource* GetResource() => m_Resource;
 
         /// <summary>
         /// Returns memory heap that the resource is created in.
         /// <para>If the Allocation represents committed resource with implicit heap, returns NULL.</para>
         /// </summary>
         /// <returns>The memory heap that the resource is created in.</returns>
-        public readonly partial ID3D12Heap* GetHeap();
+        public readonly ID3D12Heap* GetHeap()
+        {
+            switch (m_PackedData.GetType())
+            {
+                case TYPE_COMMITTED:
+                    return null;
+                case TYPE_PLACED:
+                    return m_Union.m_Placed.block->@base.GetHeap();
+                case TYPE_HEAP:
+                    return m_Union.m_Heap.heap;
+                default:
+                    D3D12MA_ASSERT(false);
+                    return null;
+            }
+        }
 
         /// <summary>
         /// Associates a name with the allocation object. This name is for use in debug diagnostics and tools.
         /// <para>Internal copy of the string is made, so the memory pointed by the argument can be changed of freed immediately after this call.</para>
         /// </summary>
         /// <param name="Name">`Name` can be null.</param>
-        public partial void SetName([NativeTypeName("LPCWSTR")] ushort* Name);
+        public void SetName([NativeTypeName("LPCWSTR")] ushort* Name)
+        {
+            FreeName();
+
+            if (Name != null)
+            {
+                nuint nameCharCount = wcslen(Name) + 1;
+                m_Name = D3D12MA_NEW_ARRAY<ushort>(m_Allocator->GetAllocs(), nameCharCount);
+                memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
+            }
+        }
 
         /// <summary>
         /// Returns the name associated with the allocation object.
@@ -87,7 +158,7 @@ namespace TerraFX.Interop
         /// </summary>
         /// <returns>The name associated with the allocation object.</returns>
         [return: NativeTypeName("LPCWSTR")]
-        public readonly ushort* GetName() { return m_Name; }
+        public readonly ushort* GetName() => m_Name;
 
         /// <summary>
         /// Returns `TRUE` if the memory of the allocation was filled with zeros when the allocation was created.
@@ -145,26 +216,46 @@ namespace TerraFX.Interop
         {
             ulong __value;
 
-            public readonly new Type GetType() { return (Type)m_Type; }
+            public readonly new Type GetType() => (Type)m_Type;
 
-            public readonly D3D12_RESOURCE_DIMENSION GetResourceDimension() { return (D3D12_RESOURCE_DIMENSION)m_ResourceDimension; }
+            public readonly D3D12_RESOURCE_DIMENSION GetResourceDimension() => (D3D12_RESOURCE_DIMENSION)m_ResourceDimension;
 
-            public readonly D3D12_RESOURCE_FLAGS GetResourceFlags() { return (D3D12_RESOURCE_FLAGS)m_ResourceFlags; }
+            public readonly D3D12_RESOURCE_FLAGS GetResourceFlags() => (D3D12_RESOURCE_FLAGS)m_ResourceFlags;
 
-            public readonly D3D12_TEXTURE_LAYOUT GetTextureLayout() { return (D3D12_TEXTURE_LAYOUT)m_TextureLayout; }
+            public readonly D3D12_TEXTURE_LAYOUT GetTextureLayout() => (D3D12_TEXTURE_LAYOUT)m_TextureLayout;
 
             [return: NativeTypeName("BOOL")]
-            public readonly int WasZeroInitialized() { return (int)m_WasZeroInitialized; }
+            public readonly int WasZeroInitialized() => (int)m_WasZeroInitialized;
 
-            public partial void SetType(Type type);
+            public void SetType(Type type)
+            {
+                uint u = (uint)type;
+                D3D12MA_ASSERT(u < (1u << 2));
+                m_Type = u;
+            }
 
-            public partial void SetResourceDimension(D3D12_RESOURCE_DIMENSION resourceDimension);
+            public void SetResourceDimension(D3D12_RESOURCE_DIMENSION resourceDimension)
+            {
+                uint u = (uint)resourceDimension;
+                D3D12MA_ASSERT(u < (1u << 3));
+                m_ResourceDimension = u;
+            }
 
-            public partial void SetResourceFlags(D3D12_RESOURCE_FLAGS resourceFlags);
+            public void SetResourceFlags(D3D12_RESOURCE_FLAGS resourceFlags)
+            {
+                uint u = (uint)resourceFlags;
+                D3D12MA_ASSERT(u < (1u << 24));
+                m_ResourceFlags = u;
+            }
 
-            public partial void SetTextureLayout(D3D12_TEXTURE_LAYOUT textureLayout);
+            public void SetTextureLayout(D3D12_TEXTURE_LAYOUT textureLayout)
+            {
+                uint u = (uint)textureLayout;
+                D3D12MA_ASSERT(u < (1u << 9));
+                m_TextureLayout = u;
+            }
 
-            public void SetWasZeroInitialized([NativeTypeName("BOOL")] int wasZeroInitialized) { m_WasZeroInitialized = wasZeroInitialized > 0 ? 1 : 0; }
+            public void SetWasZeroInitialized([NativeTypeName("BOOL")] int wasZeroInitialized) => m_WasZeroInitialized = wasZeroInitialized > 0 ? 1 : 0;
 
             [NativeTypeName("UINT")]
             uint m_Type
@@ -221,154 +312,32 @@ namespace TerraFX.Interop
             m_PackedData.SetWasZeroInitialized(wasZeroInitialized);
         }
 
-        public partial void Dispose();
-
-        internal partial void InitCommitted(D3D12_HEAP_TYPE heapType);
-
-        internal partial void InitPlaced([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong alignment, NormalBlock* block);
-
-        internal partial void InitHeap(D3D12_HEAP_TYPE heapType, ID3D12Heap* heap);
-
-        internal partial void SetResource<TD3D12_RESOURCE_DESC>(ID3D12Resource* resource, TD3D12_RESOURCE_DESC* pResourceDesc)
-            where TD3D12_RESOURCE_DESC : unmanaged;
-
-        internal partial void FreeName();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////
-    // Public class Allocation implementation
-
-    public unsafe partial struct Allocation
-    {
-        internal partial struct PackedData
-        {
-            public partial void SetType(Type type)
-            {
-                uint u = (uint)type;
-                D3D12MA_ASSERT(u < (1u << 2));
-                m_Type = u;
-            }
-
-            public partial void SetResourceDimension(D3D12_RESOURCE_DIMENSION resourceDimension)
-            {
-                uint u = (uint)resourceDimension;
-                D3D12MA_ASSERT(u < (1u << 3));
-                m_ResourceDimension = u;
-            }
-
-            public partial void SetResourceFlags(D3D12_RESOURCE_FLAGS resourceFlags)
-            {
-                uint u = (uint)resourceFlags;
-                D3D12MA_ASSERT(u < (1u << 24));
-                m_ResourceFlags = u;
-            }
-
-            public partial void SetTextureLayout(D3D12_TEXTURE_LAYOUT textureLayout)
-            {
-                uint u = (uint)textureLayout;
-                D3D12MA_ASSERT(u < (1u << 9));
-                m_TextureLayout = u;
-            }
-        }
-
-        public partial void Release()
-        {
-            if (Unsafe.IsNullRef(ref this))
-            {
-                return;
-            }
-
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
-
-            SAFE_RELEASE(&((Allocation*)Unsafe.AsPointer(ref this))->m_Resource);
-
-            switch (m_PackedData.GetType())
-            {
-                case TYPE_COMMITTED:
-                    m_Allocator->FreeCommittedMemory((Allocation*)Unsafe.AsPointer(ref this));
-                    break;
-                case TYPE_PLACED:
-                    m_Allocator->FreePlacedMemory((Allocation*)Unsafe.AsPointer(ref this));
-                    break;
-                case TYPE_HEAP:
-                    m_Allocator->FreeHeapMemory((Allocation*)Unsafe.AsPointer(ref this));
-                    break;
-            }
-
-            FreeName();
-
-            m_Allocator->GetAllocationObjectAllocator()->Free((Allocation*)Unsafe.AsPointer(ref this));
-        }
-
-        public readonly partial ulong GetOffset()
-        {
-            switch (m_PackedData.GetType())
-            {
-                case TYPE_COMMITTED:
-                case TYPE_HEAP:
-                    return 0;
-                case TYPE_PLACED:
-                    return m_Union.m_Placed.offset;
-                default:
-                    D3D12MA_ASSERT(false);
-                    return 0;
-            }
-        }
-
-        public readonly partial ID3D12Heap* GetHeap()
-        {
-            switch (m_PackedData.GetType())
-            {
-                case TYPE_COMMITTED:
-                    return null;
-                case TYPE_PLACED:
-                    return m_Union.m_Placed.block->@base.GetHeap();
-                case TYPE_HEAP:
-                    return m_Union.m_Heap.heap;
-                default:
-                    D3D12MA_ASSERT(false);
-                    return null;
-            }
-        }
-
-        public partial void SetName(ushort* Name)
-        {
-            FreeName();
-
-            if (Name != null)
-            {
-                nuint nameCharCount = wcslen(Name) + 1;
-                m_Name = D3D12MA_NEW_ARRAY<ushort>(m_Allocator->GetAllocs(), nameCharCount);
-                memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
-            }
-        }
-
-        public partial void Dispose()
+        public void Dispose()
         {
             // Nothing here, everything already done in Release.
         }
 
-        internal partial void InitCommitted(D3D12_HEAP_TYPE heapType)
+        internal void InitCommitted(D3D12_HEAP_TYPE heapType)
         {
             m_PackedData.SetType(TYPE_COMMITTED);
             m_Union.m_Committed.heapType = heapType;
         }
 
-        internal partial void InitPlaced(ulong offset, ulong alignment, NormalBlock* block)
+        internal void InitPlaced([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong alignment, NormalBlock* block)
         {
             m_PackedData.SetType(TYPE_PLACED);
             m_Union.m_Placed.offset = offset;
             m_Union.m_Placed.block = block;
         }
 
-        internal partial void InitHeap(D3D12_HEAP_TYPE heapType, ID3D12Heap* heap)
+        internal void InitHeap(D3D12_HEAP_TYPE heapType, ID3D12Heap* heap)
         {
             m_PackedData.SetType(TYPE_HEAP);
             m_Union.m_Heap.heapType = heapType;
             m_Union.m_Heap.heap = heap;
         }
 
-        internal partial void SetResource<TD3D12_RESOURCE_DESC>(ID3D12Resource* resource, TD3D12_RESOURCE_DESC* pResourceDesc)
+        internal void SetResource<TD3D12_RESOURCE_DESC>(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] TD3D12_RESOURCE_DESC* pResourceDesc)
             where TD3D12_RESOURCE_DESC : unmanaged
         {
             D3D12MA_ASSERT(m_Resource == null && pResourceDesc != null);
@@ -378,7 +347,7 @@ namespace TerraFX.Interop
             m_PackedData.SetTextureLayout(((D3D12_RESOURCE_DESC*)pResourceDesc)->Layout);
         }
 
-        internal partial void FreeName()
+        internal void FreeName()
         {
             if (m_Name != null)
             {
@@ -387,7 +356,10 @@ namespace TerraFX.Interop
                 m_Name = null;
             }
         }
+    }
 
+    public unsafe partial struct Allocation
+    {
         internal partial struct PackedData
         {
             /// <summary>
@@ -414,11 +386,6 @@ namespace TerraFX.Interop
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public static ulong ExtractRange(ulong value, byte start, byte length)
                 {
-                    if (Bmi1.X64.IsSupported)
-                    {
-                        return Bmi1.X64.BitFieldExtract(value, start, length);
-                    }
-
                     return (value >> start) & ((1ul << length) - 1ul);
                 }
 
@@ -441,11 +408,6 @@ namespace TerraFX.Interop
                         highBits = (1ul << length) - 1ul,
                         loadMask = highBits << start,
                         storeMask = (flags & highBits) << start;
-
-                    if (Bmi1.X64.IsSupported)
-                    {
-                        return Bmi1.X64.AndNot(loadMask, value) | storeMask;
-                    }
 
                     return (~loadMask & value) | storeMask;
                 }

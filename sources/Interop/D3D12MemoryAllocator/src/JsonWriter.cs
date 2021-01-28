@@ -6,10 +6,7 @@ using static TerraFX.Interop.D3D12MemoryAllocator;
 using static TerraFX.Interop.JsonWriter.CollectionType;
 
 namespace TerraFX.Interop
-{
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class JsonWriter
-    internal unsafe partial struct JsonWriter : IDisposable
+{    internal unsafe struct JsonWriter : IDisposable
     {
         private StringBuilder* m_SB;
         private Vector<StackItem> m_Stack;
@@ -22,72 +19,13 @@ namespace TerraFX.Interop
             m_InsideString = false;
         }
 
-        public partial void Dispose();
-
-        public partial void BeginObject(bool singleLine = false);
-
-        public partial void EndObject();
-
-        public partial void BeginArray(bool singleLine = false);
-
-        public partial void EndArray();
-
-        public partial void WriteString([NativeTypeName("LPCWSTR")] ushort* pStr);
-
-        public void WriteString(string str) { fixed (void* p = str) WriteString((ushort*)p); }
-
-        public partial void BeginString([NativeTypeName("LPCWSTR")] ushort* pStr = null);
-
-        public partial void ContinueString([NativeTypeName("LPCWSTR")] ushort* pStr);
-
-        public void ContinueString(string str) { fixed (void* p = str) ContinueString((ushort*)p); }
-
-        public partial void ContinueString([NativeTypeName("UINT")] uint num);
-
-        public partial void ContinueString([NativeTypeName("UINT64")] ulong num);
-
-        public partial void AddAllocationToObject(Allocation* alloc);
-
-        // void ContinueString_Pointer(const void* ptr);
-        public partial void EndString([NativeTypeName("LPCWSTR")] ushort* pStr = null);
-
-        public partial void WriteNumber([NativeTypeName("UINT")] uint num);
-
-        public partial void WriteNumber([NativeTypeName("UINT64")] ulong num);
-
-        public partial void WriteBool(bool b);
-
-        public partial void WriteNull();
-
-        private const string INDENT = "  ";
-
-        internal enum CollectionType
-        {
-            COLLECTION_TYPE_OBJECT,
-            COLLECTION_TYPE_ARRAY,
-        };
-
-        struct StackItem
-        {
-            public CollectionType type;
-            [NativeTypeName("UINT")] public uint valueCount;
-            public bool singleLineMode;
-        };
-
-        private partial void BeginValue(bool isString);
-
-        private partial void WriteIndent(bool oneLess = false);
-    }
-
-    internal unsafe partial struct JsonWriter
-    {
-        public partial void Dispose()
+        public void Dispose()
         {
             D3D12MA_ASSERT(!m_InsideString);
             D3D12MA_ASSERT(m_Stack.empty());
         }
 
-        public partial void BeginObject(bool singleLine)
+        public void BeginObject(bool singleLine = false)
         {
             D3D12MA_ASSERT(!m_InsideString);
 
@@ -101,7 +39,7 @@ namespace TerraFX.Interop
             m_Stack.push_back(&stackItem);
         }
 
-        public partial void EndObject()
+        public void EndObject()
         {
             D3D12MA_ASSERT(!m_InsideString);
             D3D12MA_ASSERT(!m_Stack.empty() && m_Stack.back()->type == COLLECTION_TYPE_OBJECT);
@@ -113,7 +51,7 @@ namespace TerraFX.Interop
             m_Stack.pop_back();
         }
 
-        public partial void BeginArray(bool singleLine)
+        public void BeginArray(bool singleLine = false)
         {
             D3D12MA_ASSERT(!m_InsideString);
 
@@ -127,7 +65,7 @@ namespace TerraFX.Interop
             m_Stack.push_back(&stackItem);
         }
 
-        public partial void EndArray()
+        public void EndArray()
         {
             D3D12MA_ASSERT(!m_InsideString);
             D3D12MA_ASSERT(!m_Stack.empty() && m_Stack.back()->type == COLLECTION_TYPE_ARRAY);
@@ -138,13 +76,15 @@ namespace TerraFX.Interop
             m_Stack.pop_back();
         }
 
-        public partial void WriteString(ushort* pStr)
+        public void WriteString([NativeTypeName("LPCWSTR")] ushort* pStr)
         {
             BeginString(pStr);
             EndString();
         }
 
-        public partial void BeginString(ushort* pStr)
+        public void WriteString(string str) { fixed (void* p = str) WriteString((ushort*)p); }
+
+        public void BeginString([NativeTypeName("LPCWSTR")] ushort* pStr = null)
         {
             D3D12MA_ASSERT(!m_InsideString);
 
@@ -157,7 +97,7 @@ namespace TerraFX.Interop
             }
         }
 
-        public partial void ContinueString(ushort* pStr)
+        public void ContinueString([NativeTypeName("LPCWSTR")] ushort* pStr)
         {
             D3D12MA_ASSERT(m_InsideString);
             D3D12MA_ASSERT(pStr != null);
@@ -205,107 +145,21 @@ namespace TerraFX.Interop
             }
         }
 
-        public partial void ContinueString(uint num)
+        public void ContinueString(string str) { fixed (void* p = str) ContinueString((ushort*)p); }
+
+        public void ContinueString([NativeTypeName("UINT")] uint num)
         {
             D3D12MA_ASSERT(m_InsideString);
             m_SB->AddNumber(num);
         }
 
-        public partial void ContinueString(ulong num)
+        public void ContinueString([NativeTypeName("UINT64")] ulong num)
         {
             D3D12MA_ASSERT(m_InsideString);
             m_SB->AddNumber(num);
         }
 
-        public partial void EndString(ushort* pStr)
-        {
-            D3D12MA_ASSERT(m_InsideString);
-
-            if (pStr != null)
-                ContinueString(pStr);
-            m_SB->Add('"');
-            m_InsideString = false;
-        }
-
-        public partial void WriteNumber(uint num)
-        {
-            D3D12MA_ASSERT(!m_InsideString);
-            BeginValue(false);
-            m_SB->AddNumber(num);
-        }
-
-        public partial void WriteNumber(ulong num)
-        {
-            D3D12MA_ASSERT(!m_InsideString);
-            BeginValue(false);
-            m_SB->AddNumber(num);
-        }
-
-        public partial void WriteBool(bool b)
-        {
-            D3D12MA_ASSERT(!m_InsideString);
-            BeginValue(false);
-            if (b)
-                m_SB->Add("true");
-            else
-                m_SB->Add("false");
-        }
-
-        public partial void WriteNull()
-        {
-            D3D12MA_ASSERT(!m_InsideString);
-            BeginValue(false);
-            m_SB->Add("null");
-        }
-
-        private partial void BeginValue(bool isString)
-        {
-            if (!m_Stack.empty())
-            {
-                StackItem* currItem = m_Stack.back();
-                if (currItem->type == COLLECTION_TYPE_OBJECT && currItem->valueCount % 2 == 0)
-                {
-                    D3D12MA_ASSERT(isString);
-                }
-
-                if (currItem->type == COLLECTION_TYPE_OBJECT && currItem->valueCount % 2 == 1)
-                {
-                    m_SB->Add(':');
-                    m_SB->Add(' ');
-                }
-                else if (currItem->valueCount > 0)
-                {
-                    m_SB->Add(',');
-                    m_SB->Add(' ');
-                    WriteIndent();
-                }
-                else
-                {
-                    WriteIndent();
-                }
-                ++currItem->valueCount;
-            }
-        }
-
-        private partial void WriteIndent(bool oneLess)
-        {
-            if (!m_Stack.empty() && !m_Stack.back()->singleLineMode)
-            {
-                m_SB->AddNewLine();
-
-                nuint count = m_Stack.size();
-                if (count > 0 && oneLess)
-                {
-                    --count;
-                }
-                for (nuint i = 0; i < count; ++i)
-                {
-                    m_SB->Add(INDENT);
-                }
-            }
-        }
-
-        public partial void AddAllocationToObject(Allocation* alloc)
+        public void AddAllocationToObject(Allocation* alloc)
         {
             WriteString("Type");
             switch (alloc->m_PackedData.GetResourceDimension())
@@ -351,6 +205,110 @@ namespace TerraFX.Interop
             {
                 WriteString("CreationFrameIndex");
                 WriteNumber(alloc->m_CreationFrameIndex);
+            }
+        }
+
+        // void ContinueString_Pointer(const void* ptr);
+        public void EndString([NativeTypeName("LPCWSTR")] ushort* pStr = null)
+        {
+            D3D12MA_ASSERT(m_InsideString);
+
+            if (pStr != null)
+                ContinueString(pStr);
+            m_SB->Add('"');
+            m_InsideString = false;
+        }
+
+        public void WriteNumber([NativeTypeName("UINT")] uint num)
+        {
+            D3D12MA_ASSERT(!m_InsideString);
+            BeginValue(false);
+            m_SB->AddNumber(num);
+        }
+
+        public void WriteNumber([NativeTypeName("UINT64")] ulong num)
+        {
+            D3D12MA_ASSERT(!m_InsideString);
+            BeginValue(false);
+            m_SB->AddNumber(num);
+        }
+
+        public void WriteBool(bool b)
+        {
+            D3D12MA_ASSERT(!m_InsideString);
+            BeginValue(false);
+            if (b)
+                m_SB->Add("true");
+            else
+                m_SB->Add("false");
+        }
+
+        public void WriteNull()
+        {
+            D3D12MA_ASSERT(!m_InsideString);
+            BeginValue(false);
+            m_SB->Add("null");
+        }
+
+        private const string INDENT = "  ";
+
+        internal enum CollectionType
+        {
+            COLLECTION_TYPE_OBJECT,
+            COLLECTION_TYPE_ARRAY,
+        };
+
+        struct StackItem
+        {
+            public CollectionType type;
+            [NativeTypeName("UINT")] public uint valueCount;
+            public bool singleLineMode;
+        };
+
+        private void BeginValue(bool isString)
+        {
+            if (!m_Stack.empty())
+            {
+                StackItem* currItem = m_Stack.back();
+                if (currItem->type == COLLECTION_TYPE_OBJECT && currItem->valueCount % 2 == 0)
+                {
+                    D3D12MA_ASSERT(isString);
+                }
+
+                if (currItem->type == COLLECTION_TYPE_OBJECT && currItem->valueCount % 2 == 1)
+                {
+                    m_SB->Add(':');
+                    m_SB->Add(' ');
+                }
+                else if (currItem->valueCount > 0)
+                {
+                    m_SB->Add(',');
+                    m_SB->Add(' ');
+                    WriteIndent();
+                }
+                else
+                {
+                    WriteIndent();
+                }
+                ++currItem->valueCount;
+            }
+        }
+
+        private void WriteIndent(bool oneLess = false)
+        {
+            if (!m_Stack.empty() && !m_Stack.back()->singleLineMode)
+            {
+                m_SB->AddNewLine();
+
+                nuint count = m_Stack.size();
+                if (count > 0 && oneLess)
+                {
+                    --count;
+                }
+                for (nuint i = 0; i < count; ++i)
+                {
+                    m_SB->Add(INDENT);
+                }
             }
         }
     }

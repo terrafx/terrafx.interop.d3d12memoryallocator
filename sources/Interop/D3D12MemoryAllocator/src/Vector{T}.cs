@@ -6,9 +6,6 @@ using static TerraFX.Interop.D3D12MemoryAllocator;
 
 namespace TerraFX.Interop
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class Vector
-
     /// <summary>
     /// Dynamically resizing continuous array. Class with interface similar to std::vector.
     /// T must be POD because constructors and destructors are not called and memcpy is
@@ -19,8 +16,12 @@ namespace TerraFX.Interop
     {
         private readonly ALLOCATION_CALLBACKS* m_AllocationCallbacks;
         private T* m_pArray;
-        [NativeTypeName("size_t")] private nuint m_Count;
-        [NativeTypeName("size_t")] private nuint m_Capacity;
+
+        [NativeTypeName("size_t")]
+        private nuint m_Count;
+
+        [NativeTypeName("size_t")]
+        private nuint m_Capacity;
 
         // allocationCallbacks externally owned, must outlive this object.
         public Vector(ALLOCATION_CALLBACKS* allocationCallbacks)

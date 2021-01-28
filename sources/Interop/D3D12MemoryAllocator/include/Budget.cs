@@ -6,7 +6,8 @@ namespace TerraFX.Interop
     public struct Budget
     {
         /// <summary>Sum size of all memory blocks allocated from particular heap type, in bytes.</summary>
-        [NativeTypeName("UINT64")] public ulong BlockBytes;
+        [NativeTypeName("UINT64")]
+        public ulong BlockBytes;
 
         /// <summary>
         /// Sum size of all allocations created in particular heap type, in bytes.
@@ -16,7 +17,8 @@ namespace TerraFX.Interop
         /// available for new allocations or wasted due to fragmentation.
         /// </para>
         /// </summary>
-        [NativeTypeName("UINT64")] public ulong AllocationBytes;
+        [NativeTypeName("UINT64")]
+        public ulong AllocationBytes;
 
         /// <summary>
         /// Estimated current memory usage of the program, in bytes.
@@ -27,7 +29,8 @@ namespace TerraFX.Interop
         /// memory blocks allocated outside of this library, if any.
         /// </para>
         /// </summary>
-        [NativeTypeName("UINT64")] public ulong UsageBytes;
+        [NativeTypeName("UINT64")]
+        public ulong UsageBytes;
 
         /// <summary>
         /// Estimated amount of memory available to the program, in bytes.
@@ -39,6 +42,7 @@ namespace TerraFX.Interop
         /// be allocated without problems. Exceeding the budget may result in various problems.
         /// </para>
         /// </summary>
-        [NativeTypeName("UINT64")] public ulong BudgetBytes;
+        [NativeTypeName("UINT64")]
+        public ulong BudgetBytes;
     }
 }

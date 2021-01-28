@@ -20,7 +20,7 @@ namespace TerraFX.Interop
     /// right after Direct3D 12 is initialized and keep it alive until before Direct3D device is destroyed.
     /// </para>
     /// </summary>
-    public unsafe partial struct Allocator : IDisposable
+    public unsafe struct Allocator : IDisposable
     {
         internal AllocatorPimpl* m_Pimpl;
 
@@ -31,13 +31,24 @@ namespace TerraFX.Interop
         /// There is no reference counting involved.
         /// </para>
         /// </summary>
-        public partial void Release();
+        public void Release()
+        {
+            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+
+            // Copy is needed because otherwise we would call destructor and invalidate the structure with callbacks before using it to free memory.
+            ALLOCATION_CALLBACKS allocationCallbacksCopy = *m_Pimpl->GetAllocs();
+            D3D12MA_DELETE(&allocationCallbacksCopy, (Allocator*)Unsafe.AsPointer(ref this));
+        }
 
         /// <summary>
         /// Returns cached options retrieved from D3D12 device.
         /// </summary>
         /// <returns>The cached options retrieved from D3D12 device.</returns>
-        public readonly partial D3D12_FEATURE_DATA_D3D12_OPTIONS* GetD3D12Options();
+        [return: NativeTypeName("const D3D12_FEATURE_DATA_D3D12_OPTIONS&")]
+        public readonly D3D12_FEATURE_DATA_D3D12_OPTIONS* GetD3D12Options()
+        {
+            return m_Pimpl->GetD3D12Options();
+        }
 
         /// <summary>
         /// Allocates memory and creates a D3D12 resource (buffer or texture). This is the main allocation function.
@@ -72,14 +83,23 @@ namespace TerraFX.Interop
         /// by the user as a higher-level logic on top of it, e.g. using the \ref virtual_allocator feature.
         /// </remarks>
         [return: NativeTypeName("HRESULT")]
-        public partial int CreateResource(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_DESC* pResourceDesc,
+        public int CreateResource(
+            [NativeTypeName("const ALLOCATION_DESC*")] ALLOCATION_DESC* pAllocDesc,
+            [NativeTypeName("const D3D12_RESOURCE_DESC*")] D3D12_RESOURCE_DESC* pResourceDesc,
             D3D12_RESOURCE_STATES InitialResourceState,
-            D3D12_CLEAR_VALUE* pOptimizedClearValue,
+            [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue,
             Allocation** ppAllocation,
             [NativeTypeName("REFIID")] Guid* riidResource,
-            void** ppvResource);
+            void** ppvResource)
+        {
+            if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
+            {
+                D3D12MA_ASSERT(false);
+                return E_INVALIDARG;
+            }
+            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            return m_Pimpl->CreateResource(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
+        }
 
         /// <summary>
         /// Similar to Allocator::CreateResource, but supports additional parameter `pProtectedSession`.
@@ -90,15 +110,24 @@ namespace TerraFX.Interop
         /// <para>To work correctly, `ID3D12Device4` interface must be available in the current system. Otherwise, `E_NOINTERFACE`</para>
         /// </summary>
         [return: NativeTypeName("HRESULT")]
-        public partial int CreateResource1(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_DESC* pResourceDesc,
+        public int CreateResource1(
+            [NativeTypeName("const ALLOCATION_DESC*")] ALLOCATION_DESC* pAllocDesc,
+            [NativeTypeName("const D3D12_RESOURCE_DESC*")] D3D12_RESOURCE_DESC* pResourceDesc,
             D3D12_RESOURCE_STATES InitialResourceState,
-            D3D12_CLEAR_VALUE* pOptimizedClearValue,
+            [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue,
             ID3D12ProtectedResourceSession* pProtectedSession,
             Allocation** ppAllocation,
             [NativeTypeName("REFIID")] Guid* riidResource,
-            void** ppvResource);
+            void** ppvResource)
+        {
+            if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
+            {
+                D3D12MA_ASSERT(false);
+                return E_INVALIDARG;
+            }
+            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            return m_Pimpl->CreateResource1(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
+        }
 
         /// <summary>
         /// Similar to Allocator::CreateResource1, but supports new structure `D3D12_RESOURCE_DESC1`.
@@ -114,15 +143,24 @@ namespace TerraFX.Interop
         /// <param name="riidResource"></param>
         /// <param name="ppvResource"></param>
         [return: NativeTypeName("HRESULT")]
-        public partial int CreateResource2(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_DESC1* pResourceDesc,
+        public int CreateResource2(
+            [NativeTypeName("const ALLOCATION_DESC*")] ALLOCATION_DESC* pAllocDesc,
+            [NativeTypeName("const D3D12_RESOURCE_DESC1*")] D3D12_RESOURCE_DESC1* pResourceDesc,
             D3D12_RESOURCE_STATES InitialResourceState,
-            D3D12_CLEAR_VALUE* pOptimizedClearValue,
+            [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue,
             ID3D12ProtectedResourceSession* pProtectedSession,
             Allocation** ppAllocation,
             [NativeTypeName("REFIID")] Guid* riidResource,
-            void** ppvResource);
+            void** ppvResource)
+        {
+            if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
+            {
+                D3D12MA_ASSERT(false);
+                return E_INVALIDARG;
+            }
+            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            return m_Pimpl->CreateResource2(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
+        }
 
         /// <summary>
         /// Allocates memory without creating any resource placed in it.
@@ -147,10 +185,19 @@ namespace TerraFX.Interop
         /// a heap that always has offset 0.
         /// </remarks>
         [return: NativeTypeName("HRESULT")]
-        public partial int AllocateMemory(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo,
-            Allocation** ppAllocation);
+        public int AllocateMemory(
+            [NativeTypeName("const ALLOCATION_DESC*")] ALLOCATION_DESC* pAllocDesc,
+            [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO*")] D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo,
+            Allocation** ppAllocation)
+        {
+            if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
+            {
+                D3D12MA_ASSERT(false);
+                return E_INVALIDARG;
+            }
+            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            return m_Pimpl->AllocateMemory(pAllocDesc, pAllocInfo, ppAllocation);
+        }
 
         /// <summary>
         /// Similar to Allocator::AllocateMemory, but supports additional parameter `pProtectedSession`.
@@ -161,11 +208,20 @@ namespace TerraFX.Interop
         /// <para>To work correctly, `ID3D12Device4` interface must be available in the current system. Otherwise, `E_NOINTERFACE` is returned.</para>
         /// </summary>
         [return: NativeTypeName("HRESULT")]
-        public partial int AllocateMemory1(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo,
+        public int AllocateMemory1(
+            [NativeTypeName("const ALLOCATION_DESC*")] ALLOCATION_DESC* pAllocDesc,
+            [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO*")] D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo,
             ID3D12ProtectedResourceSession* pProtectedSession,
-            Allocation** ppAllocation);
+            Allocation** ppAllocation)
+        {
+            if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
+            {
+                D3D12MA_ASSERT(false);
+                return E_INVALIDARG;
+            }
+            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            return m_Pimpl->AllocateMemory1(pAllocDesc, pAllocInfo, pProtectedSession, ppAllocation);
+        }
 
         /// <summary>
         /// Creates a new resource in place of an existing allocation. This is useful for memory aliasing.
@@ -194,208 +250,13 @@ namespace TerraFX.Interop
         /// returns `E_INVALIDARG`.
         /// </remarks>
         [return: NativeTypeName("HRESULT")]
-        public partial int CreateAliasingResource(
+        public int CreateAliasingResource(
             Allocation* pAllocation,
             [NativeTypeName("UINT64")] ulong AllocationLocalOffset,
-            D3D12_RESOURCE_DESC* pResourceDesc,
+            [NativeTypeName("const D3D12_RESOURCE_DESC*")] D3D12_RESOURCE_DESC* pResourceDesc,
             D3D12_RESOURCE_STATES InitialResourceState,
-            D3D12_CLEAR_VALUE* pOptimizedClearValue,
+            [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue,
             [NativeTypeName("REFIID")] Guid* riidResource,
-            void** ppvResource);
-
-        /// <summary>Creates custom pool.</summary>
-        [return: NativeTypeName("HRESULT")]
-        public partial int CreatePool(
-            POOL_DESC* pPoolDesc,
-            Pool** ppPool);
-
-        /// <summary>Sets the minimum number of bytes that should always be allocated (reserved) in a specific default pool.</summary>
-        /// <param name="heapType">Must be one of: `D3D12_HEAP_TYPE_DEFAULT`, `D3D12_HEAP_TYPE_UPLOAD`, `D3D12_HEAP_TYPE_READBACK`.</param>
-        /// <param name="heapFlags">
-        /// Must be one of: `D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS`, `D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES`,
-        /// `D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES`. If ResourceHeapTier = 2, it can also be `D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES`.
-        /// </param>
-        /// <param name="minBytes">Minimum number of bytes to keep allocated.</param>
-        /// <remarks>See also: \subpage reserving_memory.</remarks>
-        [return: NativeTypeName("HRESULT")]
-        public partial int SetDefaultHeapMinBytes(
-            D3D12_HEAP_TYPE heapType,
-            D3D12_HEAP_FLAGS heapFlags,
-            [NativeTypeName("UINT64")] ulong minBytes);
-
-        /// <summary>
-        /// Sets the index of the current frame.
-        /// <para>This function is used to set the frame index in the allocator when a new game frame begins.</para>
-        /// </summary>
-        public partial void SetCurrentFrameIndex([NativeTypeName("UINT")] uint frameIndex);
-
-        /// <summary>Retrieves statistics from the current state of the allocator.</summary>
-        public partial void CalculateStats(Stats* pStats);
-
-        /// <summary>Retrieves information about current memory budget.</summary>
-        /// <param name="pGpuBudget">Optional, can be null.</param>
-        /// <param name="pCpuBudget">Optional, can be null.</param>
-        /// <remarks>
-        /// This function is called "get" not "calculate" because it is very fast, suitable to be called
-        /// every frame or every allocation.For more detailed statistics use CalculateStats().
-        /// <para>
-        /// Note that when using allocator from multiple threads, returned information may immediately
-        /// become outdated.
-        /// </para>
-        /// </remarks>
-        public partial void GetBudget(Budget* pGpuBudget, Budget* pCpuBudget);
-
-        /// <summary>
-        /// Builds and returns statistics as a string in JSON format.
-        /// </summary>
-        /// <param name="ppStatsString">Must be freed using Allocator::FreeStatsString.</param>
-        /// <param name="DetailedMap">`TRUE` to include full list of allocations (can make the string quite long), `FALSE` to only return statistics.</param>
-        public partial void BuildStatsString([NativeTypeName("WCHAR**")] ushort** ppStatsString, [NativeTypeName("BOOL")] int DetailedMap);
-
-        /// <summary>Frees memory of a string returned from Allocator::BuildStatsString.</summary>
-        public partial void FreeStatsString([NativeTypeName("WCHAR*")] ushort* pStatsString);
-
-        internal Allocator(ALLOCATION_CALLBACKS* allocationCallbacks, ALLOCATOR_DESC* desc)
-        {
-            m_Pimpl = D3D12MA_NEW<AllocatorPimpl>(allocationCallbacks);
-            *m_Pimpl = new(allocationCallbacks, desc);
-        }
-
-        public partial void Dispose();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////
-    // Public class Allocator implementation
-
-    public unsafe partial struct Allocator
-    {
-        public partial void Dispose()
-        {
-            D3D12MA_DELETE(m_Pimpl->GetAllocs(), m_Pimpl);
-        }
-
-        public partial void Release()
-        {
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
-
-            // Copy is needed because otherwise we would call destructor and invalidate the structure with callbacks before using it to free memory.
-            ALLOCATION_CALLBACKS allocationCallbacksCopy = *m_Pimpl->GetAllocs();
-            D3D12MA_DELETE(&allocationCallbacksCopy, (Allocator*)Unsafe.AsPointer(ref this));
-        }
-
-        public readonly partial D3D12_FEATURE_DATA_D3D12_OPTIONS* GetD3D12Options()
-        {
-            return m_Pimpl->GetD3D12Options();
-        }
-
-        public partial int CreateResource(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_DESC* pResourceDesc,
-            D3D12_RESOURCE_STATES InitialResourceState,
-            D3D12_CLEAR_VALUE* pOptimizedClearValue,
-            Allocation** ppAllocation,
-            Guid* riidResource,
-            void** ppvResource)
-        {
-            if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
-            {
-                D3D12MA_ASSERT(false);
-                return E_INVALIDARG;
-            }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
-            return m_Pimpl->CreateResource(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
-        }
-
-        public partial int CreateResource1(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_DESC* pResourceDesc,
-            D3D12_RESOURCE_STATES InitialResourceState,
-            D3D12_CLEAR_VALUE* pOptimizedClearValue,
-            ID3D12ProtectedResourceSession* pProtectedSession,
-            Allocation** ppAllocation,
-            Guid* riidResource,
-            void** ppvResource)
-        {
-            if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
-            {
-                D3D12MA_ASSERT(false);
-                return E_INVALIDARG;
-            }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
-            return m_Pimpl->CreateResource1(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
-        }
-
-        public partial int CreateResource2(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_DESC1* pResourceDesc,
-            D3D12_RESOURCE_STATES InitialResourceState,
-            D3D12_CLEAR_VALUE* pOptimizedClearValue,
-            ID3D12ProtectedResourceSession* pProtectedSession,
-            Allocation** ppAllocation,
-            Guid* riidResource,
-            void** ppvResource)
-        {
-            if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
-            {
-                D3D12MA_ASSERT(false);
-                return E_INVALIDARG;
-            }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
-            return m_Pimpl->CreateResource2(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool ValidateAllocateMemoryParameters(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo,
-            Allocation** ppAllocation)
-        {
-            return pAllocDesc != null &&
-                pAllocInfo != null &&
-                ppAllocation != null &&
-                (pAllocInfo->Alignment == 0 ||
-                    pAllocInfo->Alignment == D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT ||
-                    pAllocInfo->Alignment == D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT) &&
-                pAllocInfo->SizeInBytes != 0 &&
-                pAllocInfo->SizeInBytes % (64UL * 1024) == 0;
-        }
-
-        public partial int AllocateMemory(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo,
-            Allocation** ppAllocation)
-        {
-            if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
-            {
-                D3D12MA_ASSERT(false);
-                return E_INVALIDARG;
-            }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
-            return m_Pimpl->AllocateMemory(pAllocDesc, pAllocInfo, ppAllocation);
-        }
-
-        public partial int AllocateMemory1(
-            ALLOCATION_DESC* pAllocDesc,
-            D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo,
-            ID3D12ProtectedResourceSession* pProtectedSession,
-            Allocation** ppAllocation)
-        {
-            if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
-            {
-                D3D12MA_ASSERT(false);
-                return E_INVALIDARG;
-            }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
-            return m_Pimpl->AllocateMemory1(pAllocDesc, pAllocInfo, pProtectedSession, ppAllocation);
-        }
-
-        public partial int CreateAliasingResource(
-            Allocation* pAllocation,
-            ulong AllocationLocalOffset,
-            D3D12_RESOURCE_DESC* pResourceDesc,
-            D3D12_RESOURCE_STATES InitialResourceState,
-            D3D12_CLEAR_VALUE* pOptimizedClearValue,
-            Guid* riidResource,
             void** ppvResource)
         {
             if (pAllocation == null || pResourceDesc == null || ppvResource == null)
@@ -407,9 +268,9 @@ namespace TerraFX.Interop
             return m_Pimpl->CreateAliasingResource(pAllocation, AllocationLocalOffset, pResourceDesc, InitialResourceState, pOptimizedClearValue, riidResource, ppvResource);
         }
 
-        public partial int CreatePool(
-            POOL_DESC* pPoolDesc,
-            Pool** ppPool)
+        /// <summary>Creates custom pool.</summary>
+        [return: NativeTypeName("HRESULT")]
+        public int CreatePool([NativeTypeName("const POOL_DESC*")] POOL_DESC* pPoolDesc, Pool** ppPool)
         {
             if (pPoolDesc == null || ppPool == null ||
                 !IsHeapTypeValid(pPoolDesc->HeapType) ||
@@ -439,29 +300,54 @@ namespace TerraFX.Interop
             return hr;
         }
 
-        public partial int SetDefaultHeapMinBytes(
+        /// <summary>Sets the minimum number of bytes that should always be allocated (reserved) in a specific default pool.</summary>
+        /// <param name="heapType">Must be one of: `D3D12_HEAP_TYPE_DEFAULT`, `D3D12_HEAP_TYPE_UPLOAD`, `D3D12_HEAP_TYPE_READBACK`.</param>
+        /// <param name="heapFlags">
+        /// Must be one of: `D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS`, `D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES`,
+        /// `D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES`. If ResourceHeapTier = 2, it can also be `D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES`.
+        /// </param>
+        /// <param name="minBytes">Minimum number of bytes to keep allocated.</param>
+        /// <remarks>See also: \subpage reserving_memory.</remarks>
+        [return: NativeTypeName("HRESULT")]
+        public int SetDefaultHeapMinBytes(
             D3D12_HEAP_TYPE heapType,
             D3D12_HEAP_FLAGS heapFlags,
-            ulong minBytes)
+            [NativeTypeName("UINT64")] ulong minBytes)
         {
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
             return m_Pimpl->SetDefaultHeapMinBytes(heapType, heapFlags, minBytes);
         }
 
-        public partial void SetCurrentFrameIndex(uint frameIndex)
+        /// <summary>
+        /// Sets the index of the current frame.
+        /// <para>This function is used to set the frame index in the allocator when a new game frame begins.</para>
+        /// </summary>
+        public void SetCurrentFrameIndex([NativeTypeName("UINT")] uint frameIndex)
         {
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
             m_Pimpl->SetCurrentFrameIndex(frameIndex);
         }
 
-        public partial void CalculateStats(Stats* pStats)
+        /// <summary>Retrieves statistics from the current state of the allocator.</summary>
+        public void CalculateStats(Stats* pStats)
         {
             D3D12MA_ASSERT(pStats != null);
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
             m_Pimpl->CalculateStats(pStats);
         }
 
-        public partial void GetBudget(Budget* pGpuBudget, Budget* pCpuBudget)
+        /// <summary>Retrieves information about current memory budget.</summary>
+        /// <param name="pGpuBudget">Optional, can be null.</param>
+        /// <param name="pCpuBudget">Optional, can be null.</param>
+        /// <remarks>
+        /// This function is called "get" not "calculate" because it is very fast, suitable to be called
+        /// every frame or every allocation.For more detailed statistics use CalculateStats().
+        /// <para>
+        /// Note that when using allocator from multiple threads, returned information may immediately
+        /// become outdated.
+        /// </para>
+        /// </remarks>
+        public void GetBudget(Budget* pGpuBudget, Budget* pCpuBudget)
         {
             if (pGpuBudget == null && pCpuBudget == null)
             {
@@ -471,20 +357,53 @@ namespace TerraFX.Interop
             m_Pimpl->GetBudget(pGpuBudget, pCpuBudget);
         }
 
-        public partial void BuildStatsString(ushort** ppStatsString, int DetailedMap)
+        /// <summary>
+        /// Builds and returns statistics as a string in JSON format.
+        /// </summary>
+        /// <param name="ppStatsString">Must be freed using Allocator::FreeStatsString.</param>
+        /// <param name="DetailedMap">`TRUE` to include full list of allocations (can make the string quite long), `FALSE` to only return statistics.</param>
+        public void BuildStatsString([NativeTypeName("WCHAR**")] ushort** ppStatsString, [NativeTypeName("BOOL")] int DetailedMap)
         {
             D3D12MA_ASSERT(ppStatsString != null);
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
             m_Pimpl->BuildStatsString(ppStatsString, DetailedMap);
         }
 
-        public partial void FreeStatsString(ushort* pStatsString)
+        /// <summary>Frees memory of a string returned from Allocator::BuildStatsString.</summary>
+        public void FreeStatsString([NativeTypeName("WCHAR*")] ushort* pStatsString)
         {
             if (pStatsString != null)
             {
                 //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
                 m_Pimpl->FreeStatsString(pStatsString);
             }
+        }
+
+        internal Allocator([NativeTypeName("const ALLOCATION_CALLBACKS&")] ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("const ALLOCATOR_DESC&")] ALLOCATOR_DESC* desc)
+        {
+            m_Pimpl = D3D12MA_NEW<AllocatorPimpl>(allocationCallbacks);
+            *m_Pimpl = new(allocationCallbacks, desc);
+        }
+
+        public void Dispose()
+        {
+            D3D12MA_DELETE(m_Pimpl->GetAllocs(), m_Pimpl);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool ValidateAllocateMemoryParameters(
+            ALLOCATION_DESC* pAllocDesc,
+            D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo,
+            Allocation** ppAllocation)
+        {
+            return pAllocDesc != null &&
+                pAllocInfo != null &&
+                ppAllocation != null &&
+                (pAllocInfo->Alignment == 0 ||
+                    pAllocInfo->Alignment == D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT ||
+                    pAllocInfo->Alignment == D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT) &&
+                pAllocInfo->SizeInBytes != 0 &&
+                pAllocInfo->SizeInBytes % (64UL * 1024) == 0;
         }
     }
 }

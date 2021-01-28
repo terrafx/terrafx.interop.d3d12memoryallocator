@@ -1,8 +1,11 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
+
 namespace TerraFX.Interop
 {
     /// <summary>Bit flags to be used with ALLOCATOR_DESC::Flags.</summary>
+    [Flags]
     public enum ALLOCATOR_FLAGS
     {
         /// <summary>Zero</summary>

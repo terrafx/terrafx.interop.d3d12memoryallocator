@@ -13,13 +13,13 @@ namespace TerraFX.Interop
         /// <para>You normally only need to call it once and keep a single Allocator object for your `ID3D12Device`.</para>
         /// </summary>
         [return: NativeTypeName("HRESULT")]
-        public static partial int CreateAllocator(ALLOCATOR_DESC* pDesc, Allocator** ppAllocator);
+        public static partial int CreateAllocator([NativeTypeName("const ALLOCATOR_DESC*")] ALLOCATOR_DESC* pDesc, Allocator** ppAllocator);
 
         /// <summary>
         /// Creates new D3D12MA::VirtualBlock object and returns it through `ppVirtualBlock`.
         /// <para>Note you don't need to create D3D12MA::Allocator to use virtual blocks.</para>
         /// </summary>
         [return: NativeTypeName("HRESULT")]
-        public static partial int CreateVirtualBlock(VIRTUAL_BLOCK_DESC* pDesc, VirtualBlock** ppVirtualBlock);
+        public static partial int CreateVirtualBlock([NativeTypeName("const VIRTUAL_BLOCK_DESC*")] VIRTUAL_BLOCK_DESC* pDesc, VirtualBlock** ppVirtualBlock);
     }
 }

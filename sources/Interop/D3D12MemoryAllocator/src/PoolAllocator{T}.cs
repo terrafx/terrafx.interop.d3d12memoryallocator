@@ -14,11 +14,14 @@ namespace TerraFX.Interop
     /// T should be POD because constructor and destructor is not called in Alloc or
     /// Free.
     /// </summary>
-    internal unsafe partial struct PoolAllocator<T> : IDisposable
+    internal unsafe struct PoolAllocator<T> : IDisposable
         where T : unmanaged, IDisposable
     {
         private readonly ALLOCATION_CALLBACKS* m_AllocationCallbacks;
-        [NativeTypeName("UINT")] private readonly uint m_FirstBlockCapacity;
+
+        [NativeTypeName("UINT")]
+        private readonly uint m_FirstBlockCapacity;
+
         private Vector<ItemBlock> m_ItemBlocks;
 
         // allocationCallbacks externally owned, must outlive this object.
@@ -33,36 +36,7 @@ namespace TerraFX.Interop
 
         public void Dispose() { Clear(); }
 
-        public partial void Clear();
-
-        public partial T* Alloc();
-
-        public partial T* Alloc(void** args, delegate*<void**, T> ctor);
-
-        public partial void Free(T* ptr);
-
-        [StructLayout(LayoutKind.Explicit)]
-        private struct Item
-        {
-            [FieldOffset(0), NativeTypeName("UINT")] public uint NextFreeIndex; // UINT32_MAX means end of list.
-            [FieldOffset(0)] private T __Value_Data;
-
-            public byte* Value => (byte*)Unsafe.AsPointer(ref __Value_Data);
-        }
-
-        private struct ItemBlock
-        {
-            public Item* pItems;
-            [NativeTypeName("UINT")] public uint Capacity;
-            [NativeTypeName("UINT")] public uint FirstFreeIndex;
-        }
-
-        private partial ItemBlock* CreateNewBlock();
-    }
-
-    internal unsafe partial struct PoolAllocator<T>
-    {
-        public partial void Clear()
+        public void Clear()
         {
             for (nuint i = m_ItemBlocks.size(); i-- > 0;)
             {
@@ -71,12 +45,12 @@ namespace TerraFX.Interop
             m_ItemBlocks.clear(true);
         }
 
-        public partial T* Alloc()
+        public T* Alloc()
         {
             return Alloc(null, null);
         }
 
-        public partial T* Alloc(void** args, delegate*<void**, T> ctor)
+        public T* Alloc(void** args, delegate*<void**, T> ctor)
         {
             for (nuint i = m_ItemBlocks.size(); i-- > 0;)
             {
@@ -103,7 +77,7 @@ namespace TerraFX.Interop
             }
         }
 
-        public partial void Free(T* ptr)
+        public void Free(T* ptr)
         {
             // Search all memory blocks to find ptr.
             for (nuint i = m_ItemBlocks.size(); i-- > 0;)
@@ -126,7 +100,23 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(false);
         }
 
-        private partial ItemBlock* CreateNewBlock()
+        [StructLayout(LayoutKind.Explicit)]
+        private struct Item
+        {
+            [FieldOffset(0), NativeTypeName("UINT")] public uint NextFreeIndex; // UINT32_MAX means end of list.
+            [FieldOffset(0)] private T __Value_Data;
+
+            public byte* Value => (byte*)Unsafe.AsPointer(ref __Value_Data);
+        }
+
+        private struct ItemBlock
+        {
+            public Item* pItems;
+            [NativeTypeName("UINT")] public uint Capacity;
+            [NativeTypeName("UINT")] public uint FirstFreeIndex;
+        }
+
+        private ItemBlock* CreateNewBlock()
         {
             uint newBlockCapacity = m_ItemBlocks.empty() ?
                 m_FirstBlockCapacity : m_ItemBlocks.back()->Capacity * 3 / 2;

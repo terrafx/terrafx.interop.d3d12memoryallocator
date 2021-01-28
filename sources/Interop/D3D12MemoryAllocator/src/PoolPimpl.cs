@@ -6,15 +6,14 @@ using static TerraFX.Interop.D3D12MemoryAllocator;
 
 namespace TerraFX.Interop
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class PoolPimpl
-
-    internal unsafe partial struct PoolPimpl : IDisposable
+    internal unsafe struct PoolPimpl : IDisposable
     {
         public AllocatorPimpl* m_Allocator; // Externally owned object
         public POOL_DESC m_Desc;
         public BlockVector* m_BlockVector; // Owned object
-        [NativeTypeName("wchar_t*")] public ushort* m_Name;
+
+        [NativeTypeName("wchar_t*")]
+        public ushort* m_Name;
 
         public PoolPimpl(AllocatorPimpl* allocator, POOL_DESC* desc)
         {
@@ -39,9 +38,16 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        public partial int Init();
+        public int Init()
+        {
+            return m_BlockVector->CreateMinBlocks();
+        }
 
-        public partial void Dispose();
+        public void Dispose()
+        {
+            FreeName();
+            D3D12MA_DELETE(m_Allocator->GetAllocs(), m_BlockVector);
+        }
 
         public readonly AllocatorPimpl* GetAllocator() { return m_Allocator; }
 
@@ -52,30 +58,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         public int SetMinBytes([NativeTypeName("UINT64")] ulong minBytes) { return m_BlockVector->SetMinBytes(minBytes); }
 
-        public partial void CalculateStats(StatInfo* outStats);
-
-        public partial void SetName([NativeTypeName("LPCWSTR")] ushort* Name);
-
-        [return: NativeTypeName("LPCWSTR")]
-        public ushort* GetName() { return m_Name; }
-
-        public partial void FreeName();
-    }
-
-    internal unsafe partial struct PoolPimpl : IDisposable
-    {
-        public partial int Init()
-        {
-            return m_BlockVector->CreateMinBlocks();
-        }
-
-        public partial void Dispose()
-        {
-            FreeName();
-            D3D12MA_DELETE(m_Allocator->GetAllocs(), m_BlockVector);
-        }
-
-        public partial void CalculateStats(StatInfo* outStats)
+        public void CalculateStats(StatInfo* outStats)
         {
             ZeroMemory(&outStats, (nuint)sizeof(StatInfo));
             outStats->AllocationSizeMin = ulong.MaxValue;
@@ -86,7 +69,7 @@ namespace TerraFX.Interop
             PostProcessStatInfo(ref *outStats);
         }
 
-        public partial void SetName(ushort* Name)
+        public void SetName([NativeTypeName("LPCWSTR")] ushort* Name)
         {
             FreeName();
 
@@ -98,7 +81,10 @@ namespace TerraFX.Interop
             }
         }
 
-        public partial void FreeName()
+        [return: NativeTypeName("LPCWSTR")]
+        public ushort* GetName() { return m_Name; }
+
+        public void FreeName()
         {
             if (m_Name != null)
             {

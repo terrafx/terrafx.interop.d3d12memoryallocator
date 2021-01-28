@@ -18,12 +18,14 @@ namespace TerraFX.Interop
         /// Preferred size of a single `ID3D12Heap` block to be allocated.
         /// <para>Set to 0 to use default, which is currently 256 MiB.</para>
         /// </summary>
-        [NativeTypeName("UINT64")] public ulong PreferredBlockSize;
+        [NativeTypeName("UINT64")]
+        public ulong PreferredBlockSize;
 
         /// <summary>
         /// Custom CPU memory allocation callbacks. Optional.
         /// <para>Optional, can be null. When specified, will be used for all CPU-side memory allocations.</para>
         /// </summary>
+        [NativeTypeName("const ALLOCATION_CALLBACKS*")]
         public ALLOCATION_CALLBACKS* pAllocationCallbacks;
 
         /// <summary>

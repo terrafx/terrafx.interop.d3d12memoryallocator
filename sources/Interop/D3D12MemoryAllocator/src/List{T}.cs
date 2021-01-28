@@ -6,14 +6,16 @@ using static TerraFX.Interop.D3D12MemoryAllocator;
 
 namespace TerraFX.Interop
 {
-    internal unsafe partial struct List<T> : IDisposable
+    internal unsafe struct List<T> : IDisposable
         where T : unmanaged
     {
         private readonly ALLOCATION_CALLBACKS* m_AllocationCallbacks;
         private PoolAllocator<Item> m_ItemAllocator;
         private Item* m_pFront;
         private Item* m_pBack;
-        [NativeTypeName("size_t")] private nuint m_Count;
+
+        [NativeTypeName("size_t")]
+        private nuint m_Count;
 
         public struct Item : IDisposable
         {
@@ -34,9 +36,28 @@ namespace TerraFX.Interop
             m_Count = 0;
         }
 
-        public partial void Dispose();
+        public void Dispose()
+        {
+            // Intentionally not calling Clear, because that would be unnecessary
+            // computations to return all items to m_ItemAllocator as free.
+        }
 
-        public partial void Clear();
+        public void Clear()
+        {
+            if (!IsEmpty())
+            {
+                Item* pItem = m_pBack;
+                while (pItem != null)
+                {
+                    Item* pPrevItem = pItem->pPrev;
+                    m_ItemAllocator.Free(pItem);
+                    pItem = pPrevItem;
+                }
+                m_pFront = null;
+                m_pBack = null;
+                m_Count = 0;
+            }
+        }
 
         [return: NativeTypeName("size_t")]
         public readonly nuint GetCount() { return m_Count; }
@@ -47,30 +68,187 @@ namespace TerraFX.Interop
 
         public readonly Item* Back() { return m_pBack; }
 
-        public partial Item* PushBack();
+        public Item* PushBack()
+        {
+            Item* pNewItem = m_ItemAllocator.Alloc();
+            pNewItem->pNext = null;
+            if (IsEmpty())
+            {
+                pNewItem->pPrev = null;
+                m_pFront = pNewItem;
+                m_pBack = pNewItem;
+                m_Count = 1;
+            }
+            else
+            {
+                pNewItem->pPrev = m_pBack;
+                m_pBack->pNext = pNewItem;
+                m_pBack = pNewItem;
+                ++m_Count;
+            }
+            return pNewItem;
+        }
 
-        public partial Item* PushFront();
+        public Item* PushFront()
+        {
+            Item* pNewItem = m_ItemAllocator.Alloc();
+            pNewItem->pPrev = null;
+            if (IsEmpty())
+            {
+                pNewItem->pNext = null;
+                m_pFront = pNewItem;
+                m_pBack = pNewItem;
+                m_Count = 1;
+            }
+            else
+            {
+                pNewItem->pNext = m_pFront;
+                m_pFront->pPrev = pNewItem;
+                m_pFront = pNewItem;
+                ++m_Count;
+            }
+            return pNewItem;
+        }
 
-        public partial Item* PushBack(T* value);
+        public Item* PushBack(T* value)
+        {
+            Item* pNewItem = PushBack();
+            pNewItem->Value = *value;
+            return pNewItem;
+        }
 
-        public partial Item* PushFront(T* value);
+        public Item* PushFront(T* value)
+        {
+            Item* pNewItem = PushFront();
+            pNewItem->Value = *value;
+            return pNewItem;
+        }
 
-        public partial void PopBack();
+        public void PopBack()
+        {
+            D3D12MA_HEAVY_ASSERT(m_Count > 0);
+            Item* pBackItem = m_pBack;
+            Item* pPrevItem = pBackItem->pPrev;
+            if (pPrevItem != null)
+            {
+                pPrevItem->pNext = null;
+            }
+            m_pBack = pPrevItem;
+            m_ItemAllocator.Free(pBackItem);
+            --m_Count;
+        }
 
-        public partial void PopFront();
+        public void PopFront()
+        {
+            D3D12MA_HEAVY_ASSERT(m_Count > 0);
+            Item* pFrontItem = m_pFront;
+            Item* pNextItem = pFrontItem->pNext;
+            if (pNextItem != null)
+            {
+                pNextItem->pPrev = null;
+            }
+            m_pFront = pNextItem;
+            m_ItemAllocator.Free(pFrontItem);
+            --m_Count;
+        }
 
 
         // Item can be null - it means PushBack.
-        public partial Item* InsertBefore(Item* pItem);
+        public Item* InsertBefore(Item* pItem)
+        {
+            if (pItem != null)
+            {
+                Item* prevItem = pItem->pPrev;
+                Item* newItem = m_ItemAllocator.Alloc();
+                newItem->pPrev = prevItem;
+                newItem->pNext = pItem;
+                pItem->pPrev = newItem;
+                if (prevItem != null)
+                {
+                    prevItem->pNext = newItem;
+                }
+                else
+                {
+                    D3D12MA_HEAVY_ASSERT(m_pFront == pItem);
+                    m_pFront = newItem;
+                }
+                ++m_Count;
+                return newItem;
+            }
+            else
+            {
+                return PushBack();
+            }
+        }
 
         // Item can be null - it means PushFront.
-        public partial Item* InsertAfter(Item* pItem);
+        public Item* InsertAfter(Item* pItem)
+        {
+            if (pItem != null)
+            {
+                Item* nextItem = pItem->pNext;
+                Item* newItem = m_ItemAllocator.Alloc();
+                newItem->pNext = nextItem;
+                newItem->pPrev = pItem;
+                pItem->pNext = newItem;
+                if (nextItem != null)
+                {
+                    nextItem->pPrev = newItem;
+                }
+                else
+                {
+                    D3D12MA_HEAVY_ASSERT(m_pBack == pItem);
+                    m_pBack = newItem;
+                }
+                ++m_Count;
+                return newItem;
+            }
+            else
+                return PushFront();
+        }
 
-        public partial Item* InsertBefore(Item* pItem, T* value);
+        public Item* InsertBefore(Item* pItem, T* value)
+        {
+            Item* newItem = InsertBefore(pItem);
+            newItem->Value = *value;
+            return newItem;
+        }
 
-        public partial Item* InsertAfter(Item* pItem, T* value);
+        public Item* InsertAfter(Item* pItem, T* value)
+        {
+            Item* newItem = InsertAfter(pItem);
+            newItem->Value = *value;
+            return newItem;
+        }
 
-        public partial void Remove(Item* pItem);
+        public void Remove(Item* pItem)
+        {
+            D3D12MA_HEAVY_ASSERT(pItem != null);
+            D3D12MA_HEAVY_ASSERT(m_Count > 0);
+
+            if (pItem->pPrev != null)
+            {
+                pItem->pPrev->pNext = pItem->pNext;
+            }
+            else
+            {
+                D3D12MA_HEAVY_ASSERT(m_pFront == pItem);
+                m_pFront = pItem->pNext;
+            }
+
+            if (pItem->pNext != null)
+            {
+                pItem->pNext->pPrev = pItem->pPrev;
+            }
+            else
+            {
+                D3D12MA_HEAVY_ASSERT(m_pBack == pItem);
+                m_pBack = pItem->pPrev;
+            }
+
+            m_ItemAllocator.Free(pItem);
+            --m_Count;
+        }
 
 #pragma warning disable CS0660, CS0661
         public struct iterator
@@ -139,210 +317,5 @@ namespace TerraFX.Interop
         public void erase(iterator it) { Remove(it.m_pItem); }
 
         public iterator insert(iterator it, T* value) { return new((List<T>*)Unsafe.AsPointer(ref this), InsertBefore(it.m_pItem, value)); }
-    }
-
-    internal unsafe partial struct List<T>
-    {
-        public partial void Dispose()
-        {
-            // Intentionally not calling Clear, because that would be unnecessary
-            // computations to return all items to m_ItemAllocator as free.
-        }
-
-        public partial void Clear()
-        {
-            if (!IsEmpty())
-            {
-                Item* pItem = m_pBack;
-                while (pItem != null)
-                {
-                    Item* pPrevItem = pItem->pPrev;
-                    m_ItemAllocator.Free(pItem);
-                    pItem = pPrevItem;
-                }
-                m_pFront = null;
-                m_pBack = null;
-                m_Count = 0;
-            }
-        }
-
-        public partial Item* PushBack()
-        {
-            Item* pNewItem = m_ItemAllocator.Alloc();
-            pNewItem->pNext = null;
-            if (IsEmpty())
-            {
-                pNewItem->pPrev = null;
-                m_pFront = pNewItem;
-                m_pBack = pNewItem;
-                m_Count = 1;
-            }
-            else
-            {
-                pNewItem->pPrev = m_pBack;
-                m_pBack->pNext = pNewItem;
-                m_pBack = pNewItem;
-                ++m_Count;
-            }
-            return pNewItem;
-        }
-
-        public partial Item* PushFront()
-        {
-            Item* pNewItem = m_ItemAllocator.Alloc();
-            pNewItem->pPrev = null;
-            if (IsEmpty())
-            {
-                pNewItem->pNext = null;
-                m_pFront = pNewItem;
-                m_pBack = pNewItem;
-                m_Count = 1;
-            }
-            else
-            {
-                pNewItem->pNext = m_pFront;
-                m_pFront->pPrev = pNewItem;
-                m_pFront = pNewItem;
-                ++m_Count;
-            }
-            return pNewItem;
-        }
-
-        public partial Item* PushBack(T* value)
-        {
-            Item* pNewItem = PushBack();
-            pNewItem->Value = *value;
-            return pNewItem;
-        }
-
-        public partial Item* PushFront(T* value)
-        {
-            Item* pNewItem = PushFront();
-            pNewItem->Value = *value;
-            return pNewItem;
-        }
-
-        public partial void PopBack()
-        {
-            D3D12MA_HEAVY_ASSERT(m_Count > 0);
-            Item* pBackItem = m_pBack;
-            Item* pPrevItem = pBackItem->pPrev;
-            if (pPrevItem != null)
-            {
-                pPrevItem->pNext = null;
-            }
-            m_pBack = pPrevItem;
-            m_ItemAllocator.Free(pBackItem);
-            --m_Count;
-        }
-
-        public partial void PopFront()
-        {
-            D3D12MA_HEAVY_ASSERT(m_Count > 0);
-            Item* pFrontItem = m_pFront;
-            Item* pNextItem = pFrontItem->pNext;
-            if (pNextItem != null)
-            {
-                pNextItem->pPrev = null;
-            }
-            m_pFront = pNextItem;
-            m_ItemAllocator.Free(pFrontItem);
-            --m_Count;
-        }
-
-        public partial void Remove(Item* pItem)
-        {
-            D3D12MA_HEAVY_ASSERT(pItem != null);
-            D3D12MA_HEAVY_ASSERT(m_Count > 0);
-
-            if (pItem->pPrev != null)
-            {
-                pItem->pPrev->pNext = pItem->pNext;
-            }
-            else
-            {
-                D3D12MA_HEAVY_ASSERT(m_pFront == pItem);
-                m_pFront = pItem->pNext;
-            }
-
-            if (pItem->pNext != null)
-            {
-                pItem->pNext->pPrev = pItem->pPrev;
-            }
-            else
-            {
-                D3D12MA_HEAVY_ASSERT(m_pBack == pItem);
-                m_pBack = pItem->pPrev;
-            }
-
-            m_ItemAllocator.Free(pItem);
-            --m_Count;
-        }
-
-        public partial Item* InsertBefore(Item* pItem)
-        {
-            if (pItem != null)
-            {
-                Item* prevItem = pItem->pPrev;
-                Item* newItem = m_ItemAllocator.Alloc();
-                newItem->pPrev = prevItem;
-                newItem->pNext = pItem;
-                pItem->pPrev = newItem;
-                if (prevItem != null)
-                {
-                    prevItem->pNext = newItem;
-                }
-                else
-                {
-                    D3D12MA_HEAVY_ASSERT(m_pFront == pItem);
-                    m_pFront = newItem;
-                }
-                ++m_Count;
-                return newItem;
-            }
-            else
-            {
-                return PushBack();
-            }
-        }
-
-        public partial Item* InsertAfter(Item* pItem)
-        {
-            if (pItem != null)
-            {
-                Item* nextItem = pItem->pNext;
-                Item* newItem = m_ItemAllocator.Alloc();
-                newItem->pNext = nextItem;
-                newItem->pPrev = pItem;
-                pItem->pNext = newItem;
-                if (nextItem != null)
-                {
-                    nextItem->pPrev = newItem;
-                }
-                else
-                {
-                    D3D12MA_HEAVY_ASSERT(m_pBack == pItem);
-                    m_pBack = newItem;
-                }
-                ++m_Count;
-                return newItem;
-            }
-            else
-                return PushFront();
-        }
-
-        public partial Item* InsertBefore(Item* pItem, T* value)
-        {
-            Item* newItem = InsertBefore(pItem);
-            newItem->Value = *value;
-            return newItem;
-        }
-
-        public partial Item* InsertAfter(Item* pItem, T* value)
-        {
-            Item* newItem = InsertAfter(pItem);
-            newItem->Value = *value;
-            return newItem;
-        }
     }
 }

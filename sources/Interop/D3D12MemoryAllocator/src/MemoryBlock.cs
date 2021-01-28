@@ -7,15 +7,12 @@ using System.Runtime.CompilerServices;
 
 namespace TerraFX.Interop
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class MemoryBlock definition
-
     /// <summary>
     /// Represents a single block of device memory (heap).
     /// Base class for inheritance.
     /// Thread-safety: This class must be externally synchronized.
     /// </summary>
-    internal unsafe partial struct MemoryBlock : IDisposable
+    internal unsafe struct MemoryBlock : IDisposable
     {
         private static void** SharedLpVtbl = InitLpVtbl();
 
@@ -31,7 +28,10 @@ namespace TerraFX.Interop
         public readonly AllocatorPimpl* m_Allocator;
         public readonly D3D12_HEAP_TYPE m_HeapType;
         public readonly D3D12_HEAP_FLAGS m_HeapFlags;
-        [NativeTypeName("UINT64")] public readonly ulong m_Size;
+
+        [NativeTypeName("UINT64")]
+        public readonly ulong m_Size;
+
         public readonly uint m_Id;
 
         private ID3D12Heap* m_Heap;
@@ -53,7 +53,10 @@ namespace TerraFX.Interop
             m_Heap = null;
         }
 
-        public partial void Dispose();
+        public void Dispose()
+        {
+            Dispose((MemoryBlock*)Unsafe.AsPointer(ref this));
+        }
         // Creates the ID3D12Heap.
 
         public D3D12_HEAP_TYPE GetHeapType() { return m_HeapType; }
@@ -68,17 +71,7 @@ namespace TerraFX.Interop
 
         public ID3D12Heap* GetHeap() { return m_Heap; }
 
-        public partial HRESULT Init();
-    }
-
-    internal unsafe partial struct MemoryBlock
-    {
-        public partial void Dispose()
-        {
-            Dispose((MemoryBlock*)Unsafe.AsPointer(ref this));
-        }
-
-        public partial HRESULT Init()
+        public HRESULT Init()
         {
             D3D12MA_ASSERT(m_Heap == null && m_Size > 0);
 
@@ -94,7 +87,7 @@ namespace TerraFX.Interop
                 hr = m_Allocator->GetDevice()->CreateHeap(&heapDesc, __uuidof<ID3D12Heap>(), (void**)ppvHeap);
             }
 
-            
+
             if (SUCCEEDED(hr))
             {
                 m_Allocator->m_Budget.m_BlockBytes[(int)HeapTypeToIndex(m_HeapType)].Add(m_Size);

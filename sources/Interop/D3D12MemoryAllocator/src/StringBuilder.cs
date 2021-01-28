@@ -5,12 +5,10 @@ using static TerraFX.Interop.D3D12MemoryAllocator;
 
 namespace TerraFX.Interop
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class StringBuilder
-
-    internal unsafe partial struct StringBuilder : IDisposable
+    internal unsafe struct StringBuilder : IDisposable
     {
-        [NativeTypeName("Vector<WCHAR>")] private Vector<ushort> m_Data;
+        [NativeTypeName("Vector<WCHAR>")]
+        private Vector<ushort> m_Data;
 
         public StringBuilder(ALLOCATION_CALLBACKS* allocationCallbacks)
         {
@@ -27,20 +25,7 @@ namespace TerraFX.Interop
 
         public void Add([NativeTypeName("WCHAR")] ushort ch) { m_Data.push_back(&ch); }
 
-        public partial void Add([NativeTypeName("LPCWSTR")] ushort* str);
-
-        public void Add(string str) { fixed (void* p = str) Add((ushort*)p); }
-
-        public void AddNewLine() { Add('\n'); }
-
-        public partial void AddNumber([NativeTypeName("UINT")] uint num);
-
-        public partial void AddNumber([NativeTypeName("UINT64")] ulong num);
-    }
-
-    internal unsafe partial struct StringBuilder
-    {
-        public partial void Add(ushort* str)
+        public void Add([NativeTypeName("LPCWSTR")] ushort* str)
         {
             nuint len = wcslen(str);
             if (len > 0)
@@ -51,7 +36,11 @@ namespace TerraFX.Interop
             }
         }
 
-        public partial void AddNumber(uint num)
+        public void Add(string str) { fixed (void* p = str) Add((ushort*)p); }
+
+        public void AddNewLine() { Add('\n'); }
+
+        public void AddNumber([NativeTypeName("UINT")] uint num)
         {
             ushort* buf = stackalloc ushort[11];
             buf[10] = '\0';
@@ -65,7 +54,7 @@ namespace TerraFX.Interop
             Add(p);
         }
 
-        public partial void AddNumber(ulong num)
+        public void AddNumber([NativeTypeName("UINT64")] ulong num)
         {
             ushort* buf = stackalloc ushort[21];
             buf[20] = '\0';

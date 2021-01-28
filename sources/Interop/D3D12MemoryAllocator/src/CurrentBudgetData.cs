@@ -17,9 +17,15 @@ namespace TerraFX.Interop
 
         public atomic<uint> m_OperationsSinceBudgetFetch;
         public D3D12MA_RW_MUTEX m_BudgetMutex;
-        [NativeTypeName("UINT64")] public ulong m_D3D12UsageLocal, m_D3D12UsageNonLocal;
-        [NativeTypeName("UINT64")] public ulong m_D3D12BudgetLocal, m_D3D12BudgetNonLocal;
-        [NativeTypeName("UINT64")] public __m_Buffer64_Data<ulong> m_BlockBytesAtBudgetFetch;
+
+        [NativeTypeName("UINT64")]
+        public ulong m_D3D12UsageLocal, m_D3D12UsageNonLocal;
+
+        [NativeTypeName("UINT64")]
+        public ulong m_D3D12BudgetLocal, m_D3D12BudgetNonLocal;
+
+        [NativeTypeName("UINT64")]
+        public __m_Buffer64_Data<ulong> m_BlockBytesAtBudgetFetch;
 
         public void AddAllocation([NativeTypeName("UINT")] uint heapTypeIndex, [NativeTypeName("UINT64")] ulong allocationSize)
         {

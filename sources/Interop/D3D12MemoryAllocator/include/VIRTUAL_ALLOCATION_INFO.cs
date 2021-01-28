@@ -9,7 +9,8 @@ namespace TerraFX.Interop
         /// Size of the allocation.
         /// <para>Same value as passed in VIRTUAL_ALLOCATION_DESC::Size.</para>
         /// </summary>
-        [NativeTypeName("UINT64")] public ulong size;
+        [NativeTypeName("UINT64")]
+        public ulong size;
 
         /// <summary>
         /// Custom pointer associated with the allocation.

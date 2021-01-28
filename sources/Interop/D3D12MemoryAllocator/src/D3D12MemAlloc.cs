@@ -230,7 +230,7 @@ namespace TerraFX.Interop
                 Free(allocs, memory);
             }
         }
-        internal static void D3D12MA_DELETE_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, T* memory, [NativeTypeName("size_t")] nuint count)
+        internal static void D3D12MA_DELETE_ARRAY<T>([NativeTypeName("const ALLOCATION_CALLBACKS&")] ALLOCATION_CALLBACKS* allocs, T* memory, [NativeTypeName("size_t")] nuint count)
             where T : unmanaged, IDisposable
         {
             if (memory != null)

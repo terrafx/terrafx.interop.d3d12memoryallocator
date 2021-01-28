@@ -4,13 +4,13 @@ using System;
 
 namespace TerraFX.Interop
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class VirtualBlockPimpl definition
-
-    internal unsafe partial struct VirtualBlockPimpl : IDisposable
+    internal unsafe struct VirtualBlockPimpl : IDisposable
     {
         public readonly ALLOCATION_CALLBACKS m_AllocationCallbacks;
-        [NativeTypeName("UINT64")] public readonly ulong m_Size;
+
+        [NativeTypeName("UINT64")]
+        public readonly ulong m_Size;
+
         public BlockMetadata_Generic m_Metadata;
 
         public VirtualBlockPimpl(ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("UINT64")] ulong size)

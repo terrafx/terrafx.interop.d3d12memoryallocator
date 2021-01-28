@@ -9,7 +9,7 @@ using SuballocationList = TerraFX.Interop.List<TerraFX.Interop.Suballocation>;
 
 namespace TerraFX.Interop
 {
-    internal unsafe partial struct BlockMetadata_Generic // : BlockMetadata
+    internal unsafe struct BlockMetadata_Generic // : BlockMetadata
     {
         private static void** SharedLpVtbl = InitLpVtbl();
 
@@ -36,9 +36,14 @@ namespace TerraFX.Interop
 
         private BlockMetadata @base;
 
-        [NativeTypeName("UINT")] private uint m_FreeCount;
-        [NativeTypeName("UINT")] private ulong m_SumFreeSize;
+        [NativeTypeName("UINT")]
+        private uint m_FreeCount;
+
+        [NativeTypeName("UINT")]
+        private ulong m_SumFreeSize;
+
         private SuballocationList m_Suballocations;
+
         // Suballocations that are free and have size greater than certain threshold.
         // Sorted by size, ascending.
         private Vector<SuballocationList.iterator> m_FreeSuballocationsBySize;
@@ -57,11 +62,20 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(allocationCallbacks != null);
         }
 
-        public partial void Dispose();
+        public void Dispose()
+        {
+            Dispose((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
+        }
 
-        public partial void Init([NativeTypeName("UINT64")] ulong size);
+        public void Init([NativeTypeName("UINT64")] ulong size)
+        {
+            Init((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), size);
+        }
 
-        public readonly partial bool Validate();
+        public readonly bool Validate()
+        {
+            return Validate((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
+        }
 
         [return: NativeTypeName("size_t")]
         public readonly nuint GetAllocationCount() { return GetAllocationCount((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this))); }
@@ -70,108 +84,24 @@ namespace TerraFX.Interop
         public readonly ulong GetSumFreeSize() { return GetSumFreeSize((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this))); }
 
         [return: NativeTypeName("UINT64")]
-        public readonly partial ulong GetUnusedRangeSizeMax();
-
-        public readonly partial bool IsEmpty();
-
-        public readonly partial void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, VIRTUAL_ALLOCATION_INFO* outInfo);
-
-        public partial bool CreateAllocationRequest(
-            [NativeTypeName("UINT64")] ulong allocSize,
-            [NativeTypeName("UINT64")] ulong allocAlignment,
-            AllocationRequest* pAllocationRequest);
-
-        public partial void Alloc(
-            AllocationRequest* request,
-            [NativeTypeName("UINT64")] ulong allocSize,
-            void* userData);
-
-        public partial void FreeAtOffset([NativeTypeName("UINT64")] ulong offset);
-
-        public partial void Clear();
-
-        public partial void SetAllocationUserData([NativeTypeName("UINT64")] ulong offset, void* userData);
-
-        public partial void CalcAllocationStatInfo(StatInfo* outInfo);
-
-        public partial void WriteAllocationInfoToJson(JsonWriter* json);
-
-        public partial bool ValidateFreeSuballocationList();
-
-        /// <summary>
-        /// Checks if requested suballocation with given parameters can be placed in given pFreeSuballocItem.
-        /// If yes, fills pOffset and returns true. If no, returns false.
-        /// </summary>
-        public partial bool CheckAllocation(
-            [NativeTypeName("UINT64")] ulong allocSize,
-            [NativeTypeName("UINT64")] ulong allocAlignment,
-            SuballocationList.iterator suballocItem,
-            [NativeTypeName("UINT64*")] ulong* pOffset,
-            [NativeTypeName("UINT64*")] ulong* pSumFreeSize,
-            [NativeTypeName("UINT64*")] ulong* pSumItemSize,
-            [NativeTypeName("BOOL")] int* pZeroInitialized);
-
-        /// <summary>Given free suballocation, it merges it with following one, which must also be free.</summary>
-        public partial void MergeFreeWithNext(SuballocationList.iterator item);
-
-        /// <summary>
-        /// Releases given suballocation, making it free.
-        /// Merges it with adjacent free suballocations if applicable.
-        /// Returns iterator to new free suballocation at this place.
-        /// </summary>
-        public partial SuballocationList.iterator FreeSuballocation(SuballocationList.iterator suballocItem);
-
-        /// <summary>
-        /// Given free suballocation, it inserts it into sorted list of
-        /// m_FreeSuballocationsBySize if it's suitable.
-        /// </summary>
-        public partial void RegisterFreeSuballocation(SuballocationList.iterator item);
-
-        /// <summary>
-        /// Given free suballocation, it removes it from sorted list of
-        /// m_FreeSuballocationsBySize if it's suitable.
-        /// </summary>
-        public partial void UnregisterFreeSuballocation(SuballocationList.iterator item);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class BlockMetadata_Generic implementation
-
-    internal unsafe partial struct BlockMetadata_Generic
-    {
-        public partial void Dispose()
-        {
-            Dispose((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
-        }
-
-        public partial void Init(ulong size)
-        {
-            Init((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), size);
-        }
-
-        public readonly partial bool Validate()
-        {
-            return Validate((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
-        }
-
-        public readonly partial ulong GetUnusedRangeSizeMax()
+        public readonly ulong GetUnusedRangeSizeMax()
         {
             return GetUnusedRangeSizeMax((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
         }
 
-        public readonly partial bool IsEmpty()
+        public readonly bool IsEmpty()
         {
             return IsEmpty((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
         }
 
-        public readonly partial void GetAllocationInfo(ulong offset, VIRTUAL_ALLOCATION_INFO* outInfo)
+        public readonly void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, VIRTUAL_ALLOCATION_INFO* outInfo)
         {
             GetAllocationInfo((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)), offset, outInfo);
         }
 
-        public partial bool CreateAllocationRequest(
-            ulong allocSize,
-            ulong allocAlignment,
+        public bool CreateAllocationRequest(
+            [NativeTypeName("UINT64")] ulong allocSize,
+            [NativeTypeName("UINT64")] ulong allocAlignment,
             AllocationRequest* pAllocationRequest)
         {
             return CreateAllocationRequest(
@@ -181,9 +111,9 @@ namespace TerraFX.Interop
                 pAllocationRequest);
         }
 
-        public partial void Alloc(
+        public void Alloc(
             AllocationRequest* request,
-            ulong allocSize,
+            [NativeTypeName("UINT64")] ulong allocSize,
             void* userData)
         {
             Alloc(
@@ -193,29 +123,48 @@ namespace TerraFX.Interop
                 userData);
         }
 
-        public partial void FreeAtOffset(ulong offset)
+        public void FreeAtOffset([NativeTypeName("UINT64")] ulong offset)
         {
             FreeAtOffset((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), offset);
         }
 
-        public partial void Clear()
+        public void Clear()
         {
             Clear((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
         }
 
-        public partial bool ValidateFreeSuballocationList()
+        public void SetAllocationUserData([NativeTypeName("UINT64")] ulong offset, void* userData)
+        {
+            SetAllocationUserData((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), offset, userData);
+        }
+
+        public void CalcAllocationStatInfo(StatInfo* outInfo)
+        {
+            CalcAllocationStatInfo((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), outInfo);
+        }
+
+        public void WriteAllocationInfoToJson(JsonWriter* json)
+        {
+            WriteAllocationInfoToJson((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), json);
+        }
+
+        public bool ValidateFreeSuballocationList()
         {
             return ValidateFreeSuballocationList((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
         }
 
-        public partial bool CheckAllocation(
-            ulong allocSize,
-            ulong allocAlignment,
+        /// <summary>
+        /// Checks if requested suballocation with given parameters can be placed in given pFreeSuballocItem.
+        /// If yes, fills pOffset and returns true. If no, returns false.
+        /// </summary>
+        public bool CheckAllocation(
+            [NativeTypeName("UINT64")] ulong allocSize,
+            [NativeTypeName("UINT64")] ulong allocAlignment,
             SuballocationList.iterator suballocItem,
-            ulong* pOffset,
-            ulong* pSumFreeSize,
-            ulong* pSumItemSize,
-            int* pZeroInitialized)
+            [NativeTypeName("UINT64*")] ulong* pOffset,
+            [NativeTypeName("UINT64*")] ulong* pSumFreeSize,
+            [NativeTypeName("UINT64*")] ulong* pSumItemSize,
+            [NativeTypeName("BOOL")] int* pZeroInitialized)
         {
             return CheckAllocation(
                 (BlockMetadata_Generic*)Unsafe.AsPointer(ref this),
@@ -228,39 +177,38 @@ namespace TerraFX.Interop
                 pZeroInitialized);
         }
 
-        public partial void MergeFreeWithNext(SuballocationList.iterator item)
+        /// <summary>Given free suballocation, it merges it with following one, which must also be free.</summary>
+        public void MergeFreeWithNext(SuballocationList.iterator item)
         {
             MergeFreeWithNext((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), item);
         }
 
-        public partial SuballocationList.iterator FreeSuballocation(SuballocationList.iterator suballocItem)
+        /// <summary>
+        /// Releases given suballocation, making it free.
+        /// Merges it with adjacent free suballocations if applicable.
+        /// Returns iterator to new free suballocation at this place.
+        /// </summary>
+        public SuballocationList.iterator FreeSuballocation(SuballocationList.iterator suballocItem)
         {
             return FreeSuballocation((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), suballocItem);
         }
 
-        public partial void RegisterFreeSuballocation(SuballocationList.iterator item)
+        /// <summary>
+        /// Given free suballocation, it inserts it into sorted list of
+        /// m_FreeSuballocationsBySize if it's suitable.
+        /// </summary>
+        public void RegisterFreeSuballocation(SuballocationList.iterator item)
         {
             RegisterFreeSuballocation((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), item);
         }
 
-        public partial void UnregisterFreeSuballocation(SuballocationList.iterator item)
+        /// <summary>
+        /// Given free suballocation, it removes it from sorted list of
+        /// m_FreeSuballocationsBySize if it's suitable.
+        /// </summary>
+        public void UnregisterFreeSuballocation(SuballocationList.iterator item)
         {
             UnregisterFreeSuballocation((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), item);
-        }
-
-        public partial void SetAllocationUserData(ulong offset, void* userData)
-        {
-            SetAllocationUserData((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), offset, userData);
-        }
-
-        public partial void CalcAllocationStatInfo(StatInfo* outInfo)
-        {
-            CalcAllocationStatInfo((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), outInfo);
-        }
-
-        public partial void WriteAllocationInfoToJson(JsonWriter* json)
-        {
-            WriteAllocationInfoToJson((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), json);
         }
 
         public static void Dispose(BlockMetadata_Generic* @this)

@@ -4,11 +4,8 @@ using System.Runtime.CompilerServices;
 
 namespace TerraFX.Interop
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class AllocationObjectAllocator definition
-
     /// <summary>Thread-safe wrapper over PoolAllocator free list, for allocation of Allocation objects.</summary>
-    internal unsafe partial struct AllocationObjectAllocator
+    internal unsafe struct AllocationObjectAllocator
     {
         private D3D12MA_MUTEX m_Mutex;
         private PoolAllocator<Allocation> m_Allocator;
@@ -19,14 +16,7 @@ namespace TerraFX.Interop
             m_Allocator = new(allocationCallbacks, 1024);
         }
 
-        public partial Allocation* Allocate(AllocatorPimpl* allocator, ulong size, int wasZeroInitialized);
-
-        public partial void Free(Allocation* alloc);
-    }
-
-    internal unsafe partial struct AllocationObjectAllocator
-    {
-        public partial Allocation* Allocate(AllocatorPimpl* allocator, ulong size, int wasZeroInitialized)
+        public Allocation* Allocate(AllocatorPimpl* allocator, ulong size, int wasZeroInitialized)
         {
             using MutexLock mutexLock = new((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
             static Allocation Ctor(void** args)
@@ -37,7 +27,7 @@ namespace TerraFX.Interop
             return m_Allocator.Alloc(args, &Ctor);
         }
 
-        public partial void Free(Allocation* alloc)
+        public void Free(Allocation* alloc)
         {
             using MutexLock mutexLock = new((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
             m_Allocator.Free(alloc);

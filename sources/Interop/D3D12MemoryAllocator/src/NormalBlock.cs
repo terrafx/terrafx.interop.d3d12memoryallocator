@@ -7,15 +7,12 @@ using System.Runtime.CompilerServices;
 
 namespace TerraFX.Interop
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class NormalBlock definition
-
     /// <summary>
     /// Represents a single block of device memory (heap) with all the data about its
     /// regions(aka suballocations, Allocation), assigned and free.
     /// Thread-safety: This class must be externally synchronized.
     /// </summary>
-    internal unsafe partial struct NormalBlock : /* MemoryBlock, */ IDisposable
+    internal unsafe struct NormalBlock : /* MemoryBlock, */ IDisposable
     {
         private static void** SharedLpVtbl = InitLpVtbl();
 
@@ -45,25 +42,13 @@ namespace TerraFX.Interop
             m_BlockVector = null;
         }
 
-        public partial void Dispose();
-
-        [return: NativeTypeName("HRESULT")]
-        public partial int Init();
-
-        public readonly BlockVector* GetBlockVector() { return m_BlockVector; }
-
-        /// <summary>Validates all data structures inside this object. If not valid, returns false.</summary>
-        public readonly partial bool Validate();
-    }
-
-    internal unsafe partial struct NormalBlock
-    {
-        public partial void Dispose()
+        public void Dispose()
         {
             Dispose((NormalBlock*)Unsafe.AsPointer(ref this));
         }
 
-        public partial int Init()
+        [return: NativeTypeName("HRESULT")]
+        public int Init()
         {
             HRESULT hr = @base.Init();
             if (FAILED(hr))
@@ -78,7 +63,10 @@ namespace TerraFX.Interop
             return hr;
         }
 
-        public readonly partial bool Validate()
+        public readonly BlockVector* GetBlockVector() { return m_BlockVector; }
+
+        /// <summary>Validates all data structures inside this object. If not valid, returns false.</summary>
+        public readonly bool Validate()
         {
             D3D12MA_VALIDATE(@base.GetHeap() != null &&
                 m_pMetadata != null &&

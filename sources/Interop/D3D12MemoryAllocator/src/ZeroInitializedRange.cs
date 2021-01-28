@@ -12,7 +12,8 @@ namespace TerraFX.Interop
     /// </summary>
     internal struct ZeroInitializedRange
     {
-        [NativeTypeName("UINT64")] private ulong m_ZeroBeg, m_ZeroEnd;
+        [NativeTypeName("UINT64")]
+        private ulong m_ZeroBeg, m_ZeroEnd;
 
         public void Reset([NativeTypeName("UINT64")] ulong size)
         {

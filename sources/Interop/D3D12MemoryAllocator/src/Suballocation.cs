@@ -8,8 +8,12 @@ namespace TerraFX.Interop
     /// </summary>
     internal unsafe struct Suballocation
     {
-        [NativeTypeName("UINT64")] public ulong offset;
-        [NativeTypeName("UINT64")] public ulong size;
+        [NativeTypeName("UINT64")]
+        public ulong offset;
+
+        [NativeTypeName("UINT64")]
+        public ulong size;
+
         public void* userData;
         public SuballocationType type;
     };

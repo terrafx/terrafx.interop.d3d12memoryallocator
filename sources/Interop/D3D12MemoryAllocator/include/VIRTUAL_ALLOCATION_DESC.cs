@@ -9,13 +9,15 @@ namespace TerraFX.Interop
         /// Size of the allocation.
         /// <para>Cannot be zero.</para>
         /// </summary>
-        [NativeTypeName("UINT64")] public ulong Size;
+        [NativeTypeName("UINT64")]
+        public ulong Size;
 
         /// <summary>
         /// Required alignment of the allocation.
         /// <para>Must be power of two. Special value 0 has the same meaning as 1 - means no special alignment is required, so allocation can start at any offset.</para>
         /// </summary>
-        [NativeTypeName("UINT64")] public ulong Alignment;
+        [NativeTypeName("UINT64")]
+        public ulong Alignment;
 
         /// <summary>
         /// Custom pointer to be associated with the allocation.

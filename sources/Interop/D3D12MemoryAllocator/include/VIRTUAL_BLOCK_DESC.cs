@@ -12,12 +12,14 @@ namespace TerraFX.Interop
         /// For example, if you allocate from some array of structures, 1 can mean single instance of entire structure.
         /// </para>
         /// </summary>
-        [NativeTypeName("UINT64")] public ulong Size;
+        [NativeTypeName("UINT64")]
+        public ulong Size;
 
         /// <summary>
         /// Custom CPU memory allocation callbacks. Optional.
         /// <para>Optional, can be null. When specified, will be used for all CPU-side memory allocations.</para>
         /// </summary>
+        [NativeTypeName("const ALLOCATION_CALLBACKS*")]
         public ALLOCATION_CALLBACKS* pAllocationCallbacks;
     }
 }
