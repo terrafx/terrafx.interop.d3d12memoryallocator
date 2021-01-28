@@ -30,18 +30,18 @@ namespace TerraFX.Interop
         /// </summary>
         public void Release()
         {
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             // Copy is needed because otherwise we would call destructor and invalidate the structure with callbacks before using it to free memory.
             ALLOCATION_CALLBACKS allocationCallbacksCopy = m_Pimpl->m_AllocationCallbacks;
-            D3D12MA_DELETE(&allocationCallbacksCopy, (VirtualBlock*)Unsafe.AsPointer(ref this));
+            D3D12MA_DELETE(&allocationCallbacksCopy, ref this);
         }
 
         /// <summary>Returns true if the block is empty - contains 0 allocations.</summary>
         [return: NativeTypeName("BOOL")]
         public readonly int IsEmpty()
         {
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             return m_Pimpl->m_Metadata.IsEmpty() ? TRUE : FALSE;
         }
@@ -51,7 +51,7 @@ namespace TerraFX.Interop
         {
             D3D12MA_ASSERT(offset != UINT64_MAX && pInfo != null);
 
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             m_Pimpl->m_Metadata.GetAllocationInfo(offset, pInfo);
         }
@@ -64,13 +64,13 @@ namespace TerraFX.Interop
         {
             if (pDesc == null || pOffset == null || pDesc->Size == 0 || !IsPow2(pDesc->Alignment))
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid arguments passed to VirtualBlock::Allocate."
                 return E_INVALIDARG;
             }
 
             *pOffset = UINT64_MAX;
 
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             ulong alignment = pDesc->Alignment != 0 ? pDesc->Alignment : 1;
             AllocationRequest allocRequest = default;
@@ -90,7 +90,7 @@ namespace TerraFX.Interop
         /// <summary>Frees the allocation at given offset.</summary>
         public void FreeAllocation([NativeTypeName("UINT64")] ulong offset)
         {
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             D3D12MA_ASSERT(offset != UINT64_MAX);
 
@@ -101,7 +101,7 @@ namespace TerraFX.Interop
         /// <summary>Frees all the allocations.</summary>
         public void Clear()
         {
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             m_Pimpl->m_Metadata.Clear();
             D3D12MA_HEAVY_ASSERT(m_Pimpl->m_Metadata.Validate());
@@ -112,7 +112,7 @@ namespace TerraFX.Interop
         {
             D3D12MA_ASSERT(offset != UINT64_MAX);
 
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             m_Pimpl->m_Metadata.SetAllocationUserData(offset, pUserData);
         }
@@ -122,7 +122,7 @@ namespace TerraFX.Interop
         {
             D3D12MA_ASSERT(pInfo != null);
 
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             D3D12MA_HEAVY_ASSERT(m_Pimpl->m_Metadata.Validate());
             m_Pimpl->m_Metadata.CalcAllocationStatInfo(pInfo);
@@ -134,7 +134,7 @@ namespace TerraFX.Interop
         {
             D3D12MA_ASSERT(ppStatsString != null);
 
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             using StringBuilder sb = new(&m_Pimpl->m_AllocationCallbacks);
             {
@@ -155,7 +155,7 @@ namespace TerraFX.Interop
         {
             if (pStatsString != null)
             {
-                //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+                using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
                 Free(&m_Pimpl->m_AllocationCallbacks, pStatsString);
             }
         }
@@ -170,7 +170,7 @@ namespace TerraFX.Interop
         {
             // THIS IS AN IMPORTANT ASSERT!
             // Hitting it means you have some memory leak - unreleased allocations in this virtual block.
-            D3D12MA_ASSERT(m_Pimpl->m_Metadata.IsEmpty());
+            D3D12MA_ASSERT(m_Pimpl->m_Metadata.IsEmpty()); // "Some allocations were not freed before destruction of this virtual block!"
 
             D3D12MA_DELETE(&m_Pimpl->m_AllocationCallbacks, m_Pimpl);
         }

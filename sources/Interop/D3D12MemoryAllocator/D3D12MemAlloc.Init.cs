@@ -58,12 +58,6 @@ namespace TerraFX.Interop
         /// </summary>
         public static readonly ulong D3D12MA_DEBUG_MARGIN = get_app_context_data(nameof(D3D12MA_DEBUG_MARGIN), 0);
 
-        /// <summary>
-        /// Set this to 1 for debugging purposes only, to enable single mutex protecting all
-        /// entry calls to the library.Can be useful for debugging multithreading issues.
-        /// </summary>
-        public static readonly uint D3D12MA_DEBUG_GLOBAL_MUTEX = get_app_context_data(nameof(D3D12MA_DEBUG_GLOBAL_MUTEX), 0);
-
         /// <summary>Define this macro to 0 to disable usage of DXGI 1.4 (needed for IDXGIAdapter3 and query for memory budget).</summary>
         public static readonly uint D3D12MA_DXGI_1_4 = get_app_context_data(nameof(D3D12MA_DXGI_1_4), 1);
 
@@ -73,5 +67,14 @@ namespace TerraFX.Interop
         /// <summary>Minimum size of a free suballocation to register it in the free suballocation collection.</summary>
         [NativeTypeName("UINT64")]
         public static readonly ulong MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER = get_app_context_data(nameof(MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER), 16);
+
+        /// <summary>
+        /// Set this to 1 for debugging purposes only, to enable single mutex protecting all
+        /// entry calls to the library.Can be useful for debugging multithreading issues.
+        /// </summary>
+        public static readonly uint D3D12MA_DEBUG_GLOBAL_MUTEX = get_app_context_data(nameof(D3D12MA_DEBUG_GLOBAL_MUTEX), 0);
+
+        /// <summary>The internal debug mutex to use when <see cref="D3D12MA_DEBUG_GLOBAL_MUTEX"/> is set.</summary>
+        internal static readonly D3D12MA_MUTEX g_DebugGlobalMutex = InitDebugGlobalMutex();
     }
 }

@@ -97,7 +97,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
-            D3D12MA_ASSERT(false);
+            D3D12MA_ASSERT(false); // "Pointer doesn't belong to this memory pool."
         }
 
         [StructLayout(LayoutKind.Explicit)]

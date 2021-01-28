@@ -33,11 +33,11 @@ namespace TerraFX.Interop
         /// </summary>
         public void Release()
         {
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             // Copy is needed because otherwise we would call destructor and invalidate the structure with callbacks before using it to free memory.
             ALLOCATION_CALLBACKS allocationCallbacksCopy = *m_Pimpl->GetAllocs();
-            D3D12MA_DELETE(&allocationCallbacksCopy, (Allocator*)Unsafe.AsPointer(ref this));
+            D3D12MA_DELETE(&allocationCallbacksCopy, ref this);
         }
 
         /// <summary>
@@ -94,10 +94,10 @@ namespace TerraFX.Interop
         {
             if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreateResource."
                 return E_INVALIDARG;
             }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             return m_Pimpl->CreateResource(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
         }
 
@@ -122,10 +122,10 @@ namespace TerraFX.Interop
         {
             if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreateResource1."
                 return E_INVALIDARG;
             }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             return m_Pimpl->CreateResource1(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
         }
 
@@ -155,10 +155,10 @@ namespace TerraFX.Interop
         {
             if (pAllocDesc == null || pResourceDesc == null || ppAllocation == null)
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreateResource2."
                 return E_INVALIDARG;
             }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             return m_Pimpl->CreateResource2(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
         }
 
@@ -192,10 +192,10 @@ namespace TerraFX.Interop
         {
             if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::AllocateMemory."
                 return E_INVALIDARG;
             }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             return m_Pimpl->AllocateMemory(pAllocDesc, pAllocInfo, ppAllocation);
         }
 
@@ -216,10 +216,10 @@ namespace TerraFX.Interop
         {
             if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::AllocateMemory1."
                 return E_INVALIDARG;
             }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             return m_Pimpl->AllocateMemory1(pAllocDesc, pAllocInfo, pProtectedSession, ppAllocation);
         }
 
@@ -261,10 +261,10 @@ namespace TerraFX.Interop
         {
             if (pAllocation == null || pResourceDesc == null || ppvResource == null)
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreateAliasingResource."
                 return E_INVALIDARG;
             }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             return m_Pimpl->CreateAliasingResource(pAllocation, AllocationLocalOffset, pResourceDesc, InitialResourceState, pOptimizedClearValue, riidResource, ppvResource);
         }
 
@@ -276,15 +276,15 @@ namespace TerraFX.Interop
                 !IsHeapTypeValid(pPoolDesc->HeapType) ||
                 (pPoolDesc->MaxBlockCount > 0 && pPoolDesc->MaxBlockCount < pPoolDesc->MinBlockCount))
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreatePool."
                 return E_INVALIDARG;
             }
             if (!m_Pimpl->HeapFlagsFulfillResourceHeapTier(pPoolDesc->HeapFlags))
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid pPoolDesc->HeapFlags passed to Allocator::CreatePool. Did you forget to handle ResourceHeapTier=1?"
                 return E_INVALIDARG;
             }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             *ppPool = D3D12MA_NEW<Pool>(m_Pimpl->GetAllocs());
             **ppPool = new Pool((Allocator*)Unsafe.AsPointer(ref this), pPoolDesc);
             HRESULT hr = (*ppPool)->m_Pimpl->Init();
@@ -314,7 +314,7 @@ namespace TerraFX.Interop
             D3D12_HEAP_FLAGS heapFlags,
             [NativeTypeName("UINT64")] ulong minBytes)
         {
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             return m_Pimpl->SetDefaultHeapMinBytes(heapType, heapFlags, minBytes);
         }
 
@@ -324,7 +324,7 @@ namespace TerraFX.Interop
         /// </summary>
         public void SetCurrentFrameIndex([NativeTypeName("UINT")] uint frameIndex)
         {
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             m_Pimpl->SetCurrentFrameIndex(frameIndex);
         }
 
@@ -332,7 +332,7 @@ namespace TerraFX.Interop
         public void CalculateStats(Stats* pStats)
         {
             D3D12MA_ASSERT(pStats != null);
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             m_Pimpl->CalculateStats(pStats);
         }
 
@@ -353,7 +353,7 @@ namespace TerraFX.Interop
             {
                 return;
             }
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             m_Pimpl->GetBudget(pGpuBudget, pCpuBudget);
         }
 
@@ -365,7 +365,7 @@ namespace TerraFX.Interop
         public void BuildStatsString([NativeTypeName("WCHAR**")] ushort** ppStatsString, [NativeTypeName("BOOL")] int DetailedMap)
         {
             D3D12MA_ASSERT(ppStatsString != null);
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             m_Pimpl->BuildStatsString(ppStatsString, DetailedMap);
         }
 
@@ -374,7 +374,7 @@ namespace TerraFX.Interop
         {
             if (pStatsString != null)
             {
-                //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+                using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
                 m_Pimpl->FreeStatsString(pStatsString);
             }
         }

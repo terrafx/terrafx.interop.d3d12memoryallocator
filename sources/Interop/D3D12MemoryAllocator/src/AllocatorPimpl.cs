@@ -193,7 +193,7 @@ namespace TerraFX.Interop
             {
                 if (m_pPools[(int)i].Value != null && !m_pPools[(int)i].Value->empty())
                 {
-                    D3D12MA_ASSERT(false);
+                    D3D12MA_ASSERT(false); // "Unfreed pools found!"
                 }
 
                 D3D12MA_DELETE(GetAllocs(), m_pPools[(int)i].Value);
@@ -203,7 +203,7 @@ namespace TerraFX.Interop
             {
                 if (m_pCommittedAllocations[(int)i].Value != null && !m_pCommittedAllocations[(int)i].Value->empty())
                 {
-                    D3D12MA_ASSERT(false);
+                    D3D12MA_ASSERT(false); // "Unfreed committed allocations found!"
                 }
 
                 D3D12MA_DELETE(GetAllocs(), m_pCommittedAllocations[(int)i].Value);
@@ -699,7 +699,7 @@ namespace TerraFX.Interop
         {
             if (!IsHeapTypeValid(heapType))
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Allocator::SetDefaultHeapMinBytes: Invalid heapType passed."
                 return E_INVALIDARG;
             }
 
@@ -710,7 +710,7 @@ namespace TerraFX.Interop
                     heapFlags != D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES &&
                     heapFlags != D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES)
                 {
-                    D3D12MA_ASSERT(false);
+                    D3D12MA_ASSERT(false); // "Allocator::SetDefaultHeapMinBytes: Invalid heapFlags passed."
                     return E_INVALIDARG;
                 }
 
@@ -748,7 +748,7 @@ namespace TerraFX.Interop
                     heapFlags != D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES &&
                     heapFlags != D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES)
                 {
-                    D3D12MA_ASSERT(false);
+                    D3D12MA_ASSERT(false); // "Allocator::SetDefaultHeapMinBytes: Invalid heapFlags passed."
                     return E_INVALIDARG;
                 }
 
@@ -761,47 +761,56 @@ namespace TerraFX.Interop
         /// Unregisters allocation from the collection of dedicated allocations.
         /// Allocation object must be deleted externally afterwards.
         /// </summary>
-        public void FreeCommittedMemory(Allocation* allocation)
+        public void FreeCommittedMemory([NativeTypeName("Allocation*")] ref Allocation allocation)
         {
-            D3D12MA_ASSERT(allocation != null && allocation->m_PackedData.GetType() == Allocation.Type.TYPE_COMMITTED);
-            UnregisterCommittedAllocation(allocation, allocation->m_Union.m_Committed.heapType);
+            fixed (Allocation* pAllocation = &allocation)
+            {
+                D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_COMMITTED);
+                UnregisterCommittedAllocation(pAllocation, pAllocation->m_Union.m_Committed.heapType);
 
-            ulong allocationSize = allocation->GetSize();
-            uint heapTypeIndex = HeapTypeToIndex(allocation->m_Union.m_Committed.heapType);
-            m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
-            m_Budget.m_BlockBytes[(int)heapTypeIndex].Subtract(allocationSize);
+                ulong allocationSize = pAllocation->GetSize();
+                uint heapTypeIndex = HeapTypeToIndex(pAllocation->m_Union.m_Committed.heapType);
+                m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
+                m_Budget.m_BlockBytes[(int)heapTypeIndex].Subtract(allocationSize);
+            }            
         }
 
         /// <summary>
         /// Unregisters allocation from the collection of placed allocations.
         /// Allocation object must be deleted externally afterwards.
         /// </summary>
-        public void FreePlacedMemory(Allocation* allocation)
+        public void FreePlacedMemory([NativeTypeName("Allocation*")] ref Allocation allocation)
         {
-            D3D12MA_ASSERT(allocation != null && allocation->m_PackedData.GetType() == Allocation.Type.TYPE_PLACED);
+            fixed (Allocation* pAllocation = &allocation)
+            {
+                D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_PLACED);
 
-            NormalBlock* block = allocation->m_Union.m_Placed.block;
-            D3D12MA_ASSERT(block != null);
-            BlockVector* blockVector = block->GetBlockVector();
-            D3D12MA_ASSERT(blockVector != null);
-            m_Budget.RemoveAllocation(HeapTypeToIndex(block->@base.GetHeapType()), allocation->GetSize());
-            blockVector->Free(allocation);
+                NormalBlock* block = pAllocation->m_Union.m_Placed.block;
+                D3D12MA_ASSERT(block != null);
+                BlockVector* blockVector = block->GetBlockVector();
+                D3D12MA_ASSERT(blockVector != null);
+                m_Budget.RemoveAllocation(HeapTypeToIndex(block->@base.GetHeapType()), pAllocation->GetSize());
+                blockVector->Free(pAllocation);
+            }
         }
 
         /// <summary>
         /// Unregisters allocation from the collection of dedicated allocations and destroys associated heap.
         /// Allocation object must be deleted externally afterwards.
         /// </summary>
-        public void FreeHeapMemory(Allocation* allocation)
+        public void FreeHeapMemory([NativeTypeName("Allocation*")] ref Allocation allocation)
         {
-            D3D12MA_ASSERT(allocation != null && allocation->m_PackedData.GetType() == Allocation.Type.TYPE_HEAP);
-            UnregisterCommittedAllocation(allocation, allocation->m_Union.m_Heap.heapType);
-            SAFE_RELEASE(&allocation->m_Union.m_Heap.heap);
+            fixed (Allocation* pAllocation = &allocation)
+            {
+                D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_HEAP);
+                UnregisterCommittedAllocation(pAllocation, pAllocation->m_Union.m_Heap.heapType);
+                SAFE_RELEASE(&pAllocation->m_Union.m_Heap.heap);
 
-            uint heapTypeIndex = HeapTypeToIndex(allocation->m_Union.m_Heap.heapType);
-            ulong allocationSize = allocation->GetSize();
-            m_Budget.m_BlockBytes[(int)heapTypeIndex].Subtract(allocationSize);
-            m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
+                uint heapTypeIndex = HeapTypeToIndex(pAllocation->m_Union.m_Heap.heapType);
+                ulong allocationSize = pAllocation->GetSize();
+                m_Budget.m_BlockBytes[(int)heapTypeIndex].Subtract(allocationSize);
+                m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
+            }
         }
 
         public void SetCurrentFrameIndex([NativeTypeName("UINT")] uint frameIndex)
@@ -1706,15 +1715,18 @@ namespace TerraFX.Interop
         }
 
         /// <summary>Unregisters Pool object from m_pPools.</summary>
-        internal void UnregisterPool(Pool* pool, D3D12_HEAP_TYPE heapType)
+        internal void UnregisterPool([NativeTypeName("Pool*")] ref Pool pool, D3D12_HEAP_TYPE heapType)
         {
-            uint heapTypeIndex = HeapTypeToIndex(heapType);
+            fixed (Pool* pPool = &pool)
+            {
+                uint heapTypeIndex = HeapTypeToIndex(heapType);
 
-            using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_PoolsMutex[(int)heapTypeIndex]), m_UseMutex);
-            PoolVectorType* pools = m_pPools[(int)heapTypeIndex];
-            D3D12MA_ASSERT(pools != null);
-            bool success = pools->RemoveSorted((Ptr<Pool>*)&pool, new PointerLess<Ptr<Pool>>());
-            D3D12MA_ASSERT(success);
+                using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_PoolsMutex[(int)heapTypeIndex]), m_UseMutex);
+                PoolVectorType* pools = m_pPools[(int)heapTypeIndex];
+                D3D12MA_ASSERT(pools != null);
+                bool success = pools->RemoveSorted((Ptr<Pool>*)&pPool, new PointerLess<Ptr<Pool>>());
+                D3D12MA_ASSERT(success);
+            }
         }
 
         [return: NativeTypeName("HRESULT")]

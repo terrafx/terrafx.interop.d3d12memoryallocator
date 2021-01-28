@@ -33,9 +33,9 @@ namespace TerraFX.Interop
                 return;
             }
 
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
-            D3D12MA_DELETE(m_Pimpl->GetAllocator()->GetAllocs(), (Pool*)Unsafe.AsPointer(ref this));
+            D3D12MA_DELETE(m_Pimpl->GetAllocator()->GetAllocs(), ref this);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace TerraFX.Interop
         public void CalculateStats(StatInfo* pStats)
         {
             D3D12MA_ASSERT(pStats != null);
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             m_Pimpl->CalculateStats(pStats);
         }
 
@@ -75,7 +75,7 @@ namespace TerraFX.Interop
         /// <param name="Name">`Name` can be null.</param>
         public void SetName([NativeTypeName("LPCWSTR")] ushort* Name)
         {
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
             m_Pimpl->SetName(Name);
         }
 
@@ -98,7 +98,7 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
-            m_Pimpl->GetAllocator()->UnregisterPool((Pool*)Unsafe.AsPointer(ref this), m_Pimpl->GetDesc()->HeapType);
+            m_Pimpl->GetAllocator()->UnregisterPool(ref this, m_Pimpl->GetDesc()->HeapType);
 
             D3D12MA_DELETE(m_Pimpl->GetAllocator()->GetAllocs(), m_Pimpl);
         }

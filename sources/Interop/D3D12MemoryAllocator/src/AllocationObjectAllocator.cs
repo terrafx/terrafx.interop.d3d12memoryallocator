@@ -29,10 +29,13 @@ namespace TerraFX.Interop
             return m_Allocator.Alloc(args, &Ctor);
         }
 
-        public void Free(Allocation* alloc)
+        public void Free([NativeTypeName("Allocation*")] ref Allocation alloc)
         {
             using MutexLock mutexLock = new((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
-            m_Allocator.Free(alloc);
+            fixed (Allocation* pAlloc = &alloc)
+            {
+                m_Allocator.Free(pAlloc);
+            }
         }
     }
 }

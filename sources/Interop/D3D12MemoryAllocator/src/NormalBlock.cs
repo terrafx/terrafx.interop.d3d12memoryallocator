@@ -81,7 +81,7 @@ namespace TerraFX.Interop
             {
                 // THIS IS THE MOST IMPORTANT ASSERT IN THE ENTIRE LIBRARY!
                 // Hitting it means you have some memory leak - unreleased Allocation objects.
-                D3D12MA_ASSERT(@this->m_pMetadata->IsEmpty());
+                D3D12MA_ASSERT(@this->m_pMetadata->IsEmpty()); // "Some allocations were not freed before destruction of this memory block!"
 
                 D3D12MA_DELETE(@this->@base.m_Allocator->GetAllocs(), @this->m_pMetadata);
             }

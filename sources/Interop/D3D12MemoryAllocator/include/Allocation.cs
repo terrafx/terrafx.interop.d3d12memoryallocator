@@ -47,7 +47,7 @@ namespace TerraFX.Interop
                 return;
             }
 
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             SAFE_RELEASE(ref m_Resource);
 
@@ -55,26 +55,26 @@ namespace TerraFX.Interop
             {
                 case TYPE_COMMITTED:
                 {
-                    m_Allocator->FreeCommittedMemory((Allocation*)Unsafe.AsPointer(ref this));
+                    m_Allocator->FreeCommittedMemory(ref this);
                     break;
                 }
 
                 case TYPE_PLACED:
                 {
-                    m_Allocator->FreePlacedMemory((Allocation*)Unsafe.AsPointer(ref this));
+                    m_Allocator->FreePlacedMemory(ref this);
                     break;
                 }
 
                 case TYPE_HEAP:
                 {
-                    m_Allocator->FreeHeapMemory((Allocation*)Unsafe.AsPointer(ref this));
+                    m_Allocator->FreeHeapMemory(ref this);
                     break;
                 }
             }
 
             FreeName();
 
-            m_Allocator->GetAllocationObjectAllocator()->Free((Allocation*)Unsafe.AsPointer(ref this));
+            m_Allocator->GetAllocationObjectAllocator()->Free(ref this);
         }
 
         /// <summary>

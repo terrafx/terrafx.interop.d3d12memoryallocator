@@ -363,7 +363,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
-            D3D12MA_ASSERT(false);
+            D3D12MA_ASSERT(false); // "Not found!"
         }
 
         public static bool CreateAllocationRequest(
@@ -492,7 +492,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
-            D3D12MA_ASSERT(false);
+            D3D12MA_ASSERT(false); // "Not found!"
         }
 
         public static void Clear(BlockMetadata_Generic* @this)
@@ -703,9 +703,9 @@ namespace TerraFX.Interop
                         @this->m_FreeSuballocationsBySize.remove(index);
                         return;
                     }
-                    D3D12MA_ASSERT((@this->m_FreeSuballocationsBySize[index]->op_Arrow()->size == item.op_Arrow()->size));
+                    D3D12MA_ASSERT(@this->m_FreeSuballocationsBySize[index]->op_Arrow()->size == item.op_Arrow()->size); // "Not found!"
                 }
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Not found!"
             }
 
             //D3D12MA_HEAVY_ASSERT(ValidateFreeSuballocationList());
@@ -724,7 +724,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
-            D3D12MA_ASSERT(false);
+            D3D12MA_ASSERT(false); // "Not found!"
         }
 
         public static void CalcAllocationStatInfo(BlockMetadata_Generic* @this, StatInfo* outInfo)

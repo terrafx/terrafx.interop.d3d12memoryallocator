@@ -270,7 +270,7 @@ namespace TerraFX.Interop
             Guid* riidResource,
             void** ppvResource)
         {
-            D3D12MA_ASSERT(pProtectedSession == null);
+            D3D12MA_ASSERT(pProtectedSession == null); // "Should never get here. pProtectedSession != NULL currently requires committed resources."
 
             ID3D12Device8* device8 = m_hAllocator->GetDevice8();
             if (device8 == null)

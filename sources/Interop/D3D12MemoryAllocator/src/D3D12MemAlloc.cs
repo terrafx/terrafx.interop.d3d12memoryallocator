@@ -71,6 +71,15 @@ namespace TerraFX.Interop
             }
         }
 
+        /// <summary>Creates a new <see cref="D3D12MA_MUTEX"/> when <see cref="D3D12MA_DEBUG_GLOBAL_MUTEX"/> is set, otherwise a <see langword="null"/> one.</summary>
+        private static D3D12MA_MUTEX InitDebugGlobalMutex()
+        {
+            if (D3D12MA_DEBUG_GLOBAL_MUTEX > 0)
+                return D3D12MA_MUTEX.Init();
+            else
+                return default;
+        }
+
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
         //
@@ -207,6 +216,7 @@ namespace TerraFX.Interop
 
             return TRY_D3D12MA_NEW<T>(allocs);
         }
+
         internal static T* D3D12MA_NEW_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, nuint count)
             where T : unmanaged
         {
@@ -230,6 +240,20 @@ namespace TerraFX.Interop
                 Free(allocs, memory);
             }
         }
+
+        internal static void D3D12MA_DELETE<T>(ALLOCATION_CALLBACKS* allocs, ref T memory)
+            where T : unmanaged, IDisposable
+        {
+            fixed (T* pMemory = &memory)
+            {
+                if (pMemory != null)
+                {
+                    pMemory->Dispose();
+                    Free(allocs, pMemory);
+                }
+            }
+        }
+
         internal static void D3D12MA_DELETE_ARRAY<T>([NativeTypeName("const ALLOCATION_CALLBACKS&")] ALLOCATION_CALLBACKS* allocs, T* memory, [NativeTypeName("size_t")] nuint count)
             where T : unmanaged, IDisposable
         {
@@ -242,6 +266,7 @@ namespace TerraFX.Interop
                 Free(allocs, memory);
             }
         }
+
         internal static void D3D12MA_DELETE_ARRAY_NO_DISPOSE<T>(ALLOCATION_CALLBACKS* allocs, T* memory, [NativeTypeName("size_t")] nuint count)
             where T : unmanaged
         {
@@ -902,11 +927,11 @@ namespace TerraFX.Interop
             if (pDesc == null || ppAllocator == null || pDesc->pDevice == null || pDesc->pAdapter == null ||
                 !(pDesc->PreferredBlockSize == 0 || (pDesc->PreferredBlockSize >= 16 && pDesc->PreferredBlockSize < 0x10000000000UL)))
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid arguments passed to CreateAllocator."
                 return E_INVALIDARG;
             }
 
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             ALLOCATION_CALLBACKS allocationCallbacks;
             SetupAllocationCallbacks(&allocationCallbacks, pDesc->pAllocationCallbacks);
@@ -926,11 +951,11 @@ namespace TerraFX.Interop
         {
             if (pDesc == null || ppVirtualBlock == null)
             {
-                D3D12MA_ASSERT(false);
+                D3D12MA_ASSERT(false); // "Invalid arguments passed to CreateVirtualBlock."
                 return E_INVALIDARG;
             }
 
-            //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK.Get();
 
             ALLOCATION_CALLBACKS allocationCallbacks;
             SetupAllocationCallbacks(&allocationCallbacks, pDesc->pAllocationCallbacks);

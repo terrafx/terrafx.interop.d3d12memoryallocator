@@ -13,6 +13,13 @@ namespace TerraFX.Interop
 
         public void Unlock() => ReleaseMutex(m_Mutex);
 
+        public static D3D12MA_MUTEX Init()
+        {
+            D3D12MA_MUTEX mutex = default;
+            mutex.m_Mutex = CreateMutex(null, 0, null);
+            return mutex;
+        }
+
         public static void Init(out D3D12MA_MUTEX mutex)
         {
             mutex = default;
