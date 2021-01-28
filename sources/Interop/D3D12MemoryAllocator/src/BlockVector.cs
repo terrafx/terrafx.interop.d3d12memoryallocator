@@ -89,6 +89,7 @@ namespace TerraFX.Interop
                     return hr;
                 }
             }
+
             return S_OK;
         }
 
@@ -139,6 +140,7 @@ namespace TerraFX.Interop
                 {
                     Free(pAllocations[allocIndex]);
                 }
+
                 ZeroMemory(pAllocations, (nuint)sizeof(Allocation*) * allocationCount);
             }
 
@@ -160,7 +162,7 @@ namespace TerraFX.Interop
             {
                 using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
 
-                NormalBlock* pBlock = hAllocation->m_Union.m_Placed.block;
+                NormalBlock* pBlock = hAllocation->m_Placed.block;
 
                 pBlock->m_pMetadata->FreeAtOffset(hAllocation->GetOffset());
                 D3D12MA_HEAVY_ASSERT(pBlock->Validate());
@@ -226,7 +228,7 @@ namespace TerraFX.Interop
             {
                 ID3D12Resource* res = null;
                 hr = m_hAllocator->GetDevice()->CreatePlacedResource(
-                    (*ppAllocation)->m_Union.m_Placed.block->@base.GetHeap(),
+                    (*ppAllocation)->m_Placed.block->@base.GetHeap(),
                     (*ppAllocation)->GetOffset(),
                     resourceDesc,
                     InitialResourceState,
@@ -239,6 +241,7 @@ namespace TerraFX.Interop
                     {
                         hr = res->QueryInterface(riidResource, ppvResource);
                     }
+
                     if (SUCCEEDED(hr))
                     {
                         (*ppAllocation)->SetResource(res, resourceDesc);
@@ -254,6 +257,7 @@ namespace TerraFX.Interop
                     SAFE_RELEASE(ppAllocation);
                 }
             }
+
             return hr;
         }
 
@@ -283,7 +287,7 @@ namespace TerraFX.Interop
             {
                 ID3D12Resource* res = null;
                 hr = device8->CreatePlacedResource1(
-                    (*ppAllocation)->m_Union.m_Placed.block->@base.GetHeap(),
+                    (*ppAllocation)->m_Placed.block->@base.GetHeap(),
                     (*ppAllocation)->GetOffset(),
                     resourceDesc,
                     InitialResourceState,
@@ -296,6 +300,7 @@ namespace TerraFX.Interop
                     {
                         hr = res->QueryInterface(riidResource, ppvResource);
                     }
+
                     if (SUCCEEDED(hr))
                     {
                         (*ppAllocation)->SetResource(res, resourceDesc);
@@ -311,6 +316,7 @@ namespace TerraFX.Interop
                     SAFE_RELEASE(ppAllocation);
                 }
             }
+
             return hr;
         }
 
@@ -461,6 +467,7 @@ namespace TerraFX.Interop
             {
                 result += m_Blocks[i]->Value->m_pMetadata->GetSize();
             }
+
             return result;
         }
 
@@ -476,6 +483,7 @@ namespace TerraFX.Interop
                     break;
                 }
             }
+
             return result;
         }
 
@@ -490,6 +498,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
+
             D3D12MA_ASSERT(false);
         }
 
@@ -660,6 +669,7 @@ namespace TerraFX.Interop
                 m_hAllocator->m_Budget.AddAllocation(HeapTypeToIndex(m_HeapType), size);
                 return S_OK;
             }
+
             return E_OUTOFMEMORY;
         }
 

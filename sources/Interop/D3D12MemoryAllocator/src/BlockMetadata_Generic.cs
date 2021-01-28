@@ -363,6 +363,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
+
             D3D12MA_ASSERT(false); // "Not found!"
         }
 
@@ -470,10 +471,12 @@ namespace TerraFX.Interop
             {
                 ++@this->m_FreeCount;
             }
+
             if (paddingEnd > 0)
             {
                 ++@this->m_FreeCount;
             }
+
             @this->m_SumFreeSize -= allocSize;
 
             @this->m_ZeroInitializedRange.MarkRangeAsUsed(request->offset, request->offset + allocSize);
@@ -492,6 +495,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
+
             D3D12MA_ASSERT(false); // "Not found!"
         }
 
@@ -524,6 +528,7 @@ namespace TerraFX.Interop
                 D3D12MA_VALIDATE(it.op_Arrow()->size >= lastSize);
                 lastSize = it.op_Arrow()->size;
             }
+
             return true;
         }
 
@@ -703,8 +708,10 @@ namespace TerraFX.Interop
                         @this->m_FreeSuballocationsBySize.remove(index);
                         return;
                     }
+
                     D3D12MA_ASSERT(@this->m_FreeSuballocationsBySize[index]->op_Arrow()->size == item.op_Arrow()->size); // "Not found!"
                 }
+
                 D3D12MA_ASSERT(false); // "Not found!"
             }
 
@@ -724,6 +731,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
+
             D3D12MA_ASSERT(false); // "Not found!"
         }
 
@@ -807,8 +815,10 @@ namespace TerraFX.Interop
                     D3D12MA_ASSERT(alloc != null);
                     json->AddAllocationToObject(alloc);
                 }
+
                 json->EndObject();
             }
+
             json->EndArray();
             json->EndObject();
         }

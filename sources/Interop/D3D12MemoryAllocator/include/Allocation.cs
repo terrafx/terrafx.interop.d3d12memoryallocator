@@ -8,6 +8,7 @@ using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.D3D12_TEXTURE_LAYOUT;
 using static TerraFX.Interop.Allocation.Type;
+using static TerraFX.Interop.Allocation._Anonymous_e__Union;
 
 namespace TerraFX.Interop
 {
@@ -98,7 +99,7 @@ namespace TerraFX.Interop
 
                 case TYPE_PLACED:
                 {
-                    return m_Union.m_Placed.offset;
+                    return m_Placed.offset;
                 }
 
                 default:
@@ -145,12 +146,12 @@ namespace TerraFX.Interop
 
                 case TYPE_PLACED:
                 {
-                    return m_Union.m_Placed.block->@base.GetHeap();
+                    return m_Placed.block->@base.GetHeap();
                 }
 
                 case TYPE_HEAP:
                 {
-                    return m_Union.m_Heap.heap;
+                    return m_Heap.heap;
                 }
 
                 default:
@@ -212,6 +213,24 @@ namespace TerraFX.Interop
             TYPE_PLACED,
             TYPE_HEAP,
             TYPE_COUNT
+        }
+
+        internal readonly ref _m_Committed_e__Struct m_Committed
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Unsafe.AsRef(m_Union.m_Committed), 1));
+        }
+
+        internal readonly ref _m_Placed_e__Struct m_Placed
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Unsafe.AsRef(m_Union.m_Placed), 1));
+        }
+
+        internal readonly ref _m_Heap_e__Struct m_Heap
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Unsafe.AsRef(m_Union.m_Heap), 1));
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -348,31 +367,35 @@ namespace TerraFX.Interop
         internal void InitCommitted(D3D12_HEAP_TYPE heapType)
         {
             m_PackedData.SetType(TYPE_COMMITTED);
-            m_Union.m_Committed.heapType = heapType;
+            m_Committed.heapType = heapType;
         }
 
         internal void InitPlaced([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong alignment, NormalBlock* block)
         {
             m_PackedData.SetType(TYPE_PLACED);
-            m_Union.m_Placed.offset = offset;
-            m_Union.m_Placed.block = block;
+            m_Placed.offset = offset;
+            m_Placed.block = block;
         }
 
         internal void InitHeap(D3D12_HEAP_TYPE heapType, ID3D12Heap* heap)
         {
             m_PackedData.SetType(TYPE_HEAP);
-            m_Union.m_Heap.heapType = heapType;
-            m_Union.m_Heap.heap = heap;
+            m_Heap.heapType = heapType;
+            m_Heap.heap = heap;
         }
 
-        internal void SetResource<TD3D12_RESOURCE_DESC>(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] TD3D12_RESOURCE_DESC* pResourceDesc)
-            where TD3D12_RESOURCE_DESC : unmanaged
+        internal void SetResource(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] D3D12_RESOURCE_DESC* pResourceDesc)
         {
             D3D12MA_ASSERT((m_Resource == null) && (pResourceDesc != null));
             m_Resource = resource;
-            m_PackedData.SetResourceDimension(((D3D12_RESOURCE_DESC*)pResourceDesc)->Dimension);
-            m_PackedData.SetResourceFlags(((D3D12_RESOURCE_DESC*)pResourceDesc)->Flags);
-            m_PackedData.SetTextureLayout(((D3D12_RESOURCE_DESC*)pResourceDesc)->Layout);
+            m_PackedData.SetResourceDimension(pResourceDesc->Dimension);
+            m_PackedData.SetResourceFlags(pResourceDesc->Flags);
+            m_PackedData.SetTextureLayout(pResourceDesc->Layout);
+        }
+
+        internal void SetResource(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] D3D12_RESOURCE_DESC1* pResourceDesc)
+        {
+            SetResource(resource, (D3D12_RESOURCE_DESC*)pResourceDesc);
         }
 
         internal void FreeName()

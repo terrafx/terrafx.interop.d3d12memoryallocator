@@ -92,6 +92,7 @@ namespace TerraFX.Interop
             {
                 m_Allocator->m_Budget.m_BlockBytes[(int)HeapTypeToIndex(m_HeapType)].Add(m_Size);
             }
+
             return hr;
         }
 

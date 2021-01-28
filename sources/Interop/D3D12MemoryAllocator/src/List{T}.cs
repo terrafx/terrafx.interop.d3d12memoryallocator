@@ -53,6 +53,7 @@ namespace TerraFX.Interop
                     m_ItemAllocator.Free(pItem);
                     pItem = pPrevItem;
                 }
+
                 m_pFront = null;
                 m_pBack = null;
                 m_Count = 0;
@@ -86,6 +87,7 @@ namespace TerraFX.Interop
                 m_pBack = pNewItem;
                 ++m_Count;
             }
+
             return pNewItem;
         }
 
@@ -107,6 +109,7 @@ namespace TerraFX.Interop
                 m_pFront = pNewItem;
                 ++m_Count;
             }
+
             return pNewItem;
         }
 
@@ -133,6 +136,7 @@ namespace TerraFX.Interop
             {
                 pPrevItem->pNext = null;
             }
+
             m_pBack = pPrevItem;
             m_ItemAllocator.Free(pBackItem);
             --m_Count;
@@ -147,6 +151,7 @@ namespace TerraFX.Interop
             {
                 pNextItem->pPrev = null;
             }
+
             m_pFront = pNextItem;
             m_ItemAllocator.Free(pFrontItem);
             --m_Count;

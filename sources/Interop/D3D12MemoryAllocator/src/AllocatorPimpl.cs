@@ -377,6 +377,11 @@ namespace TerraFX.Interop
             [NativeTypeName("REFIID")] Guid* riidResource,
             void** ppvResource)
         {
+            if (m_Device4 == null)
+            {
+                return E_NOINTERFACE;
+            }
+
             // Fall back to old implementation
             if (pProtectedSession == null)
             {
@@ -628,6 +633,11 @@ namespace TerraFX.Interop
             ID3D12ProtectedResourceSession *pProtectedSession,
             Allocation** ppAllocation)
         {
+            if (m_Device4 == null)
+            {
+                return E_NOINTERFACE;
+            }
+
             // Fall back to old implementation
             if (pProtectedSession == null)
             {
@@ -766,10 +776,10 @@ namespace TerraFX.Interop
             fixed (Allocation* pAllocation = &allocation)
             {
                 D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_COMMITTED);
-                UnregisterCommittedAllocation(pAllocation, pAllocation->m_Union.m_Committed.heapType);
+                UnregisterCommittedAllocation(pAllocation, pAllocation->m_Committed.heapType);
 
                 ulong allocationSize = pAllocation->GetSize();
-                uint heapTypeIndex = HeapTypeToIndex(pAllocation->m_Union.m_Committed.heapType);
+                uint heapTypeIndex = HeapTypeToIndex(pAllocation->m_Committed.heapType);
                 m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
                 m_Budget.m_BlockBytes[(int)heapTypeIndex].Subtract(allocationSize);
             }            
@@ -785,7 +795,7 @@ namespace TerraFX.Interop
             {
                 D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_PLACED);
 
-                NormalBlock* block = pAllocation->m_Union.m_Placed.block;
+                NormalBlock* block = pAllocation->m_Placed.block;
                 D3D12MA_ASSERT(block != null);
                 BlockVector* blockVector = block->GetBlockVector();
                 D3D12MA_ASSERT(blockVector != null);
@@ -803,10 +813,10 @@ namespace TerraFX.Interop
             fixed (Allocation* pAllocation = &allocation)
             {
                 D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_HEAP);
-                UnregisterCommittedAllocation(pAllocation, pAllocation->m_Union.m_Heap.heapType);
+                UnregisterCommittedAllocation(pAllocation, pAllocation->m_Heap.heapType);
                 SAFE_RELEASE(&pAllocation->m_Union.m_Heap.heap);
 
-                uint heapTypeIndex = HeapTypeToIndex(pAllocation->m_Union.m_Heap.heapType);
+                uint heapTypeIndex = HeapTypeToIndex(pAllocation->m_Heap.heapType);
                 ulong allocationSize = pAllocation->GetSize();
                 m_Budget.m_BlockBytes[(int)heapTypeIndex].Subtract(allocationSize);
                 m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
@@ -898,6 +908,7 @@ namespace TerraFX.Interop
                 outGpuBudget->BlockBytes = m_Budget.m_BlockBytes[0].Load();
                 outGpuBudget->AllocationBytes = m_Budget.m_AllocationBytes[0].Load();
             }
+
             if (outCpuBudget != null)
             {
                 // Taking UPLOAD + READBACK.
@@ -924,8 +935,10 @@ namespace TerraFX.Interop
                             {
                                 outGpuBudget->UsageBytes = 0;
                             }
+
                             outGpuBudget->BudgetBytes = m_Budget.m_D3D12BudgetLocal;
                         }
+
                         if (outCpuBudget != null)
                         {
                             if (m_Budget.m_D3D12UsageNonLocal + outCpuBudget->BlockBytes > m_Budget.m_BlockBytesAtBudgetFetch[1] + m_Budget.m_BlockBytesAtBudgetFetch[2])
@@ -937,6 +950,7 @@ namespace TerraFX.Interop
                             {
                                 outCpuBudget->UsageBytes = 0;
                             }
+
                             outCpuBudget->BudgetBytes = m_Budget.m_D3D12BudgetNonLocal;
                         }
                     }
@@ -955,6 +969,7 @@ namespace TerraFX.Interop
                     outGpuBudget->UsageBytes = outGpuBudget->BlockBytes;
                     outGpuBudget->BudgetBytes = gpuMemorySize * 8 / 10; // 80% heuristics.
                 }
+
                 if (outCpuBudget != null)
                 {
                     ulong cpuMemorySize = m_AdapterDesc.SharedSystemMemory; // TODO: Is this right?
@@ -1063,6 +1078,7 @@ namespace TerraFX.Interop
                     json.WriteString("CPU");
                     WriteBudgetToJson(&json, &cpuBudget);
                 }
+
                 json.EndObject();
 
                 if (DetailedMap > 0)
@@ -1134,6 +1150,7 @@ namespace TerraFX.Interop
                             json.AddAllocationToObject(alloc);
                             json.EndObject();
                         }
+
                         json.EndArray();
                     }
 
@@ -1141,6 +1158,7 @@ namespace TerraFX.Interop
 
                     json.EndObject(); // DetailedMap
                 }
+
                 json.EndObject();
             }
 
@@ -1207,6 +1225,7 @@ namespace TerraFX.Interop
                 {
                     hr = res->QueryInterface(riidResource, ppvResource);
                 }
+
                 if (SUCCEEDED(hr))
                 {
                     const int wasZeroInitialized = 1;
@@ -1227,6 +1246,7 @@ namespace TerraFX.Interop
                     res->Release();
                 }
             }
+
             return hr;
         }
 
@@ -1273,6 +1293,7 @@ namespace TerraFX.Interop
                 {
                     hr = res->QueryInterface(riidResource, ppvResource);
                 }
+
                 if (SUCCEEDED(hr))
                 {
                     const int wasZeroInitialized = 1;
@@ -1293,6 +1314,7 @@ namespace TerraFX.Interop
                     res->Release();
                 }
             }
+
             return hr;
         }
 
@@ -1339,6 +1361,7 @@ namespace TerraFX.Interop
                 {
                     hr = res->QueryInterface(riidResource, ppvResource);
                 }
+
                 if (SUCCEEDED(hr))
                 {
                     const int wasZeroInitialized = 1;
@@ -1359,6 +1382,7 @@ namespace TerraFX.Interop
                     res->Release();
                 }
             }
+
             return hr;
         }
 
@@ -1404,6 +1428,7 @@ namespace TerraFX.Interop
                 m_Budget.AddAllocation(heapTypeIndex, allocInfo->SizeInBytes);
                 m_Budget.m_BlockBytes[(int)heapTypeIndex].Add(allocInfo->SizeInBytes);
             }
+
             return hr;
         }
 
@@ -1453,6 +1478,7 @@ namespace TerraFX.Interop
                 m_Budget.AddAllocation(heapTypeIndex, allocInfo->SizeInBytes);
                 m_Budget.m_BlockBytes[(int)heapTypeIndex].Add(allocInfo->SizeInBytes);
             }
+
             return hr;
         }
 
@@ -1488,8 +1514,7 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("UINT")]
-        private uint CalcDefaultPoolIndex<TD3D12_RESOURCE_DESC>(ALLOCATION_DESC* allocDesc, TD3D12_RESOURCE_DESC* resourceDesc)
-            where TD3D12_RESOURCE_DESC : unmanaged
+        private uint CalcDefaultPoolIndex([NativeTypeName("const ALLOCATION_DESC&")] ALLOCATION_DESC* allocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC_T&")] D3D12_RESOURCE_DESC* resourceDesc)
         {
             D3D12_HEAP_FLAGS extraHeapFlags = allocDesc->ExtraHeapFlags & ~GetExtraHeapFlagsToIgnore();
             if (extraHeapFlags != 0)
@@ -1527,13 +1552,11 @@ namespace TerraFX.Interop
 
             if (!SupportsResourceHeapTier2())
             {
-                D3D12_RESOURCE_DESC* pResourceDesc = (D3D12_RESOURCE_DESC*)resourceDesc;
                 poolIndex *= 3;
-                if (pResourceDesc->Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
+                if (resourceDesc->Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
                 {
                     ++poolIndex;
-                    bool isRenderTargetOrDepthStencil =
-                        (pResourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
+                    bool isRenderTargetOrDepthStencil = (resourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
                     if (isRenderTargetOrDepthStencil)
                     {
                         ++poolIndex;
@@ -1542,6 +1565,12 @@ namespace TerraFX.Interop
             }
 
             return poolIndex;
+        }
+
+        [return: NativeTypeName("UINT")]
+        private uint CalcDefaultPoolIndex([NativeTypeName("const ALLOCATION_DESC&")] ALLOCATION_DESC* allocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC_T&")] D3D12_RESOURCE_DESC1* resourceDesc)
+        {
+            return CalcDefaultPoolIndex(allocDesc, (D3D12_RESOURCE_DESC*)resourceDesc);
         }
 
         /// <summary>This one returns UINT32_MAX if nonstandard heap flags are used and index cannot be calculcated.</summary>
@@ -1749,6 +1778,7 @@ namespace TerraFX.Interop
                         m_Budget.m_D3D12UsageLocal = infoLocal.CurrentUsage;
                         m_Budget.m_D3D12BudgetLocal = infoLocal.Budget;
                     }
+
                     if (SUCCEEDED(hrNonLocal))
                     {
                         m_Budget.m_D3D12UsageNonLocal = infoNonLocal.CurrentUsage;
@@ -1783,8 +1813,7 @@ namespace TerraFX.Interop
             return m_Device8->GetResourceAllocationInfo2(0, 1, resourceDesc, &info1Unused);
         }
 
-        private D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo<TD3D12_RESOURCE_DESC>(TD3D12_RESOURCE_DESC* inOutResourceDesc)
-            where TD3D12_RESOURCE_DESC : unmanaged
+        private D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo([NativeTypeName("D3D12_RESOURCE_DESC_T&")] D3D12_RESOURCE_DESC* inOutResourceDesc)
         {
             /* Optional optimization: Microsoft documentation says:
             https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-getresourceallocationinfo
@@ -1794,41 +1823,46 @@ namespace TerraFX.Interop
             which is merely the smallest multiple of 64KB that's greater or equal to
             D3D12_RESOURCE_DESC::Width.
             */
-            D3D12_RESOURCE_DESC* pInOutResourceDesc = (D3D12_RESOURCE_DESC*)inOutResourceDesc;
-            if (pInOutResourceDesc->Alignment == 0 &&
-                pInOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+            if (inOutResourceDesc->Alignment == 0 &&
+                inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
             {
                 return new D3D12_RESOURCE_ALLOCATION_INFO(
-                    AlignUp(pInOutResourceDesc->Width, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT), // SizeInBytes
+                    AlignUp(inOutResourceDesc->Width, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT), // SizeInBytes
                     D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT); // Alignment
             }
 
             if (D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT > 0)
             {
-                if (pInOutResourceDesc->Alignment == 0 &&
-                    pInOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D &&
-                    (pInOutResourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) == 0 &&
-                    (D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 1 || CanUseSmallAlignment(pInOutResourceDesc)))
+                if (inOutResourceDesc->Alignment == 0 &&
+                    inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D &&
+                    (inOutResourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) == 0 &&
+                    (D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 1 || CanUseSmallAlignment(inOutResourceDesc)))
                 {
                     /*
                     The algorithm here is based on Microsoft sample: "Small Resources Sample"
                     https://github.com/microsoft/DirectX-Graphics-Samples/tree/master/Samples/Desktop/D3D12SmallResources
                     */
-                    ulong smallAlignmentToTry = pInOutResourceDesc->SampleDesc.Count > 1 ?
+                    ulong smallAlignmentToTry = inOutResourceDesc->SampleDesc.Count > 1 ?
                         D3D12_SMALL_MSAA_RESOURCE_PLACEMENT_ALIGNMENT :
                         D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT;
-                    pInOutResourceDesc->Alignment = smallAlignmentToTry;
-                    D3D12_RESOURCE_ALLOCATION_INFO smallAllocInfo = GetResourceAllocationInfoNative(pInOutResourceDesc);
+                    inOutResourceDesc->Alignment = smallAlignmentToTry;
+                    D3D12_RESOURCE_ALLOCATION_INFO smallAllocInfo = GetResourceAllocationInfoNative(inOutResourceDesc);
                     // Check if alignment requested has been granted.
                     if (smallAllocInfo.Alignment == smallAlignmentToTry)
                     {
                         return smallAllocInfo;
                     }
-                    pInOutResourceDesc->Alignment = 0; // Restore original
+
+                    inOutResourceDesc->Alignment = 0; // Restore original
                 }
             }
 
-            return GetResourceAllocationInfoNative(pInOutResourceDesc);
+            return GetResourceAllocationInfoNative(inOutResourceDesc);
+        }
+
+        private D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo([NativeTypeName("D3D12_RESOURCE_DESC_T&")] D3D12_RESOURCE_DESC1* inOutResourceDesc)
+        {
+            return GetResourceAllocationInfo((D3D12_RESOURCE_DESC*)inOutResourceDesc);
         }
 
         private bool NewAllocationWithinBudget(D3D12_HEAP_TYPE heapType, [NativeTypeName("UINT64")] ulong size)
@@ -1852,6 +1886,7 @@ namespace TerraFX.Interop
                 json->WriteString("BudgetBytes");
                 json->WriteNumber(budget->BudgetBytes);
             }
+
             json->EndObject();
         }
 

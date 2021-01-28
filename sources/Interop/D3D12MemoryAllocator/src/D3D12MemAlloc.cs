@@ -263,6 +263,7 @@ namespace TerraFX.Interop
                 {
                     memory[i].Dispose();
                 }
+
                 Free(allocs, memory);
             }
         }
@@ -504,6 +505,7 @@ namespace TerraFX.Interop
                     up = mid;
                 }
             }
+
             return beg + down;
         }
 
@@ -525,6 +527,7 @@ namespace TerraFX.Interop
                     up = mid;
                 }
             }
+
             return beg + down;
         }
 
@@ -544,6 +547,7 @@ namespace TerraFX.Interop
             {
                 return it;
             }
+
             return end;
         }
 
@@ -944,6 +948,7 @@ namespace TerraFX.Interop
                 D3D12MA_DELETE(&allocationCallbacks, *ppAllocator);
                 *ppAllocator = null;
             }
+
             return hr;
         }
 

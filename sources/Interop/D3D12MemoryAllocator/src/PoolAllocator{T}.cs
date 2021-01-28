@@ -42,6 +42,7 @@ namespace TerraFX.Interop
             {
                 D3D12MA_DELETE_ARRAY_NO_DISPOSE(m_AllocationCallbacks, m_ItemBlocks[i]->pItems, (nuint)m_ItemBlocks[i]->Capacity);
             }
+
             m_ItemBlocks.clear(true);
         }
 
@@ -97,6 +98,7 @@ namespace TerraFX.Interop
                     return;
                 }
             }
+
             D3D12MA_ASSERT(false); // "Pointer doesn't belong to this memory pool."
         }
 
@@ -134,6 +136,7 @@ namespace TerraFX.Interop
             {
                 newBlock.pItems[i].NextFreeIndex = i + 1;
             }
+
             newBlock.pItems[newBlockCapacity - 1].NextFreeIndex = uint.MaxValue;
             return m_ItemBlocks.back();
         }

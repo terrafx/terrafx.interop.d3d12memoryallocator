@@ -114,6 +114,7 @@ namespace TerraFX.Interop
                 {
                     memcpy(newArray, m_pArray, m_Count * (nuint)sizeof(T));
                 }
+
                 Free(m_AllocationCallbacks, m_pArray);
                 m_Capacity = newCapacity;
                 m_pArray = newArray;
@@ -140,6 +141,7 @@ namespace TerraFX.Interop
                 {
                     memcpy(newArray, m_pArray, elementsToCopy * (nuint)sizeof(T));
                 }
+
                 Free(m_AllocationCallbacks, m_pArray);
                 m_Capacity = newCapacity;
                 m_pArray = newArray;
@@ -162,6 +164,7 @@ namespace TerraFX.Interop
             {
                 memcpy(m_pArray + (index + 1), m_pArray + index, (oldCount - index) * (nuint)sizeof(T));
             }
+
             m_pArray[index] = *src;
         }
 
@@ -173,6 +176,7 @@ namespace TerraFX.Interop
             {
                 memcpy(m_pArray + index, m_pArray + (index + 1), (oldCount - index - 1) * (nuint)sizeof(T));
             }
+
             resize(oldCount - 1);
         }
 
@@ -231,6 +235,7 @@ namespace TerraFX.Interop
                 remove(indexToRemove);
                 return true;
             }
+
             return false;
         }
     }

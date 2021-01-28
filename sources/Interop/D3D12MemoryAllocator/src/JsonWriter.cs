@@ -189,6 +189,7 @@ namespace TerraFX.Interop
                                     m_SB->Add((ushort)('A' + hexDigit));
                             }
                         }
+
                         break;
                     }
                 }
@@ -250,6 +251,7 @@ namespace TerraFX.Interop
                     break;
                 }
             }
+
             WriteString("Size");
             WriteNumber(alloc->GetSize());
             ushort* name = alloc->GetName();
@@ -258,16 +260,19 @@ namespace TerraFX.Interop
                 WriteString("Name");
                 WriteString(name);
             }
+
             if (alloc->m_PackedData.GetResourceFlags() != 0)
             {
                 WriteString("Flags");
                 WriteNumber((uint)alloc->m_PackedData.GetResourceFlags());
             }
+
             if (alloc->m_PackedData.GetTextureLayout() != 0)
             {
                 WriteString("Layout");
                 WriteNumber((uint)alloc->m_PackedData.GetTextureLayout());
             }
+
             if (alloc->m_CreationFrameIndex != 0)
             {
                 WriteString("CreationFrameIndex");
@@ -372,6 +377,7 @@ namespace TerraFX.Interop
                 {
                     --count;
                 }
+
                 for (nuint i = 0; i < count; ++i)
                 {
                     m_SB->Add(INDENT);
