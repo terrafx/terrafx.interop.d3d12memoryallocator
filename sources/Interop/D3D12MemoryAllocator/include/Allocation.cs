@@ -19,7 +19,7 @@ namespace TerraFX.Interop
     /// <para>The object remembers size and some other information. To retrieve this information, use methods of this class.</para>
     /// <para>The object also remembers `ID3D12Resource` and "owns" a reference to it, so it calls `Release()` on the resource when destroyed.</para>
     /// </summary>
-    public unsafe partial struct Allocation : IDisposable
+    public unsafe struct Allocation : IDisposable
     {
         internal AllocatorPimpl* m_Allocator;
 
@@ -260,7 +260,8 @@ namespace TerraFX.Interop
 
         internal partial struct PackedData
         {
-            ulong __value;
+            uint _bitfield0;
+            uint _bitfield1;
 
             public readonly new Type GetType() => (Type)m_Type;
 
@@ -303,39 +304,39 @@ namespace TerraFX.Interop
 
             public void SetWasZeroInitialized([NativeTypeName("BOOL")] int wasZeroInitialized) => m_WasZeroInitialized = wasZeroInitialized != 0 ? 1 : 0;
 
-            [NativeTypeName("UINT")]
+            [NativeTypeName("UINT : 2")]
             private uint m_Type
             {
-                readonly get => (uint)BitHelper.ExtractRange(__value, 0, 2);
-                set => __value = BitHelper.SetRange(__value, 0, 2, value);
+                readonly get => _bitfield0 & 3u;
+                set => _bitfield0 = (0xFFFFFFFCu & _bitfield0) | (value & 3u);
             }
 
-            [NativeTypeName("UINT")]
+            [NativeTypeName("UINT : 3")]
             private uint m_ResourceDimension
             {
-                readonly get => (uint)BitHelper.ExtractRange(__value, 2, 3);
-                set => __value = BitHelper.SetRange(__value, 2, 3, value);
+                readonly get => (_bitfield0 >> 2) & 7u;
+                set => _bitfield0 = (0xFFFFFFE3u & _bitfield0) | ((value & 7) << 2);
             }
 
-            [NativeTypeName("UINT")]
+            [NativeTypeName("UINT : 24")]
             private uint m_ResourceFlags
             {
-                readonly get => (uint)BitHelper.ExtractRange(__value, 5, 24);
-                set => __value = BitHelper.SetRange(__value, 5, 24, value);
+                readonly get => (_bitfield0 >> 5) & 0xFFFFFFu;
+                set => _bitfield0 = (0xE000001Fu & _bitfield0) | ((value & 0xFFFFFF) << 5);
             }
 
-            [NativeTypeName("UINT")]
+            [NativeTypeName("UINT : 9")]
             private uint m_TextureLayout
             {
-                readonly get => (uint)BitHelper.ExtractRange(__value, 29, 9);
-                set => __value = BitHelper.SetRange(__value, 29, 9, value);
+                readonly get => _bitfield1 & 0x1FFu;
+                set => _bitfield1 = (0xFFFFFE00u & _bitfield1) | (value & 0x1FFu);
             }
 
-            [NativeTypeName("UINT")]
+            [NativeTypeName("UINT : 1")]
             private uint m_WasZeroInitialized
             {
-                readonly get => (uint)BitHelper.ExtractRange(__value, 38, 1);
-                set => __value = BitHelper.SetRange(__value, 38, 1, value);
+                readonly get => (_bitfield1 >> 9) & 1u;
+                set => _bitfield1 = (0xFFFFFDFFu & _bitfield1) | ((value & 1) << 9);
             }
         }
 
@@ -405,63 +406,6 @@ namespace TerraFX.Interop
                 nuint nameCharCount = wcslen(m_Name) + 1;
                 D3D12MA_DELETE_ARRAY_NO_DISPOSE(m_Allocator->GetAllocs(), m_Name, nameCharCount);
                 m_Name = null;
-            }
-        }
-    }
-
-    public unsafe partial struct Allocation
-    {
-        internal partial struct PackedData
-        {
-            /// <summary>
-            /// Helpers to perform bit operations on numeric types.
-            /// Ported from Microsoft.Toolkit.HighPerformance:
-            /// <a href="https://github.com/windows-toolkit/WindowsCommunityToolkit/blob/master/Microsoft.Toolkit.HighPerformance/Helpers/BitHelper.cs"/>
-            /// </summary>
-            private static class BitHelper
-            {
-                /// <summary>
-                /// Extracts a bit field range from a given value.
-                /// </summary>
-                /// <param name="value">The input <see cref="ulong"/> value.</param>
-                /// <param name="start">The initial index of the range to extract (in [0, 63] range).</param>
-                /// <param name="length">The length of the range to extract (depends on <paramref name="start"/>).</param>
-                /// <returns>The value of the extracted range within <paramref name="value"/>.</returns>
-                /// <remarks>
-                /// This method doesn't validate <paramref name="start"/> and <paramref name="length"/>.
-                /// If either parameter is not valid, the result will just be inconsistent. The method
-                /// should not be used to set all the bits at once, and it is not guaranteed to work in
-                /// that case, which would just be equivalent to assigning the <see cref="ulong"/> value.
-                /// Additionally, no conditional branches are used to retrieve the range.
-                /// </remarks>
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static ulong ExtractRange(ulong value, byte start, byte length)
-                {
-                    return (value >> start) & ((1ul << length) - 1ul);
-                }
-
-                /// <summary>
-                /// Sets a bit field range within a target value.
-                /// </summary>
-                /// <param name="value">The initial <see cref="ulong"/> value.</param>
-                /// <param name="start">The initial index of the range to extract (in [0, 63] range).</param>
-                /// <param name="length">The length of the range to extract (depends on <paramref name="start"/>).</param>
-                /// <param name="flags">The input flags to insert in the target range.</param>
-                /// <returns>The updated bit field value after setting the specified range.</returns>
-                /// <remarks>
-                /// Just like <see cref="ExtractRange(ulong,byte,byte)"/>, this method doesn't validate the parameters
-                /// and does not contain branching instructions, so it's well suited for use in tight loops as well.
-                /// </remarks>
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public static ulong SetRange(ulong value, byte start, byte length, ulong flags)
-                {
-                    ulong
-                        highBits = (1ul << length) - 1ul,
-                        loadMask = highBits << start,
-                        storeMask = (flags & highBits) << start;
-
-                    return (~loadMask & value) | storeMask;
-                }
             }
         }
     }
