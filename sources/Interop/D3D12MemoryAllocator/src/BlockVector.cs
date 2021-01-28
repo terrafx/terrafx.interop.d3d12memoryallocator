@@ -64,7 +64,7 @@ namespace TerraFX.Interop
             m_ExplicitBlockSize = explicitBlockSize;
             m_MinBytes = 0;
             m_HasEmptyBlock = false;
-            m_Blocks = new(hAllocator->GetAllocs());
+            m_Blocks = new Vector<Ptr<NormalBlock>>(hAllocator->GetAllocs());
             m_NextBlockId = 0;
             D3D12MA_RW_MUTEX.Init(out m_Mutex);
         }
@@ -94,10 +94,10 @@ namespace TerraFX.Interop
 
 
         [return: NativeTypeName("UINT")]
-        public readonly uint GetHeapType() { return (uint)m_HeapType; }
+        public readonly uint GetHeapType() => (uint)m_HeapType;
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetPreferredBlockSize() { return m_PreferredBlockSize; }
+        public readonly ulong GetPreferredBlockSize() => m_PreferredBlockSize;
 
         public bool IsEmpty()
         {
@@ -667,7 +667,7 @@ namespace TerraFX.Interop
         private int CreateBlock([NativeTypeName("UINT64")] ulong blockSize, [NativeTypeName("size_t")] nuint* pNewBlockIndex)
         {
             NormalBlock* pBlock = D3D12MA_NEW<NormalBlock>(m_hAllocator->GetAllocs());
-            *pBlock = new(
+            *pBlock = new NormalBlock(
                 m_hAllocator,
                 (BlockVector*)Unsafe.AsPointer(ref this),
                 m_HeapType,

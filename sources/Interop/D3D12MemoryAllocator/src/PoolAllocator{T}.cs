@@ -29,12 +29,12 @@ namespace TerraFX.Interop
         {
             m_AllocationCallbacks = allocationCallbacks;
             m_FirstBlockCapacity = firstBlockCapacity;
-            m_ItemBlocks = new(allocationCallbacks);
+            m_ItemBlocks = new Vector<ItemBlock>(allocationCallbacks);
 
             D3D12MA_ASSERT(m_FirstBlockCapacity > 1);
         }
 
-        public void Dispose() { Clear(); }
+        public void Dispose() => Clear();
 
         public void Clear()
         {

@@ -13,16 +13,18 @@ namespace TerraFX.Interop
         public AllocationObjectAllocator(ALLOCATION_CALLBACKS* allocationCallbacks)
         {
             D3D12MA_MUTEX.Init(out m_Mutex);
-            m_Allocator = new(allocationCallbacks, 1024);
+            m_Allocator = new PoolAllocator<Allocation>(allocationCallbacks, 1024);
         }
 
         public Allocation* Allocate(AllocatorPimpl* allocator, ulong size, int wasZeroInitialized)
         {
             using MutexLock mutexLock = new((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
+
             static Allocation Ctor(void** args)
             {
-                return new((AllocatorPimpl*)args[0], *(ulong*)args[1], *(int*)args[2]);
+                return new Allocation((AllocatorPimpl*)args[0], *(ulong*)args[1], *(int*)args[2]);
             }
+
             void** args = stackalloc void*[3] { allocator, &size, &wasZeroInitialized };
             return m_Allocator.Alloc(args, &Ctor);
         }

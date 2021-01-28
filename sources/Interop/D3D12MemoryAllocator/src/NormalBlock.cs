@@ -36,7 +36,7 @@ namespace TerraFX.Interop
             [NativeTypeName("UINT64")] ulong size,
             [NativeTypeName("UINT")] uint id)
         {
-            @base = new(allocator, heapType, heapFlags, size, id);
+            @base = new MemoryBlock(allocator, heapType, heapFlags, size, id);
             @base.lpVtbl = SharedLpVtbl;
             m_pMetadata = null;
             m_BlockVector = null;
@@ -57,13 +57,13 @@ namespace TerraFX.Interop
             }
 
             m_pMetadata = (BlockMetadata*)D3D12MA_NEW<BlockMetadata_Generic>(@base.m_Allocator->GetAllocs());
-            *(BlockMetadata_Generic*)m_pMetadata = new(@base.m_Allocator->GetAllocs(), false);
+            *(BlockMetadata_Generic*)m_pMetadata = new BlockMetadata_Generic(@base.m_Allocator->GetAllocs(), false);
             m_pMetadata->Init(@base.m_Size);
 
             return hr;
         }
 
-        public readonly BlockVector* GetBlockVector() { return m_BlockVector; }
+        public readonly BlockVector* GetBlockVector() => m_BlockVector;
 
         /// <summary>Validates all data structures inside this object. If not valid, returns false.</summary>
         public readonly bool Validate()

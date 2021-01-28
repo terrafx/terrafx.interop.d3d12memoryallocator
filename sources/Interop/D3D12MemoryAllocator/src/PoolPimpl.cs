@@ -30,7 +30,7 @@ namespace TerraFX.Interop
             uint maxBlockCount = desc->MaxBlockCount != 0 ? desc->MaxBlockCount : uint.MaxValue;
 
             m_BlockVector = D3D12MA_NEW<BlockVector>(allocator->GetAllocs());
-            *m_BlockVector = new(
+            *m_BlockVector = new BlockVector(
                 allocator, desc->HeapType, heapFlags,
                 preferredBlockSize,
                 desc->MinBlockCount, maxBlockCount,
@@ -49,14 +49,14 @@ namespace TerraFX.Interop
             D3D12MA_DELETE(m_Allocator->GetAllocs(), m_BlockVector);
         }
 
-        public readonly AllocatorPimpl* GetAllocator() { return m_Allocator; }
+        public readonly AllocatorPimpl* GetAllocator() => m_Allocator;
 
-        public readonly POOL_DESC* GetDesc() { return (POOL_DESC*)Unsafe.AsPointer(ref Unsafe.AsRef(m_Desc)); }
+        public readonly POOL_DESC* GetDesc() => (POOL_DESC*)Unsafe.AsPointer(ref Unsafe.AsRef(m_Desc));
 
-        public BlockVector* GetBlockVector() { return m_BlockVector; }
+        public BlockVector* GetBlockVector() => m_BlockVector;
 
         [return: NativeTypeName("HRESULT")]
-        public int SetMinBytes([NativeTypeName("UINT64")] ulong minBytes) { return m_BlockVector->SetMinBytes(minBytes); }
+        public int SetMinBytes([NativeTypeName("UINT64")] ulong minBytes) => m_BlockVector->SetMinBytes(minBytes);
 
         public void CalculateStats(StatInfo* outStats)
         {
@@ -82,7 +82,7 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("LPCWSTR")]
-        public ushort* GetName() { return m_Name; }
+        public ushort* GetName() => m_Name;
 
         public void FreeName()
         {

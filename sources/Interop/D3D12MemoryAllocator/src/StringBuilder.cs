@@ -12,18 +12,18 @@ namespace TerraFX.Interop
 
         public StringBuilder(ALLOCATION_CALLBACKS* allocationCallbacks)
         {
-            m_Data = new(allocationCallbacks);
+            m_Data = new Vector<ushort>(allocationCallbacks);
         }
 
-        public void Dispose() { m_Data.Dispose(); }
+        public void Dispose() => m_Data.Dispose();
 
         [return: NativeTypeName("size_t")]
-        public readonly nuint GetLength() { return m_Data.size(); }
+        public readonly nuint GetLength() => m_Data.size();
 
         [return: NativeTypeName("LPCWSTR")]
-        public readonly ushort* GetData() { return m_Data.data(); }
+        public readonly ushort* GetData() => m_Data.data();
 
-        public void Add([NativeTypeName("WCHAR")] ushort ch) { m_Data.push_back(&ch); }
+        public void Add([NativeTypeName("WCHAR")] ushort ch) => m_Data.push_back(&ch);
 
         public void Add([NativeTypeName("LPCWSTR")] ushort* str)
         {
@@ -38,7 +38,7 @@ namespace TerraFX.Interop
 
         public void Add(string str) { fixed (void* p = str) Add((ushort*)p); }
 
-        public void AddNewLine() { Add('\n'); }
+        public void AddNewLine() => Add('\n');
 
         public void AddNumber([NativeTypeName("UINT")] uint num)
         {

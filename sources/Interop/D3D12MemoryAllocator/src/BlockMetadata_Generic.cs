@@ -51,12 +51,12 @@ namespace TerraFX.Interop
 
         public BlockMetadata_Generic(ALLOCATION_CALLBACKS* allocationCallbacks, bool isVirtual)
         {
-            @base = new(allocationCallbacks, isVirtual);
+            @base = new BlockMetadata(allocationCallbacks, isVirtual);
             @base.lpVtbl = SharedLpVtbl;
             m_FreeCount = 0;
             m_SumFreeSize = 0;
-            m_Suballocations = new(allocationCallbacks);
-            m_FreeSuballocationsBySize = new(allocationCallbacks);
+            m_Suballocations = new SuballocationList(allocationCallbacks);
+            m_FreeSuballocationsBySize = new Vector<SuballocationList.iterator>(allocationCallbacks);
             m_ZeroInitializedRange = default;
 
             D3D12MA_ASSERT(allocationCallbacks != null);
@@ -78,10 +78,10 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("size_t")]
-        public readonly nuint GetAllocationCount() { return GetAllocationCount((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this))); }
+        public readonly nuint GetAllocationCount() => GetAllocationCount((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetSumFreeSize() { return GetSumFreeSize((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this))); }
+        public readonly ulong GetSumFreeSize() => GetSumFreeSize((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
 
         [return: NativeTypeName("UINT64")]
         public readonly ulong GetUnusedRangeSizeMax()
@@ -330,7 +330,7 @@ namespace TerraFX.Interop
             return @this->m_Suballocations.size() - @this->m_FreeCount;
         }
 
-        public static ulong GetSumFreeSize(BlockMetadata_Generic* @this) { return @this->m_SumFreeSize; }
+        public static ulong GetSumFreeSize(BlockMetadata_Generic* @this) => @this->m_SumFreeSize;
 
         public static ulong GetUnusedRangeSizeMax(BlockMetadata_Generic* @this)
         {

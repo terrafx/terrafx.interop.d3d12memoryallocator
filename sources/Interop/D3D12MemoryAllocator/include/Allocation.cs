@@ -49,19 +49,27 @@ namespace TerraFX.Interop
 
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
 
-            SAFE_RELEASE(&((Allocation*)Unsafe.AsPointer(ref this))->m_Resource);
+            SAFE_RELEASE(ref m_Resource);
 
             switch (m_PackedData.GetType())
             {
                 case TYPE_COMMITTED:
+                {
                     m_Allocator->FreeCommittedMemory((Allocation*)Unsafe.AsPointer(ref this));
                     break;
+                }
+
                 case TYPE_PLACED:
+                {
                     m_Allocator->FreePlacedMemory((Allocation*)Unsafe.AsPointer(ref this));
                     break;
+                }
+
                 case TYPE_HEAP:
+                {
                     m_Allocator->FreeHeapMemory((Allocation*)Unsafe.AsPointer(ref this));
                     break;
+                }
             }
 
             FreeName();
@@ -84,12 +92,20 @@ namespace TerraFX.Interop
             {
                 case TYPE_COMMITTED:
                 case TYPE_HEAP:
+                {
                     return 0;
+                }
+
                 case TYPE_PLACED:
+                {
                     return m_Union.m_Placed.offset;
+                }
+
                 default:
+                {
                     D3D12MA_ASSERT(false);
                     return 0;
+                }
             }
         }
 
@@ -123,14 +139,25 @@ namespace TerraFX.Interop
             switch (m_PackedData.GetType())
             {
                 case TYPE_COMMITTED:
+                {
                     return null;
+                }
+
                 case TYPE_PLACED:
+                {
                     return m_Union.m_Placed.block->@base.GetHeap();
+                }
+
                 case TYPE_HEAP:
+                {
                     return m_Union.m_Heap.heap;
+                }
+
                 default:
+                {
                     D3D12MA_ASSERT(false);
                     return null;
+                }
             }
         }
 
@@ -177,7 +204,7 @@ namespace TerraFX.Interop
         /// </summary>
         /// <returns>Whether the memory of the allocation was filled with zeros.</returns>
         [return: NativeTypeName("BOOL")]
-        public readonly int WasZeroInitialized() { return m_PackedData.WasZeroInitialized(); }
+        public readonly int WasZeroInitialized() => m_PackedData.WasZeroInitialized();
 
         internal enum Type
         {
@@ -255,38 +282,38 @@ namespace TerraFX.Interop
                 m_TextureLayout = u;
             }
 
-            public void SetWasZeroInitialized([NativeTypeName("BOOL")] int wasZeroInitialized) => m_WasZeroInitialized = wasZeroInitialized > 0 ? 1 : 0;
+            public void SetWasZeroInitialized([NativeTypeName("BOOL")] int wasZeroInitialized) => m_WasZeroInitialized = wasZeroInitialized != 0 ? 1 : 0;
 
             [NativeTypeName("UINT")]
-            uint m_Type
+            private uint m_Type
             {
                 readonly get => (uint)BitHelper.ExtractRange(__value, 0, 2);
                 set => __value = BitHelper.SetRange(__value, 0, 2, value);
             }
 
             [NativeTypeName("UINT")]
-            uint m_ResourceDimension
+            private uint m_ResourceDimension
             {
                 readonly get => (uint)BitHelper.ExtractRange(__value, 2, 3);
                 set => __value = BitHelper.SetRange(__value, 2, 3, value);
             }
 
             [NativeTypeName("UINT")]
-            uint m_ResourceFlags
+            private uint m_ResourceFlags
             {
                 readonly get => (uint)BitHelper.ExtractRange(__value, 5, 24);
                 set => __value = BitHelper.SetRange(__value, 5, 24, value);
             }
 
             [NativeTypeName("UINT")]
-            uint m_TextureLayout
+            private uint m_TextureLayout
             {
                 readonly get => (uint)BitHelper.ExtractRange(__value, 29, 9);
                 set => __value = BitHelper.SetRange(__value, 29, 9, value);
             }
 
             [NativeTypeName("UINT")]
-            uint m_WasZeroInitialized
+            private uint m_WasZeroInitialized
             {
                 readonly get => (uint)BitHelper.ExtractRange(__value, 38, 1);
                 set => __value = BitHelper.SetRange(__value, 38, 1, value);
@@ -295,7 +322,8 @@ namespace TerraFX.Interop
 
         internal Allocation(AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
         {
-            Unsafe.SkipInit(out this);
+            Unsafe.SkipInit(out m_PackedData);
+            Unsafe.SkipInit(out m_Union);
 
             m_Allocator = allocator;
             m_Size = size;
@@ -340,7 +368,7 @@ namespace TerraFX.Interop
         internal void SetResource<TD3D12_RESOURCE_DESC>(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] TD3D12_RESOURCE_DESC* pResourceDesc)
             where TD3D12_RESOURCE_DESC : unmanaged
         {
-            D3D12MA_ASSERT(m_Resource == null && pResourceDesc != null);
+            D3D12MA_ASSERT((m_Resource == null) && (pResourceDesc != null));
             m_Resource = resource;
             m_PackedData.SetResourceDimension(((D3D12_RESOURCE_DESC*)pResourceDesc)->Dimension);
             m_PackedData.SetResourceFlags(((D3D12_RESOURCE_DESC*)pResourceDesc)->Flags);

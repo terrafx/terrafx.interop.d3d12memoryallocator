@@ -71,9 +71,9 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetSize() { return m_Size; }
+        public readonly ulong GetSize() => m_Size;
 
-        public readonly bool IsVirtual() { return m_IsVirtual; }
+        public readonly bool IsVirtual() => m_IsVirtual;
 
         [return: NativeTypeName("size_t")]
         public readonly nuint GetAllocationCount()
@@ -154,8 +154,8 @@ namespace TerraFX.Interop
 
         public static void Dispose(BlockMetadata* @this) { }
 
-        public static void Init(BlockMetadata* @this, ulong size) { @this->m_Size = size; }
+        public static void Init(BlockMetadata* @this, ulong size) => @this->m_Size = size;
 
-        public ALLOCATION_CALLBACKS* GetAllocs() { return m_pAllocationCallbacks; }
+        public ALLOCATION_CALLBACKS* GetAllocs() => m_pAllocationCallbacks;
     }
 }

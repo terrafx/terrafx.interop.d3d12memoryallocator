@@ -15,7 +15,7 @@ namespace TerraFX.Interop
         public JsonWriter(ALLOCATION_CALLBACKS* allocationCallbacks, StringBuilder* stringBuilder)
         {
             m_SB = stringBuilder;
-            m_Stack = new(allocationCallbacks);
+            m_Stack = new Vector<StackItem>(allocationCallbacks);
             m_InsideString = false;
         }
 
@@ -113,15 +113,64 @@ namespace TerraFX.Interop
                 D3D12MA_ASSERT((val <= 0xD7FF) || (0xE000 <= val && val <= 0xFFFF));
                 switch (*p)
                 {
-                    case '"': m_SB->Add('\\'); m_SB->Add('"'); break;
-                    case '\\': m_SB->Add('\\'); m_SB->Add('\\'); break;
-                    case '/':  m_SB->Add('\\'); m_SB->Add('/'); break;
-                    case '\b': m_SB->Add('\\'); m_SB->Add('b'); break;
-                    case '\f': m_SB->Add('\\'); m_SB->Add('f'); break;
-                    case '\n': m_SB->Add('\\'); m_SB->Add('n'); break;
-                    case '\r': m_SB->Add('\\'); m_SB->Add('r'); break;
-                    case '\t': m_SB->Add('\\'); m_SB->Add('t'); break;
+                    case '"':
+                    {
+                        m_SB->Add('\\');
+                        m_SB->Add('"');
+                        break;
+                    }
+
+                    case '\\':
+                    {
+                        m_SB->Add('\\');
+                        m_SB->Add('\\');
+                        break;
+                    }
+
+                    case '/':
+                    {
+                        m_SB->Add('\\');
+                        m_SB->Add('/');
+                        break;
+                    }
+
+                    case '\b':
+                    {
+                        m_SB->Add('\\');
+                        m_SB->Add('b');
+                        break;
+                    }
+
+                    case '\f':
+                    {
+                        m_SB->Add('\\');
+                        m_SB->Add('f');
+                        break;
+                    }
+
+                    case '\n':
+                    {
+                        m_SB->Add('\\');
+                        m_SB->Add('n');
+                        break;
+                    }
+
+                    case '\r':
+                    {
+                        m_SB->Add('\\');
+                        m_SB->Add('r');
+                        break;
+                    }
+
+                    case '\t':
+                    {
+                        m_SB->Add('\\');
+                        m_SB->Add('t');
+                        break;
+                    }
+
                     default:
+                    {
                         // conservatively use encoding \uXXXX for any unicode character
                         // requiring more than one byte.
                         if (32 <= val && val < 256)
@@ -141,6 +190,7 @@ namespace TerraFX.Interop
                             }
                         }
                         break;
+                    }
                 }
             }
         }
@@ -165,23 +215,40 @@ namespace TerraFX.Interop
             switch (alloc->m_PackedData.GetResourceDimension())
             {
                 case D3D12_RESOURCE_DIMENSION_UNKNOWN:
+                {
                     WriteString("UNKNOWN");
                     break;
+                }
+
                 case D3D12_RESOURCE_DIMENSION_BUFFER:
+                {
                     WriteString("BUFFER");
                     break;
+                }
+
                 case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
+                {
                     WriteString("TEXTURE1D");
                     break;
+                }
+
                 case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
+                {
                     WriteString("TEXTURE2D");
                     break;
+                }
+
                 case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
+                {
                     WriteString("TEXTURE3D");
                     break;
+                }
+
                 default:
+                {
                     D3D12MA_ASSERT(false);
                     break;
+                }
             }
             WriteString("Size");
             WriteNumber(alloc->GetSize());

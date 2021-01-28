@@ -93,7 +93,7 @@ namespace TerraFX.Interop
         internal Pool(Allocator* allocator, [NativeTypeName("const POOL_DESC&")] POOL_DESC* desc)
         {
             m_Pimpl = D3D12MA_NEW<PoolPimpl>(allocator->m_Pimpl->GetAllocs());
-            *m_Pimpl = new(allocator->m_Pimpl, desc);
+            *m_Pimpl = new PoolPimpl(allocator->m_Pimpl, desc);
         }
 
         public void Dispose()

@@ -70,12 +70,12 @@ namespace TerraFX.Interop
             }
         }
 
-        public readonly bool empty() { return m_Count == 0; }
+        public readonly bool empty() => m_Count == 0;
 
         [return: NativeTypeName("size_t")]
-        public readonly nuint size() { return m_Count; }
+        public readonly nuint size() => m_Count;
 
-        public readonly T* data() { return m_pArray; }
+        public readonly T* data() => m_pArray;
 
         public readonly T* this[[NativeTypeName("size_t")] nuint index]
         {
@@ -200,9 +200,9 @@ namespace TerraFX.Interop
             remove(0);
         }
 
-        public T* begin() { return m_pArray; }
+        public T* begin() => m_pArray;
 
-        public T* end() { return m_pArray + m_Count; }
+        public T* end() => m_pArray + m_Count;
 
         [return: NativeTypeName("size_t")]
         public nuint InsertSorted<CmpLess>(T* value, in CmpLess cmp)

@@ -163,7 +163,7 @@ namespace TerraFX.Interop
         internal VirtualBlock([NativeTypeName("const ALLOCATION_CALLBACKS&")] ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("const VIRTUAL_BLOCK_DESC&")] VIRTUAL_BLOCK_DESC* desc)
         {
             m_Pimpl = D3D12MA_NEW<VirtualBlockPimpl>(allocationCallbacks);
-            *m_Pimpl = new(allocationCallbacks, desc->Size);
+            *m_Pimpl = new VirtualBlockPimpl(allocationCallbacks, desc->Size);
         }
 
         public void Dispose()

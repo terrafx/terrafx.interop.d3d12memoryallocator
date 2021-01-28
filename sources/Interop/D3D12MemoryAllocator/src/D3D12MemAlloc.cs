@@ -296,6 +296,19 @@ namespace TerraFX.Interop
             }
         }
 
+        internal static void SAFE_RELEASE<T>(ref T* ptr)
+            where T : unmanaged
+        {
+            if (ptr != null)
+            {
+                if (typeof(T) == typeof(Allocator))
+                    ((Allocator*)ptr)->Release();
+                else
+                    ((IUnknown*)ptr)->Release();
+                ptr = null;
+            }
+        }
+
         internal static bool D3D12MA_VALIDATE(bool cond)
         {
             if (!cond)
@@ -526,7 +539,11 @@ namespace TerraFX.Interop
                 case D3D12_HEAP_TYPE_DEFAULT: return 0;
                 case D3D12_HEAP_TYPE_UPLOAD: return 1;
                 case D3D12_HEAP_TYPE_READBACK: return 2;
-                default: D3D12MA_ASSERT(false); return UINT_MAX;
+                default:
+                {
+                    D3D12MA_ASSERT(false);
+                    return UINT_MAX;
+                }
             }
         }
 
@@ -609,6 +626,7 @@ namespace TerraFX.Interop
                 {
                     return true;
                 }
+
                 default:
                 {
                     return false;
@@ -629,6 +647,7 @@ namespace TerraFX.Interop
                 {
                     return 128;
                 }
+
                 case DXGI_FORMAT_R32G32B32_TYPELESS:
                 case DXGI_FORMAT_R32G32B32_FLOAT:
                 case DXGI_FORMAT_R32G32B32_UINT:
@@ -636,6 +655,7 @@ namespace TerraFX.Interop
                 {
                     return 96;
                 }
+
                 case DXGI_FORMAT_R16G16B16A16_TYPELESS:
                 case DXGI_FORMAT_R16G16B16A16_FLOAT:
                 case DXGI_FORMAT_R16G16B16A16_UNORM:
@@ -645,6 +665,7 @@ namespace TerraFX.Interop
                 {
                     return 64;
                 }
+
                 case DXGI_FORMAT_R32G32_TYPELESS:
                 case DXGI_FORMAT_R32G32_FLOAT:
                 case DXGI_FORMAT_R32G32_UINT:
@@ -652,6 +673,7 @@ namespace TerraFX.Interop
                 {
                     return 64;
                 }
+
                 case DXGI_FORMAT_R32G8X24_TYPELESS:
                 case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
                 case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
@@ -659,6 +681,7 @@ namespace TerraFX.Interop
                 {
                     return 64;
                 }
+
                 case DXGI_FORMAT_R10G10B10A2_TYPELESS:
                 case DXGI_FORMAT_R10G10B10A2_UNORM:
                 case DXGI_FORMAT_R10G10B10A2_UINT:
@@ -666,6 +689,7 @@ namespace TerraFX.Interop
                 {
                     return 32;
                 }
+
                 case DXGI_FORMAT_R8G8B8A8_TYPELESS:
                 case DXGI_FORMAT_R8G8B8A8_UNORM:
                 case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
@@ -675,6 +699,7 @@ namespace TerraFX.Interop
                 {
                     return 32;
                 }
+
                 case DXGI_FORMAT_R16G16_TYPELESS:
                 case DXGI_FORMAT_R16G16_FLOAT:
                 case DXGI_FORMAT_R16G16_UNORM:
@@ -684,6 +709,7 @@ namespace TerraFX.Interop
                 {
                     return 32;
                 }
+
                 case DXGI_FORMAT_R32_TYPELESS:
                 case DXGI_FORMAT_D32_FLOAT:
                 case DXGI_FORMAT_R32_FLOAT:
@@ -692,6 +718,7 @@ namespace TerraFX.Interop
                 {
                     return 32;
                 }
+
                 case DXGI_FORMAT_R24G8_TYPELESS:
                 case DXGI_FORMAT_D24_UNORM_S8_UINT:
                 case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
@@ -699,6 +726,7 @@ namespace TerraFX.Interop
                 {
                     return 32;
                 }
+
                 case DXGI_FORMAT_R8G8_TYPELESS:
                 case DXGI_FORMAT_R8G8_UNORM:
                 case DXGI_FORMAT_R8G8_UINT:
@@ -707,6 +735,7 @@ namespace TerraFX.Interop
                 {
                     return 16;
                 }
+
                 case DXGI_FORMAT_R16_TYPELESS:
                 case DXGI_FORMAT_R16_FLOAT:
                 case DXGI_FORMAT_D16_UNORM:
@@ -717,6 +746,7 @@ namespace TerraFX.Interop
                 {
                     return 16;
                 }
+
                 case DXGI_FORMAT_R8_TYPELESS:
                 case DXGI_FORMAT_R8_UNORM:
                 case DXGI_FORMAT_R8_UINT:
@@ -726,48 +756,56 @@ namespace TerraFX.Interop
                 {
                     return 8;
                 }
+
                 case DXGI_FORMAT_BC1_TYPELESS:
                 case DXGI_FORMAT_BC1_UNORM:
                 case DXGI_FORMAT_BC1_UNORM_SRGB:
                 {
                     return 4;
                 }
+
                 case DXGI_FORMAT_BC2_TYPELESS:
                 case DXGI_FORMAT_BC2_UNORM:
                 case DXGI_FORMAT_BC2_UNORM_SRGB:
                 {
                     return 8;
                 }
+
                 case DXGI_FORMAT_BC3_TYPELESS:
                 case DXGI_FORMAT_BC3_UNORM:
                 case DXGI_FORMAT_BC3_UNORM_SRGB:
                 {
                     return 8;
                 }
+
                 case DXGI_FORMAT_BC4_TYPELESS:
                 case DXGI_FORMAT_BC4_UNORM:
                 case DXGI_FORMAT_BC4_SNORM:
                 {
                     return 4;
                 }
+
                 case DXGI_FORMAT_BC5_TYPELESS:
                 case DXGI_FORMAT_BC5_UNORM:
                 case DXGI_FORMAT_BC5_SNORM:
                 {
                     return 8;
                 }
+
                 case DXGI_FORMAT_BC6H_TYPELESS:
                 case DXGI_FORMAT_BC6H_UF16:
                 case DXGI_FORMAT_BC6H_SF16:
                 {
                     return 8;
                 }
+
                 case DXGI_FORMAT_BC7_TYPELESS:
                 case DXGI_FORMAT_BC7_UNORM:
                 case DXGI_FORMAT_BC7_UNORM_SRGB:
                 {
                     return 8;
                 }
+
                 default:
                 {
                     return 0;
@@ -804,27 +842,41 @@ namespace TerraFX.Interop
             switch (bitsPerPixel)
             {
                 case 8:
+                {
                     tileSizeX = 64;
                     tileSizeY = 64;
                     break;
+                }
+
                 case 16:
+                {
                     tileSizeX = 64;
                     tileSizeY = 32;
                     break;
+                }
+
                 case 32:
+                {
                     tileSizeX = 32;
                     tileSizeY = 32;
                     break;
+                }
+
                 case 64:
+                {
                     tileSizeX = 32;
                     tileSizeY = 16;
                     break;
+                }
+
                 case 128:
+                {
                     tileSizeX = 16;
                     tileSizeY = 16;
                     break;
-                default:
-                    return false;
+                }
+
+                default: return false;
             }
 
             uint tileCount = DivideRoudingUp(sizeX, tileSizeX) * DivideRoudingUp(sizeY, tileSizeY);
@@ -860,7 +912,7 @@ namespace TerraFX.Interop
             SetupAllocationCallbacks(&allocationCallbacks, pDesc->pAllocationCallbacks);
 
             *ppAllocator = D3D12MA_NEW<Allocator>(&allocationCallbacks);
-            **ppAllocator = new(&allocationCallbacks, pDesc);
+            **ppAllocator = new Allocator(&allocationCallbacks, pDesc);
             HRESULT hr = (*ppAllocator)->m_Pimpl->Init(pDesc);
             if (FAILED(hr))
             {
@@ -884,7 +936,7 @@ namespace TerraFX.Interop
             SetupAllocationCallbacks(&allocationCallbacks, pDesc->pAllocationCallbacks);
 
             *ppVirtualBlock = D3D12MA_NEW<VirtualBlock>(&allocationCallbacks);
-            **ppVirtualBlock = new(&allocationCallbacks, pDesc);
+            **ppVirtualBlock = new VirtualBlock(&allocationCallbacks, pDesc);
             return S_OK;
         }
     }

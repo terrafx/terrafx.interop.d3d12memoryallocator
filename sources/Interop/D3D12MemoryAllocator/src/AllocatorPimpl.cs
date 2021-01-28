@@ -72,7 +72,14 @@ namespace TerraFX.Interop
 
         public AllocatorPimpl(ALLOCATION_CALLBACKS* allocationCallbacks, ALLOCATOR_DESC* desc)
         {
-            Unsafe.SkipInit(out this);
+            Unsafe.SkipInit(out m_Budget);
+            m_Device4 = null;
+            m_Device8 = null;
+            m_Adapter3 = null;
+            Unsafe.SkipInit(out m_AdapterDesc);
+            Unsafe.SkipInit(out m_CommittedAllocationsMutex);
+            Unsafe.SkipInit(out m_PoolsMutex);
+            Unsafe.SkipInit(out m_DefaultPoolMinBytesMutex);
 
             m_UseMutex = ((int)desc->Flags & (int)ALLOCATOR_FLAG_SINGLETHREADED) == 0;
             m_AlwaysCommitted = ((int)desc->Flags & (int)ALLOCATOR_FLAG_ALWAYS_COMMITTED) != 0;
@@ -82,7 +89,7 @@ namespace TerraFX.Interop
             m_AllocationCallbacks = *allocationCallbacks;
             m_CurrentFrameIndex = default;
             // Below this line don't use allocationCallbacks but m_AllocationCallbacks!!!
-            m_AllocationObjectAllocator = new((ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref m_AllocationCallbacks));
+            m_AllocationObjectAllocator = new AllocationObjectAllocator((ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref m_AllocationCallbacks));
 
             // desc.pAllocationCallbacks intentionally ignored here, preprocessed by CreateAllocator.
             m_D3D12Options = default;
@@ -101,9 +108,9 @@ namespace TerraFX.Interop
             for (uint heapTypeIndex = 0; heapTypeIndex < HEAP_TYPE_COUNT; ++heapTypeIndex)
             {
                 AllocationVectorType* p0 = m_pCommittedAllocations[(int)heapTypeIndex] = D3D12MA_NEW<AllocationVectorType>(GetAllocs());
-                *p0 = new(GetAllocs());
+                *p0 = new AllocationVectorType(GetAllocs());
                 PoolVectorType* p1 = m_pPools[(int)heapTypeIndex] = D3D12MA_NEW<PoolVectorType>(GetAllocs());
-                *p1 = new(GetAllocs());
+                *p1 = new PoolVectorType(GetAllocs());
             }
 
             m_Device->AddRef();
@@ -144,7 +151,7 @@ namespace TerraFX.Interop
                 CalcDefaultPoolParams(&heapType, &heapFlags, i);
 
                 BlockVector* p = m_BlockVectors[(int)i] = D3D12MA_NEW<BlockVector>(GetAllocs());
-                *p = new(
+                *p = new BlockVector(
                     @this, // hAllocator
                     heapType, // heapType
                     heapFlags, // heapFlags
@@ -165,19 +172,17 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
-            AllocatorPimpl* @this = (AllocatorPimpl*)Unsafe.AsPointer(ref this);
+            SAFE_RELEASE(ref m_Device8);
 
-            SAFE_RELEASE(&@this->m_Device8);
-
-            SAFE_RELEASE(&@this->m_Device4);
+            SAFE_RELEASE(ref m_Device4);
 
             if (D3D12MA_DXGI_1_4 > 0)
             {
-                SAFE_RELEASE(&@this->m_Adapter3);
+                SAFE_RELEASE(ref m_Adapter3);
             }
 
-            SAFE_RELEASE(&@this->m_Adapter);
-            SAFE_RELEASE(&@this->m_Device);
+            SAFE_RELEASE(ref m_Adapter);
+            SAFE_RELEASE(ref m_Device);
 
             for (uint i = DEFAULT_POOL_MAX_COUNT; i-- > 0;)
             {
@@ -205,22 +210,22 @@ namespace TerraFX.Interop
             }
         }
 
-        public ID3D12Device* GetDevice() { return m_Device; }
+        public ID3D12Device* GetDevice() => m_Device;
 
-        public ID3D12Device4* GetDevice4() { return m_Device4; }
+        public ID3D12Device4* GetDevice4() => m_Device4;
 
-        public ID3D12Device8* GetDevice8() { return m_Device8; }
+        public ID3D12Device8* GetDevice8() => m_Device8;
 
         // Shortcut for "Allocation Callbacks", because this function is called so often.
-        public readonly ALLOCATION_CALLBACKS* GetAllocs() { return (ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref Unsafe.AsRef(m_AllocationCallbacks)); }
+        public readonly ALLOCATION_CALLBACKS* GetAllocs() => (ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref Unsafe.AsRef(m_AllocationCallbacks));
 
-        public readonly D3D12_FEATURE_DATA_D3D12_OPTIONS* GetD3D12Options() { return (D3D12_FEATURE_DATA_D3D12_OPTIONS*)Unsafe.AsPointer(ref Unsafe.AsRef(m_D3D12Options)); }
+        public readonly D3D12_FEATURE_DATA_D3D12_OPTIONS* GetD3D12Options() => (D3D12_FEATURE_DATA_D3D12_OPTIONS*)Unsafe.AsPointer(ref Unsafe.AsRef(m_D3D12Options));
 
-        public readonly bool SupportsResourceHeapTier2() { return m_D3D12Options.ResourceHeapTier >= D3D12_RESOURCE_HEAP_TIER_2; }
+        public readonly bool SupportsResourceHeapTier2() => m_D3D12Options.ResourceHeapTier >= D3D12_RESOURCE_HEAP_TIER_2;
 
-        public readonly bool UseMutex() { return m_UseMutex; }
+        public readonly bool UseMutex() => m_UseMutex;
 
-        public AllocationObjectAllocator* GetAllocationObjectAllocator() { return (AllocationObjectAllocator*)Unsafe.AsPointer(ref m_AllocationObjectAllocator); }
+        public AllocationObjectAllocator* GetAllocationObjectAllocator() => (AllocationObjectAllocator*)Unsafe.AsPointer(ref m_AllocationObjectAllocator);
 
         public readonly bool HeapFlagsFulfillResourceHeapTier(D3D12_HEAP_FLAGS flags)
         {
@@ -810,7 +815,7 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("UINT")]
-        public readonly uint GetCurrentFrameIndex() { return m_CurrentFrameIndex.Load(); }
+        public readonly uint GetCurrentFrameIndex() => m_CurrentFrameIndex.Load();
 
         public void CalculateStats(Stats* outStats)
         {
@@ -955,15 +960,23 @@ namespace TerraFX.Interop
             switch (heapType)
             {
                 case D3D12_HEAP_TYPE_DEFAULT:
+                {
                     GetBudget(outBudget, null);
                     break;
+                }
+
                 case D3D12_HEAP_TYPE_UPLOAD:
                 case D3D12_HEAP_TYPE_READBACK:
+                {
                     GetBudget(null, outBudget);
                     break;
+                }
+
                 default:
+                {
                     D3D12MA_ASSERT(false);
                     break;
+                }
             }
         }
 
@@ -1479,17 +1492,28 @@ namespace TerraFX.Interop
             switch (allocDesc->HeapType)
             {
                 case D3D12_HEAP_TYPE_DEFAULT:
+                {
                     poolIndex = 0;
                     break;
+                }
+
                 case D3D12_HEAP_TYPE_UPLOAD:
+                {
                     poolIndex = 1;
                     break;
+                }
+
                 case D3D12_HEAP_TYPE_READBACK:
+                {
                     poolIndex = 2;
                     break;
+                }
+
                 default:
+                {
                     D3D12MA_ASSERT(false);
                     break;
+                }
             }
 
             if (!SupportsResourceHeapTier2())
@@ -1525,17 +1549,28 @@ namespace TerraFX.Interop
             switch (heapType)
             {
                 case D3D12_HEAP_TYPE_DEFAULT:
+                {
                     poolIndex = 0;
                     break;
+                }
+
                 case D3D12_HEAP_TYPE_UPLOAD:
+                {
                     poolIndex = 1;
                     break;
+                }
+
                 case D3D12_HEAP_TYPE_READBACK:
+                {
                     poolIndex = 2;
                     break;
+                }
+
                 default:
+                {
                     D3D12MA_ASSERT(false);
                     break;
+                }
             }
 
             if (!supportsResourceHeapTier2)
@@ -1587,14 +1622,22 @@ namespace TerraFX.Interop
                 switch (index % 3)
                 {
                     case 0:
+                    {
                         *outHeapFlags = D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
                         break;
+                    }
+
                     case 1:
+                    {
                         *outHeapFlags = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES;
                         break;
+                    }
+
                     case 2:
+                    {
                         *outHeapFlags = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
                         break;
+                    }
                 }
 
                 index /= 3;
@@ -1603,17 +1646,28 @@ namespace TerraFX.Interop
             switch (index)
             {
                 case 0:
+                {
                     *outHeapType = D3D12_HEAP_TYPE_DEFAULT;
                     break;
+                }
+
                 case 1:
+                {
                     *outHeapType = D3D12_HEAP_TYPE_UPLOAD;
                     break;
+                }
+
                 case 2:
+                {
                     *outHeapType = D3D12_HEAP_TYPE_READBACK;
                     break;
+                }
+
                 default:
+                {
                     D3D12MA_ASSERT(false);
                     break;
+                }
             }
         }
 
@@ -1732,7 +1786,7 @@ namespace TerraFX.Interop
             if (pInOutResourceDesc->Alignment == 0 &&
                 pInOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
             {
-                return new(
+                return new D3D12_RESOURCE_ALLOCATION_INFO(
                     AlignUp(pInOutResourceDesc->Width, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT), // SizeInBytes
                     D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT); // Alignment
             }

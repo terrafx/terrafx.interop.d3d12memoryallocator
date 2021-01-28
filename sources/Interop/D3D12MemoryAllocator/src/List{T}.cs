@@ -30,7 +30,7 @@ namespace TerraFX.Interop
         public List(ALLOCATION_CALLBACKS* allocationCallbacks)
         {
             m_AllocationCallbacks = allocationCallbacks;
-            m_ItemAllocator = new(allocationCallbacks, 128);
+            m_ItemAllocator = new PoolAllocator<Item>(allocationCallbacks, 128);
             m_pFront = null;
             m_pBack = null;
             m_Count = 0;
@@ -60,13 +60,13 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("size_t")]
-        public readonly nuint GetCount() { return m_Count; }
+        public readonly nuint GetCount() => m_Count;
 
-        public readonly bool IsEmpty() { return m_Count == 0; }
+        public readonly bool IsEmpty() => m_Count == 0;
 
-        public readonly Item* Front() { return m_pFront; }
+        public readonly Item* Front() => m_pFront;
 
-        public readonly Item* Back() { return m_pBack; }
+        public readonly Item* Back() => m_pBack;
 
         public Item* PushBack()
         {
@@ -301,21 +301,21 @@ namespace TerraFX.Interop
             }
         }
 
-        public readonly bool empty() { return IsEmpty(); }
+        public readonly bool empty() => IsEmpty();
 
         [return: NativeTypeName("size_t")]
-        public readonly nuint size() { return GetCount(); }
+        public readonly nuint size() => GetCount();
 
-        public iterator begin() { return new((List<T>*)Unsafe.AsPointer(ref this), Front()); }
+        public iterator begin() => new iterator((List<T>*)Unsafe.AsPointer(ref this), Front());
 
-        public iterator end() { return new((List<T>*)Unsafe.AsPointer(ref this), null); }
+        public iterator end() => new iterator((List<T>*)Unsafe.AsPointer(ref this), null);
 
-        public void clear() { Clear(); }
+        public void clear() => Clear();
 
-        public void push_back(T* value) { PushBack(value); }
+        public void push_back(T* value) => PushBack(value);
 
-        public void erase(iterator it) { Remove(it.m_pItem); }
+        public void erase(iterator it) => Remove(it.m_pItem);
 
-        public iterator insert(iterator it, T* value) { return new((List<T>*)Unsafe.AsPointer(ref this), InsertBefore(it.m_pItem, value)); }
+        public iterator insert(iterator it, T* value) => new iterator((List<T>*)Unsafe.AsPointer(ref this), InsertBefore(it.m_pItem, value));
     }
 }

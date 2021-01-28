@@ -17,7 +17,7 @@ namespace TerraFX.Interop
         {
             m_AllocationCallbacks = *allocationCallbacks;
             m_Size = size;
-            m_Metadata = new(allocationCallbacks, true); // isVirtual
+            m_Metadata = new BlockMetadata_Generic(allocationCallbacks, true); // isVirtual
 
             m_Metadata.Init(m_Size);
         }

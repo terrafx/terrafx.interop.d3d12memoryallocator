@@ -286,7 +286,7 @@ namespace TerraFX.Interop
             }
             //D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK
             *ppPool = D3D12MA_NEW<Pool>(m_Pimpl->GetAllocs());
-            **ppPool = new((Allocator*)Unsafe.AsPointer(ref this), pPoolDesc);
+            **ppPool = new Pool((Allocator*)Unsafe.AsPointer(ref this), pPoolDesc);
             HRESULT hr = (*ppPool)->m_Pimpl->Init();
             if (SUCCEEDED(hr))
             {
@@ -382,7 +382,7 @@ namespace TerraFX.Interop
         internal Allocator([NativeTypeName("const ALLOCATION_CALLBACKS&")] ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("const ALLOCATOR_DESC&")] ALLOCATOR_DESC* desc)
         {
             m_Pimpl = D3D12MA_NEW<AllocatorPimpl>(allocationCallbacks);
-            *m_Pimpl = new(allocationCallbacks, desc);
+            *m_Pimpl = new AllocatorPimpl(allocationCallbacks, desc);
         }
 
         public void Dispose()
