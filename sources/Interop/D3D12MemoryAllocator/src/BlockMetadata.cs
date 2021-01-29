@@ -9,27 +9,27 @@ namespace TerraFX.Interop
     /// <summary>Data structure used for bookkeeping of allocations and unused ranges of memory in a single ID3D12Heap memory block.</summary>
     internal unsafe struct BlockMetadata : IDisposable
     {
-        private static void** SharedLpVtbl = InitLpVtbl();
+        private static readonly void** SharedLpVtbl = InitLpVtbl();
 
         private static void** InitLpVtbl()
         {
-            SharedLpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BlockMetadata), sizeof(void*) * 15);
-            SharedLpVtbl[0] = (delegate*<BlockMetadata*, void>)&Dispose;
-            SharedLpVtbl[1] = (delegate*<BlockMetadata*, ulong, void>)&Init;
-            SharedLpVtbl[2] = null;
-            SharedLpVtbl[3] = null;
-            SharedLpVtbl[4] = null;
-            SharedLpVtbl[5] = null;
-            SharedLpVtbl[6] = null;
-            SharedLpVtbl[7] = null;
-            SharedLpVtbl[8] = null;
-            SharedLpVtbl[9] = null;
-            SharedLpVtbl[10] = null;
-            SharedLpVtbl[11] = null;
-            SharedLpVtbl[12] = null;
-            SharedLpVtbl[13] = null;
-            SharedLpVtbl[14] = null;
-            return SharedLpVtbl;
+            void** lpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BlockMetadata), sizeof(void*) * 15);
+            lpVtbl[0] = (delegate*<BlockMetadata*, void>)&Dispose;
+            lpVtbl[1] = (delegate*<BlockMetadata*, ulong, void>)&Init;
+            lpVtbl[2] = null;
+            lpVtbl[3] = null;
+            lpVtbl[4] = null;
+            lpVtbl[5] = null;
+            lpVtbl[6] = null;
+            lpVtbl[7] = null;
+            lpVtbl[8] = null;
+            lpVtbl[9] = null;
+            lpVtbl[10] = null;
+            lpVtbl[11] = null;
+            lpVtbl[12] = null;
+            lpVtbl[13] = null;
+            lpVtbl[14] = null;
+            return lpVtbl;
         }
 
         public void** lpVtbl;

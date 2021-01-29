@@ -10,13 +10,13 @@ namespace TerraFX.Interop
     /// <summary>Represents a single block of device memory (heap) with all the data about its regions(aka suballocations, Allocation), assigned and free. Thread-safety: This class must be externally synchronized.</summary>
     internal unsafe struct NormalBlock : /* MemoryBlock, */ IDisposable
     {
-        private static void** SharedLpVtbl = InitLpVtbl();
+        private static readonly void** SharedLpVtbl = InitLpVtbl();
 
         private static void** InitLpVtbl()
         {
-            SharedLpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(NormalBlock), sizeof(void*));
-            SharedLpVtbl[0] = (delegate*<NormalBlock*, void>)&Dispose;
-            return SharedLpVtbl;
+            void** lpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(NormalBlock), sizeof(void*));
+            lpVtbl[0] = (delegate*<NormalBlock*, void>)&Dispose;
+            return lpVtbl;
         }
 
         public MemoryBlock @base;

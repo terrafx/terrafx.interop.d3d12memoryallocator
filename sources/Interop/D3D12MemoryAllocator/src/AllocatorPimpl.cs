@@ -24,8 +24,10 @@ namespace TerraFX.Interop
     {
         public CurrentBudgetData m_Budget;
 
+#pragma warning disable CS0649
         readonly bool m_UseMutex;
         readonly bool m_AlwaysCommitted;
+#pragma warning restore CS0649
         ID3D12Device* m_Device; // AddRef
         ID3D12Device4* m_Device4; // AddRef, optional
         ID3D12Device8* m_Device8; // AddRef, optional
@@ -69,19 +71,13 @@ namespace TerraFX.Interop
 
         D3D12MA_RW_MUTEX m_DefaultPoolMinBytesMutex;
 
-        public AllocatorPimpl(ALLOCATION_CALLBACKS* allocationCallbacks, ALLOCATOR_DESC* desc)
+        // Explicit constructor as a normal instance method: this is needed to ensure the code is executed in-place over the
+        // AllocatorPimpl instance being initialized, and not on a local variable which is then copied over to the
+        // target memory location, which would break the references to self fields being used in the code below.
+        public void Ctor(ALLOCATION_CALLBACKS* allocationCallbacks, ALLOCATOR_DESC* desc)
         {
-            Unsafe.SkipInit(out m_Budget);
-            m_Device4 = null;
-            m_Device8 = null;
-            m_Adapter3 = null;
-            Unsafe.SkipInit(out m_AdapterDesc);
-            Unsafe.SkipInit(out m_CommittedAllocationsMutex);
-            Unsafe.SkipInit(out m_PoolsMutex);
-            Unsafe.SkipInit(out m_DefaultPoolMinBytesMutex);
-
-            m_UseMutex = ((int)desc->Flags & (int)ALLOCATOR_FLAG_SINGLETHREADED) == 0;
-            m_AlwaysCommitted = ((int)desc->Flags & (int)ALLOCATOR_FLAG_ALWAYS_COMMITTED) != 0;
+            Unsafe.AsRef(m_UseMutex) = ((int)desc->Flags & (int)ALLOCATOR_FLAG_SINGLETHREADED) == 0;
+            Unsafe.AsRef(m_AlwaysCommitted) = ((int)desc->Flags & (int)ALLOCATOR_FLAG_ALWAYS_COMMITTED) != 0;
             m_Device = desc->pDevice;
             m_Adapter = desc->pAdapter;
             m_PreferredBlockSize = desc->PreferredBlockSize != 0 ? desc->PreferredBlockSize : D3D12MA_DEFAULT_BLOCK_SIZE;

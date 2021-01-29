@@ -347,11 +347,8 @@ namespace TerraFX.Interop
             }
         }
 
-        internal Allocation(AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
+        internal void Ctor(AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
         {
-            Unsafe.SkipInit(out m_PackedData);
-            Unsafe.SkipInit(out m_Union);
-
             m_Allocator = allocator;
             m_Size = size;
             m_Resource = null;

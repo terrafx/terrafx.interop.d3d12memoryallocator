@@ -136,6 +136,7 @@ namespace TerraFX.Interop
             return (T*)Malloc(allocs, (nuint)sizeof(T) * count, __alignof<T>());
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nuint __alignof<T>()
             where T : unmanaged
         {
@@ -159,10 +160,13 @@ namespace TerraFX.Interop
             if (typeof(T) == typeof(BlockVector)) return 8;
             if (typeof(T) == typeof(NormalBlock)) return 8;
             if (typeof(T) == typeof(BlockMetadata_Generic)) return 8;
-            if (typeof(T) == typeof(PoolAllocator<SuballocationList.Item>.Item)) return 8;
+            if (typeof(T) == typeof(PoolAllocator_Allocation.Item)) return 8;
+            if (typeof(T) == typeof(PoolAllocator_SuballocationListItem.Item)) return 8;
+            if (typeof(T) == typeof(PoolAllocator<Allocation>.ItemBlock)) return (nuint)sizeof(void*);
             if (typeof(T) == typeof(PoolAllocator<SuballocationList.Item>.ItemBlock)) return (nuint)sizeof(void*);
             if (typeof(T) == typeof(SuballocationList.iterator)) return (nuint)sizeof(void*);
             if (typeof(T) == typeof(Ptr<NormalBlock>)) return (nuint)sizeof(void*);
+            if (typeof(T) == typeof(Ptr<Allocation>)) return (nuint)sizeof(void*);
 
             throw new ArgumentException("Invalid __alignof<T> type");
         }
@@ -491,7 +495,7 @@ namespace TerraFX.Interop
             where TCmpLess : struct, ICmpLess<TKey>
             where TKey : unmanaged
         {
-            nuint down = 0, up = (nuint)end - (nuint)beg;
+            nuint down = 0, up = (nuint)(end - beg);
             while (down < up)
             {
                 nuint mid = (down + up) / 2;
@@ -513,7 +517,7 @@ namespace TerraFX.Interop
             where TCmpLess : struct, ICmpLess64<TKey>
             where TKey : unmanaged
         {
-            nuint down = 0, up = (nuint)end - (nuint)beg;
+            nuint down = 0, up = (nuint)(end - beg);
             while (down < up)
             {
                 nuint mid = (down + up) / 2;

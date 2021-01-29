@@ -11,27 +11,27 @@ namespace TerraFX.Interop
 {
     internal unsafe struct BlockMetadata_Generic // : BlockMetadata
     {
-        private static void** SharedLpVtbl = InitLpVtbl();
+        private static readonly void** SharedLpVtbl = InitLpVtbl();
 
         private static void** InitLpVtbl()
         {
-            SharedLpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BlockMetadata_Generic), sizeof(void*) * 15);
-            SharedLpVtbl[0] = (delegate*<BlockMetadata_Generic*, void>)&Dispose;
-            SharedLpVtbl[1] = (delegate*<BlockMetadata_Generic*, ulong, void>)&Init;
-            SharedLpVtbl[2] = (delegate*<BlockMetadata_Generic*, bool>)&Validate;
-            SharedLpVtbl[3] = (delegate*<BlockMetadata_Generic*, nuint>)&GetAllocationCount;
-            SharedLpVtbl[4] = (delegate*<BlockMetadata_Generic*, ulong>)&GetSumFreeSize;
-            SharedLpVtbl[5] = (delegate*<BlockMetadata_Generic*, ulong>)&GetUnusedRangeSizeMax;
-            SharedLpVtbl[6] = (delegate*<BlockMetadata_Generic*, bool>)&IsEmpty;
-            SharedLpVtbl[7] = (delegate*<BlockMetadata_Generic*, ulong, VIRTUAL_ALLOCATION_INFO*, void>)&GetAllocationInfo;
-            SharedLpVtbl[8] = (delegate*<BlockMetadata_Generic*, ulong, ulong, AllocationRequest*, bool>)&CreateAllocationRequest;
-            SharedLpVtbl[9] = (delegate*<BlockMetadata_Generic*, AllocationRequest*, ulong, void*, void>)&Alloc;
-            SharedLpVtbl[10] = (delegate*<BlockMetadata_Generic*, ulong, void>)&FreeAtOffset;
-            SharedLpVtbl[11] = (delegate*<BlockMetadata_Generic*, void>)&Clear;
-            SharedLpVtbl[12] = (delegate*<BlockMetadata_Generic*, ulong, void*, void>)&SetAllocationUserData;
-            SharedLpVtbl[13] = (delegate*<BlockMetadata_Generic*, StatInfo*, void>)&CalcAllocationStatInfo;
-            SharedLpVtbl[14] = (delegate*<BlockMetadata_Generic*, JsonWriter*, void>)&WriteAllocationInfoToJson;
-            return SharedLpVtbl;
+            void** lpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(BlockMetadata_Generic), sizeof(void*) * 15);
+            lpVtbl[0] = (delegate*<BlockMetadata_Generic*, void>)&Dispose;
+            lpVtbl[1] = (delegate*<BlockMetadata_Generic*, ulong, void>)&Init;
+            lpVtbl[2] = (delegate*<BlockMetadata_Generic*, bool>)&Validate;
+            lpVtbl[3] = (delegate*<BlockMetadata_Generic*, nuint>)&GetAllocationCount;
+            lpVtbl[4] = (delegate*<BlockMetadata_Generic*, ulong>)&GetSumFreeSize;
+            lpVtbl[5] = (delegate*<BlockMetadata_Generic*, ulong>)&GetUnusedRangeSizeMax;
+            lpVtbl[6] = (delegate*<BlockMetadata_Generic*, bool>)&IsEmpty;
+            lpVtbl[7] = (delegate*<BlockMetadata_Generic*, ulong, VIRTUAL_ALLOCATION_INFO*, void>)&GetAllocationInfo;
+            lpVtbl[8] = (delegate*<BlockMetadata_Generic*, ulong, ulong, AllocationRequest*, bool>)&CreateAllocationRequest;
+            lpVtbl[9] = (delegate*<BlockMetadata_Generic*, AllocationRequest*, ulong, void*, void>)&Alloc;
+            lpVtbl[10] = (delegate*<BlockMetadata_Generic*, ulong, void>)&FreeAtOffset;
+            lpVtbl[11] = (delegate*<BlockMetadata_Generic*, void>)&Clear;
+            lpVtbl[12] = (delegate*<BlockMetadata_Generic*, ulong, void*, void>)&SetAllocationUserData;
+            lpVtbl[13] = (delegate*<BlockMetadata_Generic*, StatInfo*, void>)&CalcAllocationStatInfo;
+            lpVtbl[14] = (delegate*<BlockMetadata_Generic*, JsonWriter*, void>)&WriteAllocationInfoToJson;
+            return lpVtbl;
         }
 
         private BlockMetadata @base;

@@ -20,13 +20,7 @@ namespace TerraFX.Interop
         {
             using MutexLock mutexLock = new((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
 
-            static Allocation Ctor(void** args)
-            {
-                return new Allocation((AllocatorPimpl*)args[0], *(ulong*)args[1], *(int*)args[2]);
-            }
-
-            void** args = stackalloc void*[3] { allocator, &size, &wasZeroInitialized };
-            return m_Allocator.Alloc(args, &Ctor);
+            return m_Allocator.Alloc(allocator, size, wasZeroInitialized);
         }
 
         public void Free([NativeTypeName("Allocation*")] ref Allocation alloc)

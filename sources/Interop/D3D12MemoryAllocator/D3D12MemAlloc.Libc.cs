@@ -15,7 +15,7 @@ namespace TerraFX.Interop
         [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern void* memset(void* _Dst, int _Val, [NativeTypeName("size_t")] nuint _Size);
 
-        [DllImport("memcpy", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void* memcpy(void* _Dst, [NativeTypeName("void const*")] void* _Src, [NativeTypeName("size_t")] nuint _Size);
 
         [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
