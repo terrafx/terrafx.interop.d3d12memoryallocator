@@ -33,11 +33,15 @@ namespace TerraFX.Interop.UnitTests
         // we want enough allocators for each buffer * number of threads (we only have one thread)
         public static ComPtr<ID3D12CommandAllocator>* g_CommandAllocators = (ComPtr<ID3D12CommandAllocator>*)Marshal.AllocHGlobal(sizeof(void*) * (int)FRAME_BUFFER_COUNT);
 
+#pragma warning disable CS0649 // TODO: implement test setup
+
         // a command list we can record commands into, then execute them to render the frame
         public static ComPtr<ID3D12GraphicsCommandList> g_CommandList;
 
         // current rtv we are on
         public static uint g_FrameIndex;
+
+#pragma warning restore CS0649
 
         public static ID3D12GraphicsCommandList* BeginCommandList()
         {
@@ -243,10 +247,10 @@ namespace TerraFX.Interop.UnitTests
 
             // # Generate JSON dump
 
-            char* json = null;
+            ushort* json = null;
             block.Get()->BuildStatsString(&json);
             {
-                string str = new(json);
+                string str = new((char*)json);
                 CHECK_BOOL(str.Contains("\"UserData\": 1"));
                 CHECK_BOOL(str.Contains("\"UserData\": 2"));
             }
@@ -312,9 +316,9 @@ namespace TerraFX.Interop.UnitTests
                     __uuidof<ID3D12Resource>(),
                     null));
 
-                char* statsString;
+                ushort* statsString;
                 ctx->allocator->BuildStatsString(&statsString, TRUE);
-                string statsStr = new(statsString);
+                string statsStr = new((char*)statsString);
                 for (uint testIndex = BEGIN_INDEX; testIndex < END_INDEX; ++testIndex)
                 {
                     string buffer = $"\"CreationFrameIndex\": {testIndex}";
@@ -382,16 +386,16 @@ namespace TerraFX.Interop.UnitTests
                 CHECK_BOOL(resources[i].allocation.Get()->GetHeap() == null && resources[i].allocation.Get()->GetOffset() == 0);
 
                 fixed (char* p = names[i])
-                    resources[i].allocation.Get()->SetName(p);
+                    resources[i].allocation.Get()->SetName((ushort*)p);
             }
 
             // Check names.
             for (uint i = 0; i < count; ++i)
             {
-                char* allocName = resources[i].allocation.Get()->GetName();
+                ushort* allocName = resources[i].allocation.Get()->GetName();
                 if (allocName != null)
                 {
-                    CHECK_BOOL(new string(allocName) == names[i]);
+                    CHECK_BOOL(new string((char*)allocName) == names[i]);
                 }
                 else
                 {
@@ -399,9 +403,9 @@ namespace TerraFX.Interop.UnitTests
                 }
             }
 
-            char* jsonString;
+            ushort* jsonString;
             ctx->allocator->BuildStatsString(&jsonString, TRUE);
-            string jsonStr = new(jsonString);
+            string jsonStr = new((char*)jsonString);
             CHECK_BOOL(jsonStr.Contains("\"Resource\\nFoo\\r\\nBar\""));
             CHECK_BOOL(jsonStr.Contains("\"Resource \\\"'&<>?#@!&-=_+[]{};:,.\\/\\\\\""));
             CHECK_BOOL(jsonStr.Contains("\"\""));
@@ -646,8 +650,8 @@ namespace TerraFX.Interop.UnitTests
 
             // # SetName and GetName
             const string NAME = "Custom pool name 1";
-            fixed(char* p = NAME) pool.Get()->SetName(p);
-            CHECK_BOOL(new string(pool.Get()->GetName()) == NAME);
+            fixed(char* p = NAME) pool.Get()->SetName((ushort*)p);
+            CHECK_BOOL(new string((char*)pool.Get()->GetName()) == NAME);
 
             // # SetMinBytes
 
