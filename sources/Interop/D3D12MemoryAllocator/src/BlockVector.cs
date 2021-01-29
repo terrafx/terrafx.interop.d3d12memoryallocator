@@ -63,7 +63,7 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
-            for (nuint i = m_Blocks.size(); i-- > 0;)
+            for (nuint i = m_Blocks.size(); unchecked(i-- > 0);)
             {
                 D3D12MA_DELETE(m_hAllocator->GetAllocs(), m_Blocks[i]->Value);
             }
@@ -429,7 +429,7 @@ namespace TerraFX.Interop
         private readonly ulong CalcSumBlockSize()
         {
             ulong result = 0;
-            for (nuint i = m_Blocks.size(); i-- > 0;)
+            for (nuint i = m_Blocks.size(); unchecked(i-- > 0);)
             {
                 result += m_Blocks[i]->Value->m_pMetadata->GetSize();
             }
@@ -441,7 +441,7 @@ namespace TerraFX.Interop
         private readonly ulong CalcMaxBlockSize()
         {
             ulong result = 0;
-            for (nuint i = m_Blocks.size(); i-- > 0;)
+            for (nuint i = m_Blocks.size(); unchecked(i-- > 0);)
             {
                 result = D3D12MA_MAX(result, m_Blocks[i]->Value->m_pMetadata->GetSize());
                 if (result >= m_PreferredBlockSize)

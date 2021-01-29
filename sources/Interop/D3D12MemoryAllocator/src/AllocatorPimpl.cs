@@ -183,12 +183,12 @@ namespace TerraFX.Interop
             SAFE_RELEASE(ref m_Adapter);
             SAFE_RELEASE(ref m_Device);
 
-            for (uint i = DEFAULT_POOL_MAX_COUNT; i-- > 0;)
+            for (uint i = DEFAULT_POOL_MAX_COUNT; unchecked(i-- > 0);)
             {
                 D3D12MA_DELETE<BlockVector>(GetAllocs(), m_BlockVectors[(int)i]);
             }
 
-            for (uint i = HEAP_TYPE_COUNT; i-- > 0;)
+            for (uint i = HEAP_TYPE_COUNT; unchecked(i-- > 0);)
             {
                 if (m_pPools[(int)i].Value != null && !m_pPools[(int)i].Value->empty())
                 {
@@ -198,7 +198,7 @@ namespace TerraFX.Interop
                 D3D12MA_DELETE(GetAllocs(), m_pPools[(int)i].Value);
             }
 
-            for (uint i = HEAP_TYPE_COUNT; i-- > 0;)
+            for (uint i = HEAP_TYPE_COUNT; unchecked(i-- > 0);)
             {
                 if (m_pCommittedAllocations[(int)i].Value != null && !m_pCommittedAllocations[(int)i].Value->empty())
                 {

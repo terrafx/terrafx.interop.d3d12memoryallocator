@@ -1,7 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using static TerraFX.Interop.D3D12MemoryAllocator;
 
@@ -33,7 +32,7 @@ namespace TerraFX.Interop
 
         public void Clear()
         {
-            for (nuint i = m_ItemBlocks.size(); i-- > 0;)
+            for (nuint i = m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
                 D3D12MA_DELETE_ARRAY_NO_DISPOSE(m_AllocationCallbacks, m_ItemBlocks[i]->pItems, (nuint)m_ItemBlocks[i]->Capacity);
             }
@@ -48,7 +47,7 @@ namespace TerraFX.Interop
 
         public T* Alloc(void** args, delegate*<void**, T> ctor)
         {
-            for (nuint i = m_ItemBlocks.size(); i-- > 0;)
+            for (nuint i = m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
                 ItemBlock* block = m_ItemBlocks[i];
                 // This block has some free items: Use first one.
@@ -76,7 +75,7 @@ namespace TerraFX.Interop
         public void Free(T* ptr)
         {
             // Search all memory blocks to find ptr.
-            for (nuint i = m_ItemBlocks.size(); i-- > 0;)
+            for (nuint i = m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
                 ItemBlock* block = m_ItemBlocks[i];
 
@@ -97,19 +96,17 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(false); // "Pointer doesn't belong to this memory pool."
         }
 
-        [StructLayout(LayoutKind.Explicit)]
-        private struct Item
+        internal struct Item
         {
-            [FieldOffset(0), NativeTypeName("UINT")]
+            [NativeTypeName("UINT")]
             public uint NextFreeIndex; // UINT32_MAX means end of list.
 
-            [FieldOffset(0)]
             private T __Value_Data;
 
             public byte* Value => (byte*)Unsafe.AsPointer(ref __Value_Data);
         }
 
-        private struct ItemBlock
+        internal struct ItemBlock
         {
             public Item* pItems;
 

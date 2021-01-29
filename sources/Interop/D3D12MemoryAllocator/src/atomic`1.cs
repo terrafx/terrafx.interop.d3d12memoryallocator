@@ -9,51 +9,69 @@ namespace TerraFX.Interop
     internal struct atomic<T>
         where T : unmanaged
     {
-        private T value;
+        internal T value;
+    }
 
-        public void Add(T value)
+    internal static class atomic
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Add(this ref atomic<uint> @this, uint value)
         {
-            if (typeof(T) == typeof(uint))
-                Interlocked.Add(ref Unsafe.As<T, uint>(ref this.value), Unsafe.As<T, uint>(ref value));
-            else if (typeof(T) == typeof(ulong))
-                Interlocked.Add(ref Unsafe.As<T, ulong>(ref this.value), Unsafe.As<T, ulong>(ref value));
-            throw null!;
+            Interlocked.Add(ref @this.value, value);
         }
 
-        public void Subtract(T value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Add(this ref atomic<ulong> @this, ulong value)
         {
-            if (typeof(T) == typeof(uint))
-                Interlocked.Add(ref Unsafe.As<T, int>(ref this.value), -Unsafe.As<T, int>(ref value));
-            else if (typeof(T) == typeof(ulong))
-                Interlocked.Add(ref Unsafe.As<T, long>(ref this.value), -Unsafe.As<T, long>(ref value));
-            throw null!;
+            Interlocked.Add(ref @this.value, value);
         }
 
-        public void Increment()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Subtract(this ref atomic<uint> @this, uint value)
         {
-            if (typeof(T) == typeof(uint))
-                Interlocked.Increment(ref Unsafe.As<T, uint>(ref value));
-            else if (typeof(T) == typeof(ulong))
-                Interlocked.Increment(ref Unsafe.As<T, ulong>(ref value));
-            throw null!;
+            Interlocked.Add(ref Unsafe.As<uint, int>(ref @this.value), -(int)value);
         }
 
-        public T Load()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Subtract(this ref atomic<ulong> @this, ulong value)
         {
-            if (typeof(T) == typeof(uint))
-                Interlocked.Increment(ref Unsafe.As<T, uint>(ref value));
-            else if (typeof(T) == typeof(ulong))
-                Interlocked.Increment(ref Unsafe.As<T, ulong>(ref value));
-            throw null!;
+            Interlocked.Add(ref Unsafe.As<ulong, long>(ref @this.value), -(long)value);
         }
 
-        public T Store(T value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Increment(this ref atomic<uint> @this)
         {
-            if (typeof(T) == typeof(uint))
-                Interlocked.Exchange(ref Unsafe.As<T, uint>(ref this.value), Unsafe.As<T, uint>(ref value));
-            else if (typeof(T) == typeof(ulong))
-                Interlocked.Exchange(ref Unsafe.As<T, ulong>(ref this.value), Unsafe.As<T, ulong>(ref value));
-            throw null!;
+            Interlocked.Increment(ref @this.value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Increment(this ref atomic<ulong> @this)
+        {
+            Interlocked.Increment(ref @this.value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Load(this in atomic<uint> @this)
+        {
+            return @this.value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong Load(this in atomic<ulong> @this)
+        {
+            return Interlocked.Read(ref Unsafe.AsRef(in @this).value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Store(this ref atomic<uint> @this, uint value)
+        {
+            @this.value = value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Store(this ref atomic<ulong> @this, ulong value)
+        {
+            Interlocked.Exchange(ref @this.value, value);
         }
     }
 }
