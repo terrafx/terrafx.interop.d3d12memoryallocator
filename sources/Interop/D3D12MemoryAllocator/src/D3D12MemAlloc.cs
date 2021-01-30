@@ -167,6 +167,9 @@ namespace TerraFX.Interop
             if (typeof(T) == typeof(SuballocationList.iterator)) return (nuint)sizeof(void*);
             if (typeof(T) == typeof(Ptr<NormalBlock>)) return (nuint)sizeof(void*);
             if (typeof(T) == typeof(Ptr<Allocation>)) return (nuint)sizeof(void*);
+            if (typeof(T) == typeof(VirtualBlock)) return (nuint)sizeof(void*);
+            if (typeof(T) == typeof(VirtualBlockPimpl)) return 8;
+            if (typeof(T) == typeof(JsonWriter.StackItem)) return 4;
 
             throw new ArgumentException("Invalid __alignof<T> type");
         }
@@ -374,12 +377,12 @@ namespace TerraFX.Interop
         /// <summary>Returns true if given number is a power of two. T must be unsigned integer number or signed integer but always nonnegative. For 0 returns true.</summary>
         internal static bool IsPow2(nuint x)
         {
-            return (x & (x - 1)) == 0;
+            return unchecked(x & (x - 1)) == 0;
         }
 
         internal static bool IsPow2(ulong x)
         {
-            return (x & (x - 1)) == 0;
+            return unchecked(x & (x - 1)) == 0;
         }
 
         /// <summary>Aligns given value up to nearest multiply of align value. For example: AlignUp(11, 8) = 16.</summary>

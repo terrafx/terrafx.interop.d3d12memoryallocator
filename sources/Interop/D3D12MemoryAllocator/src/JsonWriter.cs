@@ -330,7 +330,7 @@ namespace TerraFX.Interop
             COLLECTION_TYPE_ARRAY,
         };
 
-        struct StackItem
+        internal struct StackItem
         {
             public CollectionType type;
 

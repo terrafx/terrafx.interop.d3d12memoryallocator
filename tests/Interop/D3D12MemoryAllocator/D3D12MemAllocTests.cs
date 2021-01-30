@@ -1,11 +1,10 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Threading;
 using NUnit.Framework;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12MemoryAllocator;
-using static TerraFX.Interop.UnitTests.D3D12Sample;
-using static TerraFX.Interop.UnitTests.D3D12MemAllocTests;
 using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.DXGI_FORMAT;
 using static TerraFX.Interop.D3D12_TEXTURE_LAYOUT;
@@ -20,160 +19,16 @@ using static TerraFX.Interop.D3D12_RESOURCE_BARRIER_TYPE;
 using AllocationUniquePtr = TerraFX.Interop.UnitTests.unique_ptr<TerraFX.Interop.Allocation>;
 using PoolUniquePtr = TerraFX.Interop.UnitTests.unique_ptr<TerraFX.Interop.Pool>;
 using VirtualBlockUniquePtr = TerraFX.Interop.UnitTests.unique_ptr<TerraFX.Interop.VirtualBlock>;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace TerraFX.Interop.UnitTests
 {
-    internal unsafe static class D3D12Sample
-    {
-        // number of buffers we want, 2 for double buffering, 3 for tripple buffering
-        public const nuint FRAME_BUFFER_COUNT = 3;
-
-        // we want enough allocators for each buffer * number of threads (we only have one thread)
-        public static ComPtr<ID3D12CommandAllocator>* g_CommandAllocators = (ComPtr<ID3D12CommandAllocator>*)Marshal.AllocHGlobal(sizeof(void*) * (int)FRAME_BUFFER_COUNT);
-
-#pragma warning disable CS0649 // TODO: implement test setup
-
-        // a command list we can record commands into, then execute them to render the frame
-        public static ComPtr<ID3D12GraphicsCommandList> g_CommandList;
-
-        // current rtv we are on
-        public static uint g_FrameIndex;
-
-#pragma warning restore CS0649
-
-        public static ID3D12GraphicsCommandList* BeginCommandList()
-        {
-            CHECK_HR(g_CommandList.Get()->Reset(g_CommandAllocators[g_FrameIndex], null));
-
-            return g_CommandList;
-        }
-
-        public static void EndCommandList(ID3D12GraphicsCommandList* cmdList)
-        {
-            cmdList->Close();
-
-            ID3D12CommandList* genericCmdList = (ID3D12CommandList*)cmdList;
-            //g_CommandQueue->ExecuteCommandLists(1, &genericCmdList);
-
-            //WaitGPUIdle(g_FrameIndex);
-            // TODO
-        }
-    }
-
     internal unsafe static partial class D3D12MemAllocTests
     {
-        public static void CHECK_HR(int hResult) => Assert.IsTrue(SUCCEEDED(hResult));
-
-        public static void CHECK_BOOL(bool cond) => Assert.IsTrue(cond);
-
-        [NativeTypeName("UINT64")] private const ulong MEGABYTE = 1024 * 1024;
-
-        public struct D3d12maObjDeleter<T>
-            where T : unmanaged
+        [Test]
+        public static void TestVirtualBlocks()
         {
-            public void Invoke(T* obj)
-            {
-                if (obj != null)
-                {
-                    if (typeof(T) == typeof(Allocation))
-                        ((Allocation*)obj)->Release();
-                    else if (typeof(T) == typeof(Pool))
-                        ((Pool*)obj)->Release();
-                    else if (typeof(T) == typeof(VirtualBlock))
-                        ((VirtualBlock*)obj)->Release();
-                    else throw new NotSupportedException("Invalid type argument");
-                }
-            }
-        }
-
-        struct ResourceWithAllocation
-        {
-            public ComPtr<ID3D12Resource> resource;
-            public AllocationUniquePtr allocation;
-            [NativeTypeName("UINT64")] public ulong size;
-            [NativeTypeName("UINT")] public uint dataSeed;
-
-            public static void Init(out ResourceWithAllocation value)
-            {
-                value = default;
-                value.size = UINT64_MAX;
-                value.dataSeed = 0;
-            }
-
-            public void Reset()
-            {
-                resource.Get()->Release();
-                allocation.reset();
-                size = UINT64_MAX;
-                dataSeed = 0;
-            }
-        }
-
-        static void FillResourceDescForBuffer<TD3D12_RESOURCE_DESC>(TD3D12_RESOURCE_DESC* outResourceDesc, [NativeTypeName("UINT64")] ulong size)
-            where TD3D12_RESOURCE_DESC : unmanaged
-        {
-            *outResourceDesc = default;
-            D3D12_RESOURCE_DESC* pOutResourceDesc = (D3D12_RESOURCE_DESC*)outResourceDesc;
-            pOutResourceDesc->Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-            pOutResourceDesc->Alignment = 0;
-            pOutResourceDesc->Width = size;
-            pOutResourceDesc->Height = 1;
-            pOutResourceDesc->DepthOrArraySize = 1;
-            pOutResourceDesc->MipLevels = 1;
-            pOutResourceDesc->Format = DXGI_FORMAT_UNKNOWN;
-            pOutResourceDesc->SampleDesc.Count = 1;
-            pOutResourceDesc->SampleDesc.Quality = 0;
-            pOutResourceDesc->Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-            pOutResourceDesc->Flags = D3D12_RESOURCE_FLAG_NONE;
-        }
-
-        static void FillData(void* outPtr, [NativeTypeName("UINT64")] ulong sizeInBytes, [NativeTypeName("UINT")] uint seed)
-        {
-            uint* outValues = (uint*)outPtr;
-            ulong sizeInValues = sizeInBytes / sizeof(uint);
-            uint value = seed;
-            for (uint i = 0; i < sizeInValues; ++i)
-            {
-                outValues[i] = value++;
-            }
-        }
-
-        static bool ValidateData(void* ptr, [NativeTypeName("UINT64")] ulong sizeInBytes, [NativeTypeName("UINT")] uint seed)
-        {
-            uint* values = (uint*)ptr;
-            ulong sizeInValues = sizeInBytes / sizeof(uint);
-            uint value = seed;
-            for(uint i = 0; i<sizeInValues; ++i)
-            {
-                if(values[i] != value++)
-                {
-                    //FAIL("ValidateData failed.");
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        static bool ValidateDataZero(void* ptr, [NativeTypeName("UINT64")] ulong sizeInBytes)
-        {
-            uint* values = (uint*)ptr;
-            ulong sizeInValues = sizeInBytes / sizeof(uint);
-            for (uint i = 0; i < sizeInValues; ++i)
-            {
-                if (values[i] != 0)
-                {
-                    //FAIL("ValidateData failed.");
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        static void TestVirtualBlocks(TestContext* ctx)
-        {
-            Console.WriteLine("Test virtual blocks");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             const ulong blockSize = 16 * MEGABYTE;
             const ulong alignment = 256;
@@ -183,7 +38,7 @@ namespace TerraFX.Interop.UnitTests
             using VirtualBlockUniquePtr block = default;
             VirtualBlock* blockPtr = null;
             VIRTUAL_BLOCK_DESC blockDesc = default;
-            blockDesc.pAllocationCallbacks = ctx->allocationCallbacks;
+            blockDesc.pAllocationCallbacks = ctx.allocationCallbacks;
             blockDesc.Size = blockSize;
             CHECK_HR(CreateVirtualBlock(&blockDesc, &blockPtr));
             CHECK_BOOL(blockPtr != null);
@@ -277,7 +132,7 @@ namespace TerraFX.Interop.UnitTests
                     }
                 }
 
-                for (nuint i = allocCount; i-- > 0;)
+                for (nuint i = allocCount; unchecked(i-- > 0);)
                 {
                     block.Get()->FreeAllocation(allocOffset[i]);
                 }
@@ -290,8 +145,12 @@ namespace TerraFX.Interop.UnitTests
             //block->Clear();
         }
 
-        static void TestFrameIndexAndJson(TestContext* ctx)
+        [Test]
+        public static void TestFrameIndexAndJson()
         {
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
+
             const ulong bufSize = 32UL * 1024;
 
             ALLOCATION_DESC allocDesc = default;
@@ -305,9 +164,9 @@ namespace TerraFX.Interop.UnitTests
             const uint END_INDEX = 20;
             for (uint frameIndex = BEGIN_INDEX; frameIndex < END_INDEX; ++frameIndex)
             {
-                ctx->allocator->SetCurrentFrameIndex(frameIndex);
+                ctx.allocator->SetCurrentFrameIndex(frameIndex);
                 Allocation* alloc = null;
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDesc,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -317,7 +176,7 @@ namespace TerraFX.Interop.UnitTests
                     null));
 
                 ushort* statsString;
-                ctx->allocator->BuildStatsString(&statsString, TRUE);
+                ctx.allocator->BuildStatsString(&statsString, TRUE);
                 string statsStr = new((char*)statsString);
                 for (uint testIndex = BEGIN_INDEX; testIndex < END_INDEX; ++testIndex)
                 {
@@ -331,14 +190,16 @@ namespace TerraFX.Interop.UnitTests
                         CHECK_BOOL(!statsStr.Contains(buffer));
                     }
                 }
-                ctx->allocator->FreeStatsString(statsString);
+                ctx.allocator->FreeStatsString(statsString);
                 alloc->Release();
             }
         }
 
-        static void TestCommittedResourcesAndJson(TestContext* ctx)
+        [Test]
+        public static void TestCommittedResourcesAndJson()
         {
-            Console.WriteLine("Test committed resources and JSON");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             const uint count = 4;
             const ulong bufSize = 32 * 1024;
@@ -363,7 +224,7 @@ namespace TerraFX.Interop.UnitTests
                 bool receiveExplicitResource = i < 2;
 
                 Allocation* alloc = null;
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDesc,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_COPY_DEST,
@@ -404,17 +265,19 @@ namespace TerraFX.Interop.UnitTests
             }
 
             ushort* jsonString;
-            ctx->allocator->BuildStatsString(&jsonString, TRUE);
+            ctx.allocator->BuildStatsString(&jsonString, TRUE);
             string jsonStr = new((char*)jsonString);
             CHECK_BOOL(jsonStr.Contains("\"Resource\\nFoo\\r\\nBar\""));
             CHECK_BOOL(jsonStr.Contains("\"Resource \\\"'&<>?#@!&-=_+[]{};:,.\\/\\\\\""));
             CHECK_BOOL(jsonStr.Contains("\"\""));
-            ctx->allocator->FreeStatsString(jsonString);
+            ctx.allocator->FreeStatsString(jsonString);
         }
 
-        static void TestCustomHeapFlags(TestContext* ctx)
+        [Test]
+        public static void TestCustomHeapFlags()
         {
-            Console.WriteLine("Test custom heap flags");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             // 1. Just memory heap with custom flags
             {
@@ -428,7 +291,7 @@ namespace TerraFX.Interop.UnitTests
                 resAllocInfo.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 
                 Allocation* alloc = null;
-                CHECK_HR(ctx->allocator->AllocateMemory(&allocDesc, &resAllocInfo, &alloc));
+                CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, &alloc));
                 ResourceWithAllocation res = default;
                 res.allocation.reset(alloc);
 
@@ -457,7 +320,7 @@ namespace TerraFX.Interop.UnitTests
 
                 ResourceWithAllocation res = default;
                 Allocation* alloc = null;
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDesc,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_COMMON,
@@ -472,11 +335,13 @@ namespace TerraFX.Interop.UnitTests
             }
         }
 
-        static void TestPlacedResources(TestContext* ctx)
+        [Test]
+        public static void TestPlacedResources()
         {
-            Console.WriteLine("Test placed resources");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
-            bool alwaysCommitted = (ctx->allocatorFlags & ALLOCATOR_FLAG_ALWAYS_COMMITTED) != 0;
+            bool alwaysCommitted = (ctx.allocatorFlags & ALLOCATOR_FLAG_ALWAYS_COMMITTED) != 0;
 
             const uint count = 4;
             const ulong bufSize = 32ul * 1024;
@@ -491,7 +356,7 @@ namespace TerraFX.Interop.UnitTests
             Allocation* alloc = null;
             for (uint i = 0; i < count; ++i)
             {
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDesc,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -544,7 +409,7 @@ namespace TerraFX.Interop.UnitTests
             resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
             resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
             ResourceWithAllocation textureRes = default;
-            CHECK_HR(ctx->allocator->CreateResource(
+            CHECK_HR(ctx.allocator->CreateResource(
                 &allocDesc,
                 &resourceDesc,
                 D3D12_RESOURCE_STATE_COPY_DEST,
@@ -568,7 +433,7 @@ namespace TerraFX.Interop.UnitTests
             resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
             resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
             ResourceWithAllocation renderTargetRes = default;
-            CHECK_HR(ctx->allocator->CreateResource(
+            CHECK_HR(ctx.allocator->CreateResource(
                 &allocDesc,
                 &resourceDesc,
                 D3D12_RESOURCE_STATE_RENDER_TARGET,
@@ -579,9 +444,11 @@ namespace TerraFX.Interop.UnitTests
             renderTargetRes.allocation.reset(alloc);
         }
 
-        static void TestOtherComInterface(TestContext* ctx)
+        [Test]
+        public static void TestOtherComInterface()
         {
-            Console.WriteLine("Test other COM interface");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             D3D12_RESOURCE_DESC resDesc;
             FillResourceDescForBuffer(&resDesc, 0x10000);
@@ -597,7 +464,7 @@ namespace TerraFX.Interop.UnitTests
 
                 Allocation* alloc = null;
                 using ComPtr<ID3D12Pageable> pageable = default;
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDesc,
                     &resDesc,
                     D3D12_RESOURCE_STATE_COMMON,
@@ -609,20 +476,22 @@ namespace TerraFX.Interop.UnitTests
                 // Do something with the interface to make sure it's valid.
                 using ComPtr<ID3D12Device> device = default;
                 CHECK_HR(pageable.Get()->GetDevice(__uuidof<ID3D12Device>(), (void**)&device));
-                CHECK_BOOL(device == ctx->device);
+                CHECK_BOOL(device == ctx.device);
 
                 alloc->Release();
             }
         }
 
-        static void TestCustomPools(TestContext* ctx)
+        [Test]
+        public static void TestCustomPools()
         {
-            Console.WriteLine("Test custom pools");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             // # Fetch global stats 1
 
             Stats globalStatsBeg = default;
-            ctx->allocator->CalculateStats(&globalStatsBeg);
+            ctx.allocator->CalculateStats(&globalStatsBeg);
 
             // # Create pool, 1..2 blocks of 11 MB
 
@@ -634,7 +503,7 @@ namespace TerraFX.Interop.UnitTests
             poolDesc.MaxBlockCount = 2;
 
             Pool* poolPtr;
-            CHECK_HR(ctx->allocator->CreatePool(&poolDesc, &poolPtr));
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, &poolPtr));
             using PoolUniquePtr pool = poolPtr;
 
             Allocation* allocPtr;
@@ -683,7 +552,7 @@ namespace TerraFX.Interop.UnitTests
             AllocationUniquePtr* allocs = stackalloc AllocationUniquePtr[4];
             for (uint i = 0; i < 2; ++i)
             {
-                CHECK_HR(ctx->allocator->CreateResource(&allocDesc, &resDesc,
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
                     null, // pOptimizedClearValue
                     &allocPtr,
@@ -702,7 +571,7 @@ namespace TerraFX.Interop.UnitTests
             // # Check that global stats are updated as well
 
             Stats globalStatsCurr = default;
-            ctx->allocator->CalculateStats(&globalStatsCurr);
+            ctx.allocator->CalculateStats(&globalStatsCurr);
 
             CHECK_BOOL(globalStatsCurr.Total.AllocationCount == globalStatsBeg.Total.AllocationCount + poolStats.AllocationCount);
             CHECK_BOOL(globalStatsCurr.Total.BlockCount == globalStatsBeg.Total.BlockCount + poolStats.BlockCount);
@@ -715,7 +584,7 @@ namespace TerraFX.Interop.UnitTests
                 allocDesc.Flags = i == 0 ?
                     ALLOCATION_FLAG_NEVER_ALLOCATE :
                     ALLOCATION_FLAG_COMMITTED;
-                HRESULT hr = ctx->allocator->CreateResource(&allocDesc, &resDesc,
+                HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &resDesc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
                     null, // pOptimizedClearValue
                     &allocPtr,
@@ -728,7 +597,7 @@ namespace TerraFX.Interop.UnitTests
             allocDesc.Flags = ALLOCATION_FLAG_NONE;
             for (uint i = 2; i < 5; ++i)
             {
-                HRESULT hr = ctx->allocator->CreateResource(&allocDesc, &resDesc,
+                HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &resDesc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
                     null, // pOptimizedClearValue
                     &allocPtr,
@@ -759,12 +628,12 @@ namespace TerraFX.Interop.UnitTests
             resAllocInfo.SizeInBytes = 5 * MEGABYTE;
             resAllocInfo.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 
-            CHECK_HR(ctx->allocator->AllocateMemory(&allocDesc, &resAllocInfo, &allocPtr));
+            CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, &allocPtr));
             allocs[0].reset(allocPtr);
 
             resDesc.Width = 1 * MEGABYTE;
             using ComPtr<ID3D12Resource> res = default;
-            CHECK_HR(ctx->allocator->CreateAliasingResource(allocs[0].Get(),
+            CHECK_HR(ctx.allocator->CreateAliasingResource(allocs[0].Get(),
                 0, // AllocationLocalOffset
                 &resDesc,
                 D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -773,34 +642,35 @@ namespace TerraFX.Interop.UnitTests
                 (void**)&res));
         }
 
-        static ulong CeilDiv(ulong x, ulong y)
+        [Test]
+        public static void TestDefaultPoolMinBytes()
         {
-            return (x + y - 1) / y;
-        }
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
-        static void TestDefaultPoolMinBytes(TestContext* ctx)
-        {
             Stats stats;
-            ctx->allocator->CalculateStats(&stats);
+            ctx.allocator->CalculateStats(&stats);
             ulong gpuAllocatedBefore = stats.HeapType[0].UsedBytes + stats.HeapType[0].UnusedBytes;
 
             ulong gpuAllocatedMin = gpuAllocatedBefore * 105 / 100;
-            CHECK_HR(ctx->allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, CeilDiv(gpuAllocatedMin, 3ul)));
-            CHECK_HR(ctx->allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES, CeilDiv(gpuAllocatedMin, 3ul)));
-            CHECK_HR(ctx->allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES, CeilDiv(gpuAllocatedMin, 3ul)));
+            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, CeilDiv(gpuAllocatedMin, 3ul)));
+            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES, CeilDiv(gpuAllocatedMin, 3ul)));
+            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES, CeilDiv(gpuAllocatedMin, 3ul)));
 
-            ctx->allocator->CalculateStats(&stats);
+            ctx.allocator->CalculateStats(&stats);
             ulong gpuAllocatedAfter = stats.HeapType[0].UsedBytes + stats.HeapType[0].UnusedBytes;
             CHECK_BOOL(gpuAllocatedAfter >= gpuAllocatedMin);
 
-            CHECK_HR(ctx->allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, 0));
-            CHECK_HR(ctx->allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES, 0));
-            CHECK_HR(ctx->allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES, 0));
+            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, 0));
+            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES, 0));
+            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES, 0));
         }
 
-        static void TestAliasingMemory(TestContext* ctx)
+        [Test]
+        public static void TestAliasingMemory()
         {
-            Console.WriteLine("Test aliasing memory");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             D3D12_RESOURCE_DESC resDesc1 = default;
             resDesc1.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -828,8 +698,8 @@ namespace TerraFX.Interop.UnitTests
             resDesc2.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
             resDesc2.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-            D3D12_RESOURCE_ALLOCATION_INFO allocInfo1 = ctx->device->GetResourceAllocationInfo(0, 1, &resDesc1);
-            D3D12_RESOURCE_ALLOCATION_INFO allocInfo2 = ctx->device->GetResourceAllocationInfo(0, 1, &resDesc2);
+            D3D12_RESOURCE_ALLOCATION_INFO allocInfo1 = ctx.device->GetResourceAllocationInfo(0, 1, &resDesc1);
+            D3D12_RESOURCE_ALLOCATION_INFO allocInfo2 = ctx.device->GetResourceAllocationInfo(0, 1, &resDesc2);
 
             D3D12_RESOURCE_ALLOCATION_INFO finalAllocInfo = default;
             finalAllocInfo.Alignment = Math.Max(allocInfo1.Alignment, allocInfo2.Alignment);
@@ -840,11 +710,11 @@ namespace TerraFX.Interop.UnitTests
             allocDesc.ExtraHeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES;
 
             Allocation* alloc = null;
-            CHECK_HR(ctx->allocator->AllocateMemory(&allocDesc, &finalAllocInfo, &alloc));
+            CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &finalAllocInfo, &alloc));
             CHECK_BOOL(alloc != null && alloc->GetHeap() != null);
 
             ID3D12Resource* res1 = null;
-            CHECK_HR(ctx->allocator->CreateAliasingResource(
+            CHECK_HR(ctx.allocator->CreateAliasingResource(
                 alloc,
                 0, // AllocationLocalOffset
                 &resDesc1,
@@ -855,7 +725,7 @@ namespace TerraFX.Interop.UnitTests
             CHECK_BOOL(res1 != null);
 
             ID3D12Resource* res2 = null;
-            CHECK_HR(ctx->allocator->CreateAliasingResource(
+            CHECK_HR(ctx.allocator->CreateAliasingResource(
                 alloc,
                 0, // AllocationLocalOffset
                 &resDesc2,
@@ -872,9 +742,11 @@ namespace TerraFX.Interop.UnitTests
             alloc->Release();
         }
 
-        static void TestMapping(TestContext* ctx)
+        [Test]
+        public static void TestMapping()
         {
-            Console.WriteLine("Test mapping");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             const uint count = 10;
             const ulong bufSize = 32ul * 1024;
@@ -889,7 +761,7 @@ namespace TerraFX.Interop.UnitTests
             for (uint i = 0; i < count; ++i)
             {
                 Allocation* alloc = null;
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDesc,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -948,12 +820,14 @@ namespace TerraFX.Interop.UnitTests
             }
         }
 
-        static void TestStats(TestContext* ctx)
+        [Test]
+        public static void TestStats()
         {
-            Console.WriteLine("Test stats");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             Stats begStats = default;
-            ctx->allocator->CalculateStats(&begStats);
+            ctx.allocator->CalculateStats(&begStats);
 
             const uint count = 10;
             const ulong bufSize = 64ul * 1024;
@@ -970,7 +844,7 @@ namespace TerraFX.Interop.UnitTests
                 if (i == count / 2)
                     allocDesc.Flags |= ALLOCATION_FLAG_COMMITTED;
                 Allocation* alloc = null;
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDesc,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -982,7 +856,7 @@ namespace TerraFX.Interop.UnitTests
             }
 
             Stats endStats = default;
-            ctx->allocator->CalculateStats(&endStats);
+            ctx.allocator->CalculateStats(&endStats);
 
             CHECK_BOOL(endStats.Total.BlockCount >= begStats.Total.BlockCount);
             CHECK_BOOL(endStats.Total.AllocationCount == begStats.Total.AllocationCount + count);
@@ -1005,7 +879,7 @@ namespace TerraFX.Interop.UnitTests
             CheckStatInfo(ref endStats.HeapType[2]);
 
             Budget gpuBudget = default, cpuBudget = default;
-            ctx->allocator->GetBudget(&gpuBudget, &cpuBudget);
+            ctx.allocator->GetBudget(&gpuBudget, &cpuBudget);
 
             CHECK_BOOL(gpuBudget.AllocationBytes <= gpuBudget.BlockBytes);
             CHECK_BOOL(gpuBudget.AllocationBytes == endStats.HeapType[0].UsedBytes);
@@ -1017,9 +891,11 @@ namespace TerraFX.Interop.UnitTests
                 endStats.HeapType[2].UsedBytes + endStats.HeapType[2].UnusedBytes);
         }
 
-        static void TestTransfer(TestContext* ctx)
+        [Test]
+        public static void TestTransfer()
         {
-            Console.WriteLine("Test transfer");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             const uint count = 10;
             const ulong bufSize = 32ul * 1024;
@@ -1042,7 +918,7 @@ namespace TerraFX.Interop.UnitTests
             for (uint i = 0; i < count; ++i)
             {
                 Allocation* alloc = null;
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDescUpload,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -1052,7 +928,7 @@ namespace TerraFX.Interop.UnitTests
                     (void**)&resourcesUpload[i].resource));
                 resourcesUpload[i].allocation.reset(alloc);
 
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDescDefault,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_COPY_DEST,
@@ -1062,7 +938,7 @@ namespace TerraFX.Interop.UnitTests
                     (void**)&resourcesDefault[i].resource));
                 resourcesDefault[i].allocation.reset(alloc);
 
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDescReadback,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_COPY_DEST,
@@ -1090,7 +966,7 @@ namespace TerraFX.Interop.UnitTests
             }
 
             // Transfer from UPLOAD to DEFAULT, from there to READBACK.
-            ID3D12GraphicsCommandList* cmdList = BeginCommandList();
+            ID3D12GraphicsCommandList* cmdList = runner.BeginCommandList();
             for (uint i = 0; i < count; ++i)
             {
                 cmdList->CopyBufferRegion(resourcesDefault[i].resource, 0, resourcesUpload[i].resource, 0, bufSize);
@@ -1109,10 +985,10 @@ namespace TerraFX.Interop.UnitTests
             {
                 cmdList->CopyBufferRegion(resourcesReadback[i].resource, 0, resourcesDefault[i].resource, 0, bufSize);
             }
-            EndCommandList(cmdList);
+            runner.EndCommandList(&cmdList);
 
             // Validate READBACK buffers.
-            for (uint i = count; i-- > 0;)
+            for (uint i = count; unchecked(i-- > 0);)
             {
                 D3D12_RANGE mapRange = new(0, (nuint)bufSize);
                 void* mappedPtr = null;
@@ -1129,9 +1005,11 @@ namespace TerraFX.Interop.UnitTests
             }
         }
 
-        static void TestZeroInitialized(TestContext* ctx)
+        [Test]
+        public static void TestZeroInitialized()
         {
-            Console.WriteLine("Test zero initialized");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             const ulong bufSize = 128ul * 1024;
             Allocation* alloc = null;
@@ -1145,7 +1023,7 @@ namespace TerraFX.Interop.UnitTests
             allocDescUpload.HeapType = D3D12_HEAP_TYPE_UPLOAD;
 
             ResourceWithAllocation bufUpload = default;
-            CHECK_HR(ctx->allocator->CreateResource(
+            CHECK_HR(ctx.allocator->CreateResource(
                 &allocDescUpload,
                 &resourceDesc,
                 D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -1169,7 +1047,7 @@ namespace TerraFX.Interop.UnitTests
             allocDescReadback.HeapType = D3D12_HEAP_TYPE_READBACK;
 
             ResourceWithAllocation bufReadback = default;
-            CHECK_HR(ctx->allocator->CreateResource(
+            CHECK_HR(ctx.allocator->CreateResource(
                 &allocDescReadback,
                 &resourceDesc,
                 D3D12_RESOURCE_STATE_COPY_DEST,
@@ -1179,14 +1057,14 @@ namespace TerraFX.Interop.UnitTests
                 (void**)&bufReadback.resource));
             bufReadback.allocation.reset(alloc);
 
-            static void CheckBufferData(ResourceWithAllocation* bufReadback, ResourceWithAllocation* buf)
+            static void CheckBufferData(TestRunner runner, ResourceWithAllocation* bufReadback, ResourceWithAllocation* buf)
             {
                 bool shouldBeZero = buf->allocation.Get()->WasZeroInitialized() != FALSE;
 
                 {
-                    ID3D12GraphicsCommandList* cmdList = BeginCommandList();
+                    ID3D12GraphicsCommandList* cmdList = runner.BeginCommandList();
                     cmdList->CopyBufferRegion(bufReadback->resource, 0, buf->resource, 0, bufSize);
-                    EndCommandList(cmdList);
+                    runner.EndCommandList(&cmdList);
                 }
 
                 bool isZero = false;
@@ -1215,7 +1093,7 @@ namespace TerraFX.Interop.UnitTests
                 allocDescDefault.HeapType = D3D12_HEAP_TYPE_DEFAULT;
                 allocDescDefault.Flags = ALLOCATION_FLAG_COMMITTED;
 
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDescDefault,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_COPY_SOURCE,
@@ -1226,7 +1104,7 @@ namespace TerraFX.Interop.UnitTests
                 bufDefault.allocation.reset(alloc);
 
                 Console.Write("  Committed: ");
-                CheckBufferData(&bufReadback, &bufDefault);
+                CheckBufferData(runner, &bufReadback, &bufDefault);
                 CHECK_BOOL(bufDefault.allocation.Get()->WasZeroInitialized() > 0);
             }
 
@@ -1240,7 +1118,7 @@ namespace TerraFX.Interop.UnitTests
                 ALLOCATION_DESC allocDescDefault = default;
                 allocDescDefault.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
-                CHECK_HR(ctx->allocator->CreateResource(
+                CHECK_HR(ctx.allocator->CreateResource(
                     &allocDescDefault,
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_COPY_SOURCE,
@@ -1253,12 +1131,12 @@ namespace TerraFX.Interop.UnitTests
                 // 2. Check it
 
                 Console.Write($"  Normal #{i}: ");
-                CheckBufferData(&bufReadback, &bufDefault);
+                CheckBufferData(runner, &bufReadback, &bufDefault);
 
                 // 3. Upload some data to it
 
                 {
-                    ID3D12GraphicsCommandList* cmdList = BeginCommandList();
+                    ID3D12GraphicsCommandList* cmdList = runner.BeginCommandList();
 
                     D3D12_RESOURCE_BARRIER barrier = default;
                     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -1270,7 +1148,7 @@ namespace TerraFX.Interop.UnitTests
 
                     cmdList->CopyBufferRegion(bufDefault.resource, 0, bufUpload.resource, 0, bufSize);
 
-                    EndCommandList(cmdList);
+                    runner.EndCommandList(&cmdList);
                 }
 
                 // 4. Delete it
@@ -1279,9 +1157,11 @@ namespace TerraFX.Interop.UnitTests
             }
         }
 
-        static void TestMultithreading(TestContext* ctx)
+        [Test]
+        public static void TestMultithreading()
         {
-            Console.WriteLine("Test multithreading");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             const uint threadCount = 32;
             const uint bufSizeMin = 1024u;
@@ -1313,7 +1193,7 @@ namespace TerraFX.Interop.UnitTests
                         FillResourceDescForBuffer(&resourceDesc, res.size);
 
                         Allocation* alloc = null;
-                        CHECK_HR(ctx->allocator->CreateResource(
+                        CHECK_HR(ctx.allocator->CreateResource(
                             &allocDesc,
                             &resourceDesc,
                             D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -1360,7 +1240,7 @@ namespace TerraFX.Interop.UnitTests
                             FillResourceDescForBuffer(&resourceDesc, res.size);
 
                             Allocation* alloc = null;
-                            CHECK_HR(ctx->allocator->CreateResource(
+                            CHECK_HR(ctx.allocator->CreateResource(
                                 &allocDesc,
                                 &resourceDesc,
                                 D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -1417,12 +1297,14 @@ namespace TerraFX.Interop.UnitTests
             }
         }
 
-        static void TestDevice4(TestContext* ctx)
+        [Test]
+        public static void TestDevice4()
         {
-            Console.WriteLine("Test ID3D12Device4");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             using ComPtr<ID3D12Device4> dev4 = default;
-            CHECK_HR(ctx->device->QueryInterface(__uuidof<ID3D12Device4>(), (void**)&dev4));
+            CHECK_HR(ctx.device->QueryInterface(__uuidof<ID3D12Device4>(), (void**)&dev4));
 
             D3D12_PROTECTED_RESOURCE_SESSION_DESC sessionDesc = default;
             using ComPtr<ID3D12ProtectedResourceSession> session = default;
@@ -1441,7 +1323,7 @@ namespace TerraFX.Interop.UnitTests
 
             Allocation* alloc = null;
             using ComPtr<ID3D12Resource> bufRes = default;
-            CHECK_HR(ctx->allocator->CreateResource1(&allocDesc, &resourceDesc,
+            CHECK_HR(ctx.allocator->CreateResource1(&allocDesc, &resourceDesc,
                 D3D12_RESOURCE_STATE_COMMON, null,
                 session, &alloc, __uuidof<ID3D12Resource>(), (void**)&bufRes));
             using AllocationUniquePtr bufAllocPtr = alloc;
@@ -1453,16 +1335,18 @@ namespace TerraFX.Interop.UnitTests
                 D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT // Alignment
             );
 
-            CHECK_HR(ctx->allocator->AllocateMemory1(&allocDesc, &heapAllocInfo, session, &alloc));
+            CHECK_HR(ctx.allocator->AllocateMemory1(&allocDesc, &heapAllocInfo, session, &alloc));
             using AllocationUniquePtr heapAllocPtr = alloc;
         }
 
-        static void TestDevice8(TestContext* ctx)
+        [Test]
+        public static void TestDevice8()
         {
-            Console.WriteLine("Test ID3D12Device8");
+            using TestRunner runner = new();
+            runner.CreateContext(out TestContext ctx);
 
             using ComPtr<ID3D12Device8> dev8 = default;
-            CHECK_HR(ctx->device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)&dev8));
+            CHECK_HR(ctx.device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)&dev8));
 
             D3D12_RESOURCE_DESC1 resourceDesc = default;
             FillResourceDescForBuffer(&resourceDesc, 1024 * 1024);
@@ -1475,7 +1359,7 @@ namespace TerraFX.Interop.UnitTests
 
             Allocation* alloc0 = null;
             using ComPtr<ID3D12Resource> res0 = default;
-            CHECK_HR(ctx->allocator->CreateResource2(&allocDesc, &resourceDesc,
+            CHECK_HR(ctx.allocator->CreateResource2(&allocDesc, &resourceDesc,
                 D3D12_RESOURCE_STATE_COMMON, null, null,
                 &alloc0, __uuidof<ID3D12Resource>(), (void**)&res0));
             using AllocationUniquePtr allocPtr0 = alloc0;
@@ -1487,45 +1371,124 @@ namespace TerraFX.Interop.UnitTests
 
             Allocation* alloc1 = null;
             using ComPtr<ID3D12Resource> res1 = null;
-            CHECK_HR(ctx->allocator->CreateResource2(&allocDesc, &resourceDesc,
+            CHECK_HR(ctx.allocator->CreateResource2(&allocDesc, &resourceDesc,
                 D3D12_RESOURCE_STATE_COMMON, null, null,
                 &alloc1, __uuidof<ID3D12Resource>(), (void**)&res1));
             using AllocationUniquePtr allocPtr1 = alloc1;
             CHECK_BOOL(alloc1->GetHeap() != null);
         }
 
-        static void TestGroupVirtual(TestContext* ctx)
+        public static void CHECK_HR(int hResult) => Assert.IsTrue(SUCCEEDED(hResult));
+
+        public static void CHECK_BOOL(bool cond) => Assert.IsTrue(cond);
+
+        [NativeTypeName("UINT64")] private const ulong MEGABYTE = 1024 * 1024;
+
+        internal struct D3d12maObjDeleter<T>
+            where T : unmanaged
         {
-            TestVirtualBlocks(ctx);
+            public void Invoke(T* obj)
+            {
+                if (obj != null)
+                {
+                    if (typeof(T) == typeof(Allocation))
+                        ((Allocation*)obj)->Release();
+                    else if (typeof(T) == typeof(Pool))
+                        ((Pool*)obj)->Release();
+                    else if (typeof(T) == typeof(VirtualBlock))
+                        ((VirtualBlock*)obj)->Release();
+                    else
+                        throw new NotSupportedException("Invalid type argument");
+                }
+            }
         }
 
-        static void TestGroupBasics(TestContext* ctx)
+        private struct ResourceWithAllocation
         {
-            TestFrameIndexAndJson(ctx);
-            TestCommittedResourcesAndJson(ctx);
-            TestCustomHeapFlags(ctx);
-            TestPlacedResources(ctx);
-            TestOtherComInterface(ctx);
-            TestCustomPools(ctx);
-            TestDefaultPoolMinBytes(ctx);
-            TestAliasingMemory(ctx);
-            TestMapping(ctx);
-            TestStats(ctx);
-            TestTransfer(ctx);
-            TestZeroInitialized(ctx);
-            TestMultithreading(ctx);
-            TestDevice4(ctx);
-            TestDevice8(ctx);
+            public ComPtr<ID3D12Resource> resource;
+            public AllocationUniquePtr allocation;
+            [NativeTypeName("UINT64")] public ulong size;
+            [NativeTypeName("UINT")] public uint dataSeed;
+
+            public static void Init(out ResourceWithAllocation value)
+            {
+                value = default;
+                value.size = UINT64_MAX;
+                value.dataSeed = 0;
+            }
+
+            public void Reset()
+            {
+                resource.Get()->Release();
+                allocation.reset();
+                size = UINT64_MAX;
+                dataSeed = 0;
+            }
         }
 
-        public static void Test(TestContext* ctx)
+        private static void FillResourceDescForBuffer<TD3D12_RESOURCE_DESC>(TD3D12_RESOURCE_DESC* outResourceDesc, [NativeTypeName("UINT64")] ulong size)
+            where TD3D12_RESOURCE_DESC : unmanaged
         {
-            Console.WriteLine("TESTS BEGIN");
+            *outResourceDesc = default;
+            D3D12_RESOURCE_DESC* pOutResourceDesc = (D3D12_RESOURCE_DESC*)outResourceDesc;
+            pOutResourceDesc->Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+            pOutResourceDesc->Alignment = 0;
+            pOutResourceDesc->Width = size;
+            pOutResourceDesc->Height = 1;
+            pOutResourceDesc->DepthOrArraySize = 1;
+            pOutResourceDesc->MipLevels = 1;
+            pOutResourceDesc->Format = DXGI_FORMAT_UNKNOWN;
+            pOutResourceDesc->SampleDesc.Count = 1;
+            pOutResourceDesc->SampleDesc.Quality = 0;
+            pOutResourceDesc->Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+            pOutResourceDesc->Flags = D3D12_RESOURCE_FLAG_NONE;
+        }
 
-            TestGroupVirtual(ctx);
-            TestGroupBasics(ctx);
+        private static void FillData(void* outPtr, [NativeTypeName("UINT64")] ulong sizeInBytes, [NativeTypeName("UINT")] uint seed)
+        {
+            uint* outValues = (uint*)outPtr;
+            ulong sizeInValues = sizeInBytes / sizeof(uint);
+            uint value = seed;
+            for (uint i = 0; i < sizeInValues; ++i)
+            {
+                outValues[i] = value++;
+            }
+        }
 
-            Console.WriteLine("TESTS END");
+        private static bool ValidateData(void* ptr, [NativeTypeName("UINT64")] ulong sizeInBytes, [NativeTypeName("UINT")] uint seed)
+        {
+            uint* values = (uint*)ptr;
+            ulong sizeInValues = sizeInBytes / sizeof(uint);
+            uint value = seed;
+            for (uint i = 0; i < sizeInValues; ++i)
+            {
+                if (values[i] != value++)
+                {
+                    //FAIL("ValidateData failed.");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool ValidateDataZero(void* ptr, [NativeTypeName("UINT64")] ulong sizeInBytes)
+        {
+            uint* values = (uint*)ptr;
+            ulong sizeInValues = sizeInBytes / sizeof(uint);
+            for (uint i = 0; i < sizeInValues; ++i)
+            {
+                if (values[i] != 0)
+                {
+                    //FAIL("ValidateData failed.");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        static ulong CeilDiv(ulong x, ulong y)
+        {
+            return (x + y - 1) / y;
         }
     }
 }
