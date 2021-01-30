@@ -49,20 +49,20 @@ namespace TerraFX.Interop
         public static readonly uint D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT = get_app_context_data(nameof(D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT), 1);
 
         /// <summary>Minimum alignment of all allocations, in bytes. Set to more than 1 for debugging purposes only. Must be power of two.</summary>
-        public static readonly ulong D3D12MA_DEBUG_ALIGNMENT = get_app_context_data(nameof(D3D12MA_DEBUG_ALIGNMENT), 1);
+        public static readonly ulong D3D12MA_DEBUG_ALIGNMENT = get_app_context_data(nameof(D3D12MA_DEBUG_ALIGNMENT), 1UL);
 
         /// <summary>Minimum margin before and after every allocation, in bytes. Set nonzero for debugging purposes only.</summary>
-        public static readonly ulong D3D12MA_DEBUG_MARGIN = get_app_context_data(nameof(D3D12MA_DEBUG_MARGIN), 0);
+        public static readonly ulong D3D12MA_DEBUG_MARGIN = get_app_context_data(nameof(D3D12MA_DEBUG_MARGIN), 0UL);
 
         /// <summary>Define this macro to 0 to disable usage of DXGI 1.4 (needed for <see cref="IDXGIAdapter3"/> and query for memory budget).</summary>
         public static readonly uint D3D12MA_DXGI_1_4 = get_app_context_data(nameof(D3D12MA_DXGI_1_4), 1);
 
         /// <summary>Default size of a block allocated as single <see cref="ID3D12Heap"/>.</summary>
-        public static readonly ulong D3D12MA_DEFAULT_BLOCK_SIZE = get_app_context_data(nameof(D3D12MA_DEFAULT_BLOCK_SIZE), 256U * 1024 * 1024);
+        public static readonly ulong D3D12MA_DEFAULT_BLOCK_SIZE = get_app_context_data(nameof(D3D12MA_DEFAULT_BLOCK_SIZE), 256UL * 1024 * 1024);
 
         /// <summary>Minimum size of a free suballocation to register it in the free suballocation collection.</summary>
         [NativeTypeName("UINT64")]
-        public static readonly ulong MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER = get_app_context_data(nameof(MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER), 16);
+        public static readonly ulong MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER = get_app_context_data(nameof(MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER), 16UL);
 
         /// <summary>Set this to 1 for debugging purposes only, to enable single mutex protecting all entry calls to the library.Can be useful for debugging multithreading issues.</summary>
         public static readonly uint D3D12MA_DEBUG_GLOBAL_MUTEX = get_app_context_data(nameof(D3D12MA_DEBUG_GLOBAL_MUTEX), 0);

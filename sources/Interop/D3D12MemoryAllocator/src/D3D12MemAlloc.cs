@@ -70,6 +70,24 @@ namespace TerraFX.Interop
             }
         }
 
+        private static ulong get_app_context_data(string name, ulong defaultValue)
+        {
+            var data = AppContext.GetData(name);
+
+            if (data is ulong value)
+            {
+                return value;
+            }
+            else if ((data is string s) && ulong.TryParse(s, out var result))
+            {
+                return result;
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+
         /// <summary>Creates a new <see cref="D3D12MA_MUTEX"/> when <see cref="D3D12MA_DEBUG_GLOBAL_MUTEX"/> is set, otherwise a <see langword="null"/> one.</summary>
         private static D3D12MA_MUTEX* InitDebugGlobalMutex()
         {
