@@ -364,7 +364,7 @@ namespace TerraFX.Interop
             m_PackedData.SetWasZeroInitialized(wasZeroInitialized);
         }
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             // Nothing here, everything already done in Release.
         }
@@ -408,7 +408,7 @@ namespace TerraFX.Interop
             if (m_Name != null)
             {
                 nuint nameCharCount = wcslen(m_Name) + 1;
-                D3D12MA_DELETE_ARRAY_NO_DISPOSE(m_Allocator->GetAllocs(), m_Name, nameCharCount);
+                D3D12MA_DELETE_ARRAY(m_Allocator->GetAllocs(), m_Name, nameCharCount);
                 m_Name = null;
             }
         }

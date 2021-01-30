@@ -261,35 +261,23 @@ namespace TerraFX.Interop
         internal static void D3D12MA_DELETE<T>(ALLOCATION_CALLBACKS* allocs, ref T memory)
             where T : unmanaged, IDisposable
         {
-            fixed (T* pMemory = &memory)
+            T* pMemory = (T*)Unsafe.AsPointer(ref memory);
+            if (pMemory != null)
             {
-                if (pMemory != null)
-                {
-                    pMemory->Dispose();
-                    Free(allocs, pMemory);
-                }
+                pMemory->Dispose();
+                Free(allocs, pMemory);
             }
         }
 
-        internal static void D3D12MA_DELETE_ARRAY<T>([NativeTypeName("const ALLOCATION_CALLBACKS&")] ALLOCATION_CALLBACKS* allocs, T* memory, [NativeTypeName("size_t")] nuint count)
-            where T : unmanaged, IDisposable
-        {
-            if (memory != null)
-            {
-                for (nuint i = count; unchecked(i-- > 0);)
-                {
-                    memory[i].Dispose();
-                }
-
-                Free(allocs, memory);
-            }
-        }
-
-        internal static void D3D12MA_DELETE_ARRAY_NO_DISPOSE<T>(ALLOCATION_CALLBACKS* allocs, T* memory, [NativeTypeName("size_t")] nuint count)
+        internal static void D3D12MA_DELETE_ARRAY<T>(ALLOCATION_CALLBACKS* allocs, T* memory, [NativeTypeName("size_t")] nuint count)
             where T : unmanaged
         {
             if (memory != null)
             {
+                // The loop to call the destructor on all target items has been removed, because it was not actually needed.
+                // D3D12MA_DELETE_ARRAY is only ever called on two types: either ushort*, which has no destructor, or
+                // List<Suballocation>.Item, which only contains raw values and pointers and has no desstructor either.
+
                 Free(allocs, memory);
             }
         }

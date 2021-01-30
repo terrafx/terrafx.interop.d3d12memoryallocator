@@ -112,7 +112,7 @@ namespace TerraFX.Interop
         {
             for (nuint i = @this.m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
-                D3D12MA_DELETE_ARRAY_NO_DISPOSE(@this.m_AllocationCallbacks, (Item*)@this.m_ItemBlocks[i]->pItems, (nuint)@this.m_ItemBlocks[i]->Capacity);
+                D3D12MA_DELETE_ARRAY(@this.m_AllocationCallbacks, (Item*)@this.m_ItemBlocks[i]->pItems, (nuint)@this.m_ItemBlocks[i]->Capacity);
             }
 
             @this.m_ItemBlocks.clear(true);
@@ -157,7 +157,7 @@ namespace TerraFX.Interop
                 // Check if pItemPtr is in address range of this block.
                 if ((pItemPtr >= block->pItems) && (pItemPtr < (Item*)block->pItems + block->Capacity))
                 {
-                    ptr->Dispose(); // Explicit destructor call.
+                    // ptr->Dispose(); // Explicit destructor call (skipped, Allocation has an empty destructor)
                     uint index = (uint)(pItemPtr - (Item*)block->pItems);
                     pItemPtr->NextFreeIndex = block->FirstFreeIndex;
                     block->FirstFreeIndex = index;
@@ -210,7 +210,7 @@ namespace TerraFX.Interop
         {
             for (nuint i = @this.m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
-                D3D12MA_DELETE_ARRAY_NO_DISPOSE(@this.m_AllocationCallbacks, (Item*)@this.m_ItemBlocks[i]->pItems, (nuint)@this.m_ItemBlocks[i]->Capacity);
+                D3D12MA_DELETE_ARRAY(@this.m_AllocationCallbacks, (Item*)@this.m_ItemBlocks[i]->pItems, (nuint)@this.m_ItemBlocks[i]->Capacity);
             }
 
             @this.m_ItemBlocks.clear(true);

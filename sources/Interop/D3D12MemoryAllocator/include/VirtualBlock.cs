@@ -158,7 +158,7 @@ namespace TerraFX.Interop
             *m_Pimpl = new VirtualBlockPimpl(allocationCallbacks, desc->Size);
         }
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             // THIS IS AN IMPORTANT ASSERT!
             // Hitting it means you have some memory leak - unreleased allocations in this virtual block.

@@ -334,7 +334,7 @@ namespace TerraFX.Interop
             m_Pimpl->Ctor(allocationCallbacks, desc);
         }
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             D3D12MA_DELETE(m_Pimpl->GetAllocs(), m_Pimpl);
         }

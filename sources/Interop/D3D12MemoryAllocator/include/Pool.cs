@@ -89,7 +89,7 @@ namespace TerraFX.Interop
             *m_Pimpl = new PoolPimpl(allocator->m_Pimpl, desc);
         }
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             m_Pimpl->GetAllocator()->UnregisterPool(ref this, m_Pimpl->GetDesc()->HeapType);
             D3D12MA_DELETE(m_Pimpl->GetAllocator()->GetAllocs(), m_Pimpl);

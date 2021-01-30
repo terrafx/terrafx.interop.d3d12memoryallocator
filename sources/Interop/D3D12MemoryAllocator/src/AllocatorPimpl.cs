@@ -728,16 +728,14 @@ namespace TerraFX.Interop
         /// </summary>
         public void FreeCommittedMemory([NativeTypeName("Allocation*")] ref Allocation allocation)
         {
-            fixed (Allocation* pAllocation = &allocation)
-            {
-                D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_COMMITTED);
-                UnregisterCommittedAllocation(pAllocation, pAllocation->m_Committed.heapType);
+            Allocation* pAllocation = (Allocation*)Unsafe.AsPointer(ref allocation);
+            D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_COMMITTED);
+            UnregisterCommittedAllocation(pAllocation, pAllocation->m_Committed.heapType);
 
-                ulong allocationSize = pAllocation->GetSize();
-                uint heapTypeIndex = HeapTypeToIndex(pAllocation->m_Committed.heapType);
-                m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
-                m_Budget.m_BlockBytes[(int)heapTypeIndex].Subtract(allocationSize);
-            }            
+            ulong allocationSize = pAllocation->GetSize();
+            uint heapTypeIndex = HeapTypeToIndex(pAllocation->m_Committed.heapType);
+            m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
+            m_Budget.m_BlockBytes[(int)heapTypeIndex].Subtract(allocationSize);
         }
 
         /// <summary>
@@ -746,17 +744,15 @@ namespace TerraFX.Interop
         /// </summary>
         public void FreePlacedMemory([NativeTypeName("Allocation*")] ref Allocation allocation)
         {
-            fixed (Allocation* pAllocation = &allocation)
-            {
-                D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_PLACED);
+            Allocation* pAllocation = (Allocation*)Unsafe.AsPointer(ref allocation);
+            D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_PLACED);
 
-                NormalBlock* block = pAllocation->m_Placed.block;
-                D3D12MA_ASSERT(block != null);
-                BlockVector* blockVector = block->GetBlockVector();
-                D3D12MA_ASSERT(blockVector != null);
-                m_Budget.RemoveAllocation(HeapTypeToIndex(block->GetHeapType()), pAllocation->GetSize());
-                blockVector->Free(pAllocation);
-            }
+            NormalBlock* block = pAllocation->m_Placed.block;
+            D3D12MA_ASSERT(block != null);
+            BlockVector* blockVector = block->GetBlockVector();
+            D3D12MA_ASSERT(blockVector != null);
+            m_Budget.RemoveAllocation(HeapTypeToIndex(block->GetHeapType()), pAllocation->GetSize());
+            blockVector->Free(pAllocation);
         }
 
         /// <summary>
@@ -765,17 +761,15 @@ namespace TerraFX.Interop
         /// </summary>
         public void FreeHeapMemory([NativeTypeName("Allocation*")] ref Allocation allocation)
         {
-            fixed (Allocation* pAllocation = &allocation)
-            {
-                D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_HEAP);
-                UnregisterCommittedAllocation(pAllocation, pAllocation->m_Heap.heapType);
-                SAFE_RELEASE(&pAllocation->m_Union.m_Heap.heap);
+            Allocation* pAllocation = (Allocation*)Unsafe.AsPointer(ref allocation);
+            D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_HEAP);
+            UnregisterCommittedAllocation(pAllocation, pAllocation->m_Heap.heapType);
+            SAFE_RELEASE(&pAllocation->m_Union.m_Heap.heap);
 
-                uint heapTypeIndex = HeapTypeToIndex(pAllocation->m_Heap.heapType);
-                ulong allocationSize = pAllocation->GetSize();
-                m_Budget.m_BlockBytes[(int)heapTypeIndex].Subtract(allocationSize);
-                m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
-            }
+            uint heapTypeIndex = HeapTypeToIndex(pAllocation->m_Heap.heapType);
+            ulong allocationSize = pAllocation->GetSize();
+            m_Budget.m_BlockBytes[(int)heapTypeIndex].Subtract(allocationSize);
+            m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
         }
 
         public void SetCurrentFrameIndex([NativeTypeName("UINT")] uint frameIndex)

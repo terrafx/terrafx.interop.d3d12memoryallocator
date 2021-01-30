@@ -26,10 +26,7 @@ namespace TerraFX.Interop
         public void Free([NativeTypeName("Allocation*")] ref Allocation alloc)
         {
             using MutexLock mutexLock = new((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
-            fixed (Allocation* pAlloc = &alloc)
-            {
-                m_Allocator.Free(pAlloc);
-            }
+            m_Allocator.Free((Allocation*)Unsafe.AsPointer(ref alloc));
         }
     }
 }
