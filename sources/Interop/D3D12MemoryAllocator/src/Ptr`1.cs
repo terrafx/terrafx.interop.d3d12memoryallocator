@@ -25,7 +25,7 @@ namespace TerraFX.Interop
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static implicit operator Ptr<T>(T* ptr) => new(ptr);
+        public static implicit operator Ptr<T>(T* ptr) => new Ptr<T>(ptr);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator T*(Ptr<T> ptr) => ptr.ptr;

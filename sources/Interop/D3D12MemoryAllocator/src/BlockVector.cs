@@ -94,7 +94,7 @@ namespace TerraFX.Interop
 
         public bool IsEmpty()
         {
-            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
+            using var @lock = new MutexLockRead((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
             return m_Blocks.empty();
         }
 
@@ -105,7 +105,7 @@ namespace TerraFX.Interop
             HRESULT hr = S_OK;
 
             {
-                using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
+                using var @lock = new MutexLockWrite((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
                 for (allocIndex = 0; allocIndex < allocationCount; ++allocIndex)
                 {
                     hr = AllocatePage(
@@ -145,7 +145,7 @@ namespace TerraFX.Interop
                 budgetExceeded = budget.UsageBytes >= budget.BudgetBytes;
             }
 
-            using (MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex()))
+            using (var @lock = new MutexLockWrite((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex()))
             {
                 NormalBlock* pBlock = hAllocation->m_Placed.block;
 
@@ -289,7 +289,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         public int SetMinBytes([NativeTypeName("UINT64")] ulong minBytes)
         {
-            using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
+            using var @lock = new MutexLockWrite((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
 
             if (minBytes == m_MinBytes)
             {
@@ -372,7 +372,7 @@ namespace TerraFX.Interop
 
         public void AddStats(StatInfo* outStats)
         {
-            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
+            using var @lock = new MutexLockRead((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
 
             for (nuint i = 0; i < m_Blocks.size(); ++i)
             {
@@ -390,7 +390,7 @@ namespace TerraFX.Interop
             uint heapTypeIndex = HeapTypeToIndex(m_HeapType);
             ref StatInfo pStatInfo = ref outStats->HeapType[(int)heapTypeIndex];
 
-            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
+            using var @lock = new MutexLockRead((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
 
             for (nuint i = 0; i < m_Blocks.size(); ++i)
             {
@@ -406,7 +406,7 @@ namespace TerraFX.Interop
 
         public void WriteBlockInfoToJson(JsonWriter* json)
         {
-            using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
+            using var @lock = new MutexLockRead((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_Mutex), m_hAllocator->UseMutex());
 
             json->BeginObject();
 

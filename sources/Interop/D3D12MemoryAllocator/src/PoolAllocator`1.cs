@@ -108,21 +108,21 @@ namespace TerraFX.Interop
 
     internal unsafe static class PoolAllocator_Allocation
     {
-        public static void Clear(this ref PoolAllocator<Allocation> @this)
+        public static void Clear(this ref PoolAllocator<Allocation> pThis)
         {
-            for (nuint i = @this.m_ItemBlocks.size(); unchecked(i-- > 0);)
+            for (nuint i = pThis.m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
-                D3D12MA_DELETE_ARRAY(@this.m_AllocationCallbacks, (Item*)@this.m_ItemBlocks[i]->pItems, (nuint)@this.m_ItemBlocks[i]->Capacity);
+                D3D12MA_DELETE_ARRAY(pThis.m_AllocationCallbacks, (Item*)pThis.m_ItemBlocks[i]->pItems, (nuint)pThis.m_ItemBlocks[i]->Capacity);
             }
 
-            @this.m_ItemBlocks.clear(true);
+            pThis.m_ItemBlocks.clear(true);
         }
 
-        public static Allocation* Alloc(this ref PoolAllocator<Allocation> @this, AllocatorPimpl* allocator, ulong size, int wasZeroInitialized)
+        public static Allocation* Alloc(this ref PoolAllocator<Allocation> pThis, AllocatorPimpl* allocator, ulong size, int wasZeroInitialized)
         {
-            for (nuint i = @this.m_ItemBlocks.size(); unchecked(i-- > 0);)
+            for (nuint i = pThis.m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
-                PoolAllocator<Allocation>.ItemBlock* block = @this.m_ItemBlocks[i];
+                PoolAllocator<Allocation>.ItemBlock* block = pThis.m_ItemBlocks[i];
                 // This block has some free items: Use first one.
                 if (block->FirstFreeIndex != uint.MaxValue)
                 {
@@ -136,7 +136,7 @@ namespace TerraFX.Interop
 
             {
                 // No block has free item: Create new one and use it.
-                PoolAllocator<Allocation>.ItemBlock* newBlock = @this.CreateNewBlock();
+                PoolAllocator<Allocation>.ItemBlock* newBlock = pThis.CreateNewBlock();
                 Item* pItem = &((Item*)newBlock->pItems)[0];
                 newBlock->FirstFreeIndex = pItem->NextFreeIndex;
                 Allocation* result = (Allocation*)pItem->Value;
@@ -145,12 +145,12 @@ namespace TerraFX.Interop
             }
         }
 
-        public static void Free(this ref PoolAllocator<Allocation> @this, Allocation* ptr)
+        public static void Free(this ref PoolAllocator<Allocation> pThis, Allocation* ptr)
         {
             // Search all memory blocks to find ptr.
-            for (nuint i = @this.m_ItemBlocks.size(); unchecked(i-- > 0);)
+            for (nuint i = pThis.m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
-                PoolAllocator<Allocation>.ItemBlock* block = @this.m_ItemBlocks[i];
+                PoolAllocator<Allocation>.ItemBlock* block = pThis.m_ItemBlocks[i];
 
                 Item* pItemPtr = (Item*)ptr; // memcpy(&pItemPtr, &ptr, (nuint)sizeof(Item*));
 
@@ -180,18 +180,19 @@ namespace TerraFX.Interop
             public byte* Value => (byte*)Unsafe.AsPointer(ref __Value_Data);
         }
 
-        private static PoolAllocator<Allocation>.ItemBlock* CreateNewBlock(this ref PoolAllocator<Allocation> @this)
+        private static PoolAllocator<Allocation>.ItemBlock* CreateNewBlock(this ref PoolAllocator<Allocation> pThis)
         {
-            uint newBlockCapacity = @this.m_ItemBlocks.empty() ?
-                @this.m_FirstBlockCapacity : @this.m_ItemBlocks.back()->Capacity * 3 / 2;
+            uint newBlockCapacity = pThis.m_ItemBlocks.empty() ?
+                pThis.m_FirstBlockCapacity : pThis.m_ItemBlocks.back()->Capacity * 3 / 2;
 
-            PoolAllocator<Allocation>.ItemBlock newBlock = new() {
-                pItems = D3D12MA_NEW_ARRAY<Item>(@this.m_AllocationCallbacks, (nuint)newBlockCapacity),
+            var newBlock = new PoolAllocator<Allocation>.ItemBlock()
+            {
+                pItems = D3D12MA_NEW_ARRAY<Item>(pThis.m_AllocationCallbacks, (nuint)newBlockCapacity),
                 Capacity = newBlockCapacity,
                 FirstFreeIndex = 0
             };
 
-            @this.m_ItemBlocks.push_back(&newBlock);
+            pThis.m_ItemBlocks.push_back(&newBlock);
 
             // Setup singly-linked list of all free items in this block.
             for (uint i = 0; i < newBlockCapacity - 1; ++i)
@@ -200,27 +201,27 @@ namespace TerraFX.Interop
             }
 
             ((Item*)newBlock.pItems)[newBlockCapacity - 1].NextFreeIndex = uint.MaxValue;
-            return @this.m_ItemBlocks.back();
+            return pThis.m_ItemBlocks.back();
         }
     }
 
     internal unsafe static class PoolAllocator_SuballocationListItem
     {
-        public static void Clear(this ref PoolAllocator<List<Suballocation>.Item> @this)
+        public static void Clear(this ref PoolAllocator<List<Suballocation>.Item> pThis)
         {
-            for (nuint i = @this.m_ItemBlocks.size(); unchecked(i-- > 0);)
+            for (nuint i = pThis.m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
-                D3D12MA_DELETE_ARRAY(@this.m_AllocationCallbacks, (Item*)@this.m_ItemBlocks[i]->pItems, (nuint)@this.m_ItemBlocks[i]->Capacity);
+                D3D12MA_DELETE_ARRAY(pThis.m_AllocationCallbacks, (Item*)pThis.m_ItemBlocks[i]->pItems, (nuint)pThis.m_ItemBlocks[i]->Capacity);
             }
 
-            @this.m_ItemBlocks.clear(true);
+            pThis.m_ItemBlocks.clear(true);
         }
 
-        public static List<Suballocation>.Item* Alloc(this ref PoolAllocator<List<Suballocation>.Item> @this)
+        public static List<Suballocation>.Item* Alloc(this ref PoolAllocator<List<Suballocation>.Item> pThis)
         {
-            for (nuint i = @this.m_ItemBlocks.size(); unchecked(i-- > 0);)
+            for (nuint i = pThis.m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
-                PoolAllocator<List<Suballocation>.Item>.ItemBlock* block = @this.m_ItemBlocks[i];
+                PoolAllocator<List<Suballocation>.Item>.ItemBlock* block = pThis.m_ItemBlocks[i];
                 // This block has some free items: Use first one.
                 if (block->FirstFreeIndex != uint.MaxValue)
                 {
@@ -234,7 +235,7 @@ namespace TerraFX.Interop
 
             {
                 // No block has free item: Create new one and use it.
-                PoolAllocator<List<Suballocation>.Item>.ItemBlock* newBlock = @this.CreateNewBlock();
+                PoolAllocator<List<Suballocation>.Item>.ItemBlock* newBlock = pThis.CreateNewBlock();
                 Item* pItem = &((Item*)newBlock->pItems)[0];
                 newBlock->FirstFreeIndex = pItem->NextFreeIndex;
                 List<Suballocation>.Item* result = (List<Suballocation>.Item*)pItem->Value;
@@ -243,12 +244,12 @@ namespace TerraFX.Interop
             }
         }
 
-        public static void Free(this ref PoolAllocator<List<Suballocation>.Item> @this, List<Suballocation>.Item* ptr)
+        public static void Free(this ref PoolAllocator<List<Suballocation>.Item> pThis, List<Suballocation>.Item* ptr)
         {
             // Search all memory blocks to find ptr.
-            for (nuint i = @this.m_ItemBlocks.size(); unchecked(i-- > 0);)
+            for (nuint i = pThis.m_ItemBlocks.size(); unchecked(i-- > 0);)
             {
-                PoolAllocator<List<Suballocation>.Item>.ItemBlock* block = @this.m_ItemBlocks[i];
+                PoolAllocator<List<Suballocation>.Item>.ItemBlock* block = pThis.m_ItemBlocks[i];
 
                 Item* pItemPtr = (Item*)ptr; // memcpy(&pItemPtr, &ptr, (nuint)sizeof(Item*));
 
@@ -278,18 +279,19 @@ namespace TerraFX.Interop
             public byte* Value => (byte*)Unsafe.AsPointer(ref __Value_Data);
         }
 
-        private static PoolAllocator<List<Suballocation>.Item>.ItemBlock* CreateNewBlock(this ref PoolAllocator<List<Suballocation>.Item> @this)
+        private static PoolAllocator<List<Suballocation>.Item>.ItemBlock* CreateNewBlock(this ref PoolAllocator<List<Suballocation>.Item> pThis)
         {
-            uint newBlockCapacity = @this.m_ItemBlocks.empty() ?
-                @this.m_FirstBlockCapacity : @this.m_ItemBlocks.back()->Capacity * 3 / 2;
+            uint newBlockCapacity = pThis.m_ItemBlocks.empty() ?
+                pThis.m_FirstBlockCapacity : pThis.m_ItemBlocks.back()->Capacity * 3 / 2;
 
-            PoolAllocator<List<Suballocation>.Item>.ItemBlock newBlock = new() {
-                pItems = D3D12MA_NEW_ARRAY<Item>(@this.m_AllocationCallbacks, (nuint)newBlockCapacity),
+            var newBlock = new PoolAllocator<List<Suballocation>.Item>.ItemBlock()
+            {
+                pItems = D3D12MA_NEW_ARRAY<Item>(pThis.m_AllocationCallbacks, (nuint)newBlockCapacity),
                 Capacity = newBlockCapacity,
                 FirstFreeIndex = 0
             };
 
-            @this.m_ItemBlocks.push_back(&newBlock);
+            pThis.m_ItemBlocks.push_back(&newBlock);
 
             // Setup singly-linked list of all free items in this block.
             for (uint i = 0; i < newBlockCapacity - 1; ++i)
@@ -298,7 +300,7 @@ namespace TerraFX.Interop
             }
 
             ((Item*)newBlock.pItems)[newBlockCapacity - 1].NextFreeIndex = uint.MaxValue;
-            return @this.m_ItemBlocks.back();
+            return pThis.m_ItemBlocks.back();
         }
     }
 }

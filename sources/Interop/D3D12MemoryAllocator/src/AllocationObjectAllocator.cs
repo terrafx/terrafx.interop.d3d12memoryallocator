@@ -18,14 +18,14 @@ namespace TerraFX.Interop
 
         public Allocation* Allocate(AllocatorPimpl* allocator, ulong size, int wasZeroInitialized)
         {
-            using MutexLock mutexLock = new((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
+            using var mutexLock = new MutexLock((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
 
             return m_Allocator.Alloc(allocator, size, wasZeroInitialized);
         }
 
         public void Free([NativeTypeName("Allocation*")] ref Allocation alloc)
         {
-            using MutexLock mutexLock = new((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
+            using var mutexLock = new MutexLock((D3D12MA_MUTEX*)Unsafe.AsPointer(ref m_Mutex));
             m_Allocator.Free((Allocation*)Unsafe.AsPointer(ref alloc));
         }
     }

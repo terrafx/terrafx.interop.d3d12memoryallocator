@@ -8,6 +8,9 @@ namespace TerraFX.Interop
         [NativeTypeName("UINT")]
         internal const uint HEAP_TYPE_COUNT = 3;
 
+        /// <summary>To be used with MAKE_HRESULT to define custom error codes.</summary>
+        internal const uint FACILITY_D3D12MA = 3542;
+
         /// <summary>
         /// Creates new main <see cref="Allocator"/> object and returns it through <paramref name="ppAllocator"/>.
         /// <para>You normally only need to call it once and keep a single Allocator object for your <see cref="ID3D12Device"/>.</para>

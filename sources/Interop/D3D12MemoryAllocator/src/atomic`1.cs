@@ -15,63 +15,63 @@ namespace TerraFX.Interop
     internal static class atomic
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Add(this ref atomic<uint> @this, uint value)
+        public static void Add(this ref atomic<uint> pThis, uint value)
         {
-            Interlocked.Add(ref @this.value, value);
+            Interlocked.Add(ref pThis.value, value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Add(this ref atomic<ulong> @this, ulong value)
+        public static void Add(this ref atomic<ulong> pThis, ulong value)
         {
-            Interlocked.Add(ref @this.value, value);
+            Interlocked.Add(ref pThis.value, value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Subtract(this ref atomic<uint> @this, uint value)
+        public static void Subtract(this ref atomic<uint> pThis, uint value)
         {
-            Interlocked.Add(ref Unsafe.As<uint, int>(ref @this.value), -(int)value);
+            Interlocked.Add(ref Unsafe.As<uint, int>(ref pThis.value), -(int)value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Subtract(this ref atomic<ulong> @this, ulong value)
+        public static void Subtract(this ref atomic<ulong> pThis, ulong value)
         {
-            Interlocked.Add(ref Unsafe.As<ulong, long>(ref @this.value), -(long)value);
+            Interlocked.Add(ref Unsafe.As<ulong, long>(ref pThis.value), -(long)value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Increment(this ref atomic<uint> @this)
+        public static void Increment(this ref atomic<uint> pThis)
         {
-            Interlocked.Increment(ref @this.value);
+            Interlocked.Increment(ref pThis.value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Increment(this ref atomic<ulong> @this)
+        public static void Increment(this ref atomic<ulong> pThis)
         {
-            Interlocked.Increment(ref @this.value);
+            Interlocked.Increment(ref pThis.value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint Load(this in atomic<uint> @this)
+        public static uint Load(this in atomic<uint> pThis)
         {
-            return @this.value;
+            return pThis.value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong Load(this in atomic<ulong> @this)
+        public static ulong Load(this in atomic<ulong> pThis)
         {
-            return Interlocked.Read(ref Unsafe.AsRef(in @this).value);
+            return Interlocked.Read(ref Unsafe.AsRef(in pThis).value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Store(this ref atomic<uint> @this, uint value)
+        public static void Store(this ref atomic<uint> pThis, uint value)
         {
-            @this.value = value;
+            pThis.value = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Store(this ref atomic<ulong> @this, ulong value)
+        public static void Store(this ref atomic<ulong> pThis, ulong value)
         {
-            Interlocked.Exchange(ref @this.value, value);
+            Interlocked.Exchange(ref pThis.value, value);
         }
     }
 }

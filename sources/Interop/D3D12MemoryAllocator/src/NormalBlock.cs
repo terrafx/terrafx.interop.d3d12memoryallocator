@@ -19,15 +19,15 @@ namespace TerraFX.Interop
             return lpVtbl;
         }
 
-        public MemoryBlock @base;
+        public MemoryBlock Base;
         public BlockMetadata* m_pMetadata;
 
         private BlockVector* m_BlockVector;
 
         public NormalBlock(AllocatorPimpl* allocator, BlockVector* blockVector, D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
         {
-            @base = new MemoryBlock(allocator, heapType, heapFlags, size, id);
-            @base.lpVtbl = SharedLpVtbl;
+            Base = new MemoryBlock(allocator, heapType, heapFlags, size, id);
+            Base.lpVtbl = SharedLpVtbl;
             m_pMetadata = null;
             m_BlockVector = blockVector;
         }
@@ -40,50 +40,50 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         public int Init()
         {
-            HRESULT hr = @base.Init();
+            HRESULT hr = Base.Init();
             if (FAILED(hr))
             {
                 return hr;
             }
 
-            m_pMetadata = (BlockMetadata*)D3D12MA_NEW<BlockMetadata_Generic>(@base.m_Allocator->GetAllocs());
-            *(BlockMetadata_Generic*)m_pMetadata = new BlockMetadata_Generic(@base.m_Allocator->GetAllocs(), false);
-            m_pMetadata->Init(@base.m_Size);
+            m_pMetadata = (BlockMetadata*)D3D12MA_NEW<BlockMetadata_Generic>(Base.m_Allocator->GetAllocs());
+            *(BlockMetadata_Generic*)m_pMetadata = new BlockMetadata_Generic(Base.m_Allocator->GetAllocs(), false);
+            m_pMetadata->Init(Base.m_Size);
 
             return hr;
         }
 
-        public ID3D12Heap* GetHeap() => @base.m_Heap;
+        public ID3D12Heap* GetHeap() => Base.m_Heap;
 
-        public D3D12_HEAP_TYPE GetHeapType() => @base.m_HeapType;
+        public D3D12_HEAP_TYPE GetHeapType() => Base.m_HeapType;
 
         [return: NativeTypeName("UINT")]
-        public uint GetId() => @base.m_Id;
+        public uint GetId() => Base.m_Id;
 
         public readonly BlockVector* GetBlockVector() => m_BlockVector;
 
         /// <summary>Validates all data structures inside this object. If not valid, returns false.</summary>
         public readonly bool Validate()
         {
-            D3D12MA_VALIDATE(@base.GetHeap() != null &&
+            D3D12MA_VALIDATE(Base.GetHeap() != null &&
                 m_pMetadata != null &&
                 m_pMetadata->GetSize() != 0 &&
-                m_pMetadata->GetSize() == @base.GetSize());
+                m_pMetadata->GetSize() == Base.GetSize());
             return m_pMetadata->Validate();
         }
 
-        public static void Dispose(NormalBlock* @this)
+        public static void Dispose(NormalBlock* pThis)
         {
-            if (@this->m_pMetadata != null)
+            if (pThis->m_pMetadata != null)
             {
                 // THIS IS THE MOST IMPORTANT ASSERT IN THE ENTIRE LIBRARY!
                 // Hitting it means you have some memory leak - unreleased Allocation objects.
-                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (@this->m_pMetadata->IsEmpty())); // "Some allocations were not freed before destruction of this memory block!"
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pThis->m_pMetadata->IsEmpty())); // "Some allocations were not freed before destruction of this memory block!"
 
-                D3D12MA_DELETE(@this->@base.m_Allocator->GetAllocs(), @this->m_pMetadata);
+                D3D12MA_DELETE(pThis->Base.m_Allocator->GetAllocs(), pThis->m_pMetadata);
             }
 
-            MemoryBlock.Dispose((MemoryBlock*)@this); // base.~T();
+            MemoryBlock.Dispose((MemoryBlock*)pThis); // base.~T();
         }
     }
 }

@@ -87,12 +87,12 @@ namespace TerraFX.Interop
             return hr;
         }
 
-        public static void Dispose(MemoryBlock* @this)
+        public static void Dispose(MemoryBlock* pThis)
         {
-            if (@this->m_Heap != null)
+            if (pThis->m_Heap != null)
             {
-                @this->m_Allocator->m_Budget.m_BlockBytes[(int)HeapTypeToIndex(@this->m_HeapType)].Subtract(@this->m_Size);
-                @this->m_Heap->Release();
+                pThis->m_Allocator->m_Budget.m_BlockBytes[(int)HeapTypeToIndex(pThis->m_HeapType)].Subtract(pThis->m_Size);
+                pThis->m_Heap->Release();
             }
         }
     }

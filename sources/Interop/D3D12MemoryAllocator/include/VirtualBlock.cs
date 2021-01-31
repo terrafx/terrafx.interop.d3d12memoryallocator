@@ -127,9 +127,9 @@ namespace TerraFX.Interop
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
-            using StringBuilder sb = new(&m_Pimpl->m_AllocationCallbacks);
+            using var sb = new StringBuilder(&m_Pimpl->m_AllocationCallbacks);
 
-            using (JsonWriter json = new(&m_Pimpl->m_AllocationCallbacks, &sb))
+            using (var json = new JsonWriter(&m_Pimpl->m_AllocationCallbacks, &sb))
             {
                 D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Pimpl->m_Metadata.Validate()));
                 m_Pimpl->m_Metadata.WriteAllocationInfoToJson(&json);

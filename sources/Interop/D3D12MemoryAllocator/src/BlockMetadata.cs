@@ -136,9 +136,9 @@ namespace TerraFX.Interop
             ((delegate*<BlockMetadata*, JsonWriter*, void>)lpVtbl[14])((BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(this)), json);
         }
 
-        public static void Dispose(BlockMetadata* @this) { }
+        public static void Dispose(BlockMetadata* pThis) { }
 
-        public static void Init(BlockMetadata* @this, ulong size) => @this->m_Size = size;
+        public static void Init(BlockMetadata* pThis, ulong size) => pThis->m_Size = size;
 
         public ALLOCATION_CALLBACKS* GetAllocs() => m_pAllocationCallbacks;
     }
