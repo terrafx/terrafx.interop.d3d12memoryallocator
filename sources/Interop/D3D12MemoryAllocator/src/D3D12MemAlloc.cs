@@ -188,6 +188,9 @@ namespace TerraFX.Interop
             if (typeof(T) == typeof(VirtualBlock)) return (nuint)sizeof(void*);
             if (typeof(T) == typeof(VirtualBlockPimpl)) return 8;
             if (typeof(T) == typeof(JsonWriter.StackItem)) return 4;
+            if (typeof(T) == typeof(Pool)) return (nuint)sizeof(void*);
+            if (typeof(T) == typeof(PoolPimpl)) return 8;
+            if (typeof(T) == typeof(Ptr<Pool>)) return (nuint)sizeof(void*);
 
             throw new ArgumentException("Invalid __alignof<T> type");
         }

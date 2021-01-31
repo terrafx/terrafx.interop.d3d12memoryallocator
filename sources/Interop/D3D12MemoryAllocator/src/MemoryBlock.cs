@@ -50,17 +50,17 @@ namespace TerraFX.Interop
         }
         // Creates the ID3D12Heap.
 
-        public D3D12_HEAP_TYPE GetHeapType() => m_HeapType;
+        public readonly D3D12_HEAP_TYPE GetHeapType() => m_HeapType;
 
-        public D3D12_HEAP_FLAGS GetHeapFlags() => m_HeapFlags;
+        public readonly D3D12_HEAP_FLAGS GetHeapFlags() => m_HeapFlags;
 
         [return: NativeTypeName("UINT64")]
-        public ulong GetSize() => m_Size;
+        public readonly ulong GetSize() => m_Size;
 
         [return: NativeTypeName("UINT")]
-        public uint GetId() => m_Id;
+        public readonly uint GetId() => m_Id;
 
-        public ID3D12Heap* GetHeap() => m_Heap;
+        public readonly ID3D12Heap* GetHeap() => m_Heap;
 
         public HRESULT Init()
         {

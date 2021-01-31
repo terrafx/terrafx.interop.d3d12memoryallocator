@@ -1268,7 +1268,7 @@ namespace TerraFX.Interop.UnitTests
                     Sleep(20);
 
                     // Validate data in all remaining buffers while deleting them.
-                    for (nuint resIndex = (nuint)resources.Count; resIndex-- > 0;)
+                    for (nuint resIndex = (nuint)resources.Count; unchecked(resIndex-- > 0);)
                     {
                         void* mappedPtr = null;
                         CHECK_HR(resources[(int)resIndex].resource.Get()->Map(0, null, &mappedPtr));
@@ -1291,7 +1291,7 @@ namespace TerraFX.Interop.UnitTests
             }
 
             // Wait for threads to finish.
-            for (uint threadIndex = threadCount; threadIndex-- > 0;)
+            for (uint threadIndex = threadCount; unchecked(threadIndex-- > 0);)
             {
                 threads[threadIndex].Join();
             }

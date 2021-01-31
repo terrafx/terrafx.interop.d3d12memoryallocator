@@ -60,7 +60,7 @@ namespace TerraFX.Interop
 
         public void CalculateStats(StatInfo* outStats)
         {
-            ZeroMemory(&outStats, (nuint)sizeof(StatInfo));
+            ZeroMemory(outStats, (nuint)sizeof(StatInfo));
             outStats->AllocationSizeMin = ulong.MaxValue;
             outStats->UnusedRangeSizeMin = ulong.MaxValue;
 

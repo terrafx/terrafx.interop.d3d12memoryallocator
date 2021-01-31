@@ -64,43 +64,63 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, void>)&Dispose == Base.lpVtbl[0]));
             Dispose((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
         }
 
         public void Init([NativeTypeName("UINT64")] ulong size)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, ulong, void>)&Init == Base.lpVtbl[1]));
             Init((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), size);
         }
 
         public readonly bool Validate()
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, bool>)&Validate == Base.lpVtbl[2]));
             return Validate((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
         }
 
+        [return: NativeTypeName("UINT64")]
+        public readonly ulong GetSize() => Base.m_Size;
+
+        public readonly bool IsVirtual() => Base.m_IsVirtual;
+
         [return: NativeTypeName("size_t")]
-        public readonly nuint GetAllocationCount() => GetAllocationCount((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
+        public readonly nuint GetAllocationCount()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, nuint>)&GetAllocationCount == Base.lpVtbl[3]));
+            return GetAllocationCount((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
+        }
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetSumFreeSize() => GetSumFreeSize((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
+        public readonly ulong GetSumFreeSize()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, ulong>)&GetSumFreeSize == Base.lpVtbl[4]));
+            return GetSumFreeSize((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
+        }
 
         [return: NativeTypeName("UINT64")]
         public readonly ulong GetUnusedRangeSizeMax()
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, ulong>)&GetUnusedRangeSizeMax == Base.lpVtbl[5]));
             return GetUnusedRangeSizeMax((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
         }
 
         public readonly bool IsEmpty()
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, bool>)&IsEmpty == Base.lpVtbl[6]));
             return IsEmpty((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
         }
 
         public readonly void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, VIRTUAL_ALLOCATION_INFO* outInfo)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, ulong, VIRTUAL_ALLOCATION_INFO*, void>)&GetAllocationInfo == Base.lpVtbl[7]));
             GetAllocationInfo((BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)), offset, outInfo);
         }
 
         public bool CreateAllocationRequest([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, AllocationRequest* pAllocationRequest)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, ulong, ulong, AllocationRequest*, bool>)&CreateAllocationRequest == Base.lpVtbl[8]));
             return CreateAllocationRequest(
                 (BlockMetadata_Generic*)Unsafe.AsPointer(ref this),
                 allocSize,
@@ -110,6 +130,7 @@ namespace TerraFX.Interop
 
         public void Alloc(AllocationRequest* request, [NativeTypeName("UINT64")] ulong allocSize, void* userData)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, AllocationRequest*, ulong, void*, void>)&Alloc == Base.lpVtbl[9]));
             Alloc(
                 (BlockMetadata_Generic*)Unsafe.AsPointer(ref this),
                 request,
@@ -119,26 +140,31 @@ namespace TerraFX.Interop
 
         public void FreeAtOffset([NativeTypeName("UINT64")] ulong offset)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, ulong, void>)&FreeAtOffset == Base.lpVtbl[10]));
             FreeAtOffset((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), offset);
         }
 
         public void Clear()
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, void>)&Clear == Base.lpVtbl[11]));
             Clear((BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
         }
 
         public void SetAllocationUserData([NativeTypeName("UINT64")] ulong offset, void* userData)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, ulong, void*, void>)&SetAllocationUserData == Base.lpVtbl[12]));
             SetAllocationUserData((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), offset, userData);
         }
 
         public void CalcAllocationStatInfo(StatInfo* outInfo)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, StatInfo*, void>)&CalcAllocationStatInfo == Base.lpVtbl[13]));
             CalcAllocationStatInfo((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), outInfo);
         }
 
         public void WriteAllocationInfoToJson(JsonWriter* json)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<BlockMetadata_Generic*, JsonWriter*, void>)&WriteAllocationInfoToJson == Base.lpVtbl[14]));
             WriteAllocationInfoToJson((BlockMetadata_Generic*)Unsafe.AsPointer(ref this), json);
         }
 
@@ -394,7 +420,7 @@ namespace TerraFX.Interop
                 D3D12MA_VALIDATE(!prevFree || !currFree);
 
                 Allocation* alloc = (Allocation*)subAlloc->userData;
-                if (!pThis->Base.IsVirtual())
+                if (!pThis->IsVirtual())
                 {
                     D3D12MA_VALIDATE(currFree == (alloc == null));
                 }
@@ -413,7 +439,7 @@ namespace TerraFX.Interop
                 }
                 else
                 {
-                    if (!pThis->Base.IsVirtual())
+                    if (!pThis->IsVirtual())
                     {
                         D3D12MA_VALIDATE(alloc->GetOffset() == subAlloc->offset);
                         D3D12MA_VALIDATE(alloc->GetSize() == subAlloc->size);
@@ -446,7 +472,7 @@ namespace TerraFX.Interop
 
             // Check if totals match calculacted values.
             D3D12MA_VALIDATE(pThis->ValidateFreeSuballocationList());
-            D3D12MA_VALIDATE(calculatedOffset == pThis->Base.GetSize());
+            D3D12MA_VALIDATE(calculatedOffset == pThis->GetSize());
             D3D12MA_VALIDATE(calculatedSumFreeSize == pThis->m_SumFreeSize);
             D3D12MA_VALIDATE(calculatedFreeCount == pThis->m_FreeCount);
 
@@ -622,12 +648,12 @@ namespace TerraFX.Interop
         public static void Clear(BlockMetadata_Generic* pThis)
         {
             pThis->m_FreeCount = 1;
-            pThis->m_SumFreeSize = pThis->Base.GetSize();
+            pThis->m_SumFreeSize = pThis->GetSize();
 
             pThis->m_Suballocations.clear();
             Suballocation suballoc = default;
             suballoc.offset = 0;
-            suballoc.size = pThis->Base.GetSize();
+            suballoc.size = pThis->GetSize();
             suballoc.type = SUBALLOCATION_TYPE_FREE;
             pThis->m_Suballocations.push_back(&suballoc);
 
@@ -661,7 +687,7 @@ namespace TerraFX.Interop
             outInfo->AllocationCount = rangeCount - pThis->m_FreeCount;
             outInfo->UnusedRangeCount = pThis->m_FreeCount;
 
-            outInfo->UsedBytes = pThis->Base.GetSize() - pThis->m_SumFreeSize;
+            outInfo->UsedBytes = pThis->GetSize() - pThis->m_SumFreeSize;
             outInfo->UnusedBytes = pThis->m_SumFreeSize;
 
             outInfo->AllocationSizeMin = UINT64_MAX;
@@ -691,7 +717,7 @@ namespace TerraFX.Interop
         {
             json->BeginObject();
             json->WriteString("TotalBytes");
-            json->WriteNumber(pThis->Base.GetSize());
+            json->WriteNumber(pThis->GetSize());
             json->WriteString("UnusuedBytes");
             json->WriteNumber(pThis->GetSumFreeSize());
             json->WriteString("Allocations");
@@ -715,7 +741,7 @@ namespace TerraFX.Interop
                     json->WriteString("Size");
                     json->WriteNumber(suballoc->size);
                 }
-                else if (pThis->Base.IsVirtual())
+                else if (pThis->IsVirtual())
                 {
                     json->WriteString("Type");
                     json->WriteString("ALLOCATION");

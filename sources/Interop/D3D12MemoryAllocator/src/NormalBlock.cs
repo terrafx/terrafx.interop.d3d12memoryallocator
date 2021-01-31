@@ -34,6 +34,7 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<NormalBlock*, void>)&Dispose == Base.lpVtbl[0]));
             Dispose((NormalBlock*)Unsafe.AsPointer(ref this));
         }
 
@@ -53,22 +54,25 @@ namespace TerraFX.Interop
             return hr;
         }
 
-        public ID3D12Heap* GetHeap() => Base.m_Heap;
+        public readonly D3D12_HEAP_TYPE GetHeapType() => Base.m_HeapType;
 
-        public D3D12_HEAP_TYPE GetHeapType() => Base.m_HeapType;
+        [return: NativeTypeName("UINT64")]
+        public readonly ulong GetSize() => Base.m_Size;
 
         [return: NativeTypeName("UINT")]
-        public uint GetId() => Base.m_Id;
+        public readonly uint GetId() => Base.m_Id;
+
+        public readonly ID3D12Heap* GetHeap() => Base.m_Heap;
 
         public readonly BlockVector* GetBlockVector() => m_BlockVector;
 
         /// <summary>Validates all data structures inside this object. If not valid, returns false.</summary>
         public readonly bool Validate()
         {
-            D3D12MA_VALIDATE(Base.GetHeap() != null &&
+            D3D12MA_VALIDATE(GetHeap() != null &&
                 m_pMetadata != null &&
                 m_pMetadata->GetSize() != 0 &&
-                m_pMetadata->GetSize() == Base.GetSize());
+                m_pMetadata->GetSize() == GetSize());
             return m_pMetadata->Validate();
         }
 

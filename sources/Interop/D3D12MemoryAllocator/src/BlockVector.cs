@@ -123,7 +123,7 @@ namespace TerraFX.Interop
             if (FAILED(hr))
             {
                 // Free all already created allocations.
-                while (allocIndex-- > 0)
+                while (unchecked(allocIndex-- > 0))
                 {
                     Free(pAllocations[allocIndex]);
                 }
@@ -304,7 +304,7 @@ namespace TerraFX.Interop
             if (minBytes < m_MinBytes)
             {
                 m_HasEmptyBlock = false; // Will recalculate this value from scratch.
-                for (nuint blockIndex = blockCount; blockIndex-- > 0;)
+                for (nuint blockIndex = blockCount; unchecked(blockIndex-- > 0);)
                 {
                     NormalBlock* block = *m_Blocks[blockIndex];
                     ulong size = block->m_pMetadata->GetSize();
