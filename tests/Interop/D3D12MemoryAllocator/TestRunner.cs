@@ -13,17 +13,17 @@ namespace TerraFX.Interop.UnitTests
 {
     internal sealed unsafe class TestRunner : IDisposable
     {
-        private IDXGIFactory4* _dxgiFactory;
-        private IDXGIAdapter* _dxgiAdapter;
-        private ID3D12Device* _d3dDevice;
-        private ID3D12CommandQueue* _commandQueue;
-        private ID3D12CommandAllocator* _commandAllocator;
-        private ID3D12Fence* _fence;
+        private readonly IDXGIFactory4* _dxgiFactory;
+        private readonly IDXGIAdapter* _dxgiAdapter;
+        private readonly ID3D12Device* _d3dDevice;
+        private readonly ID3D12CommandQueue* _commandQueue;
+        private readonly ID3D12CommandAllocator* _commandAllocator;
+        private readonly ID3D12Fence* _fence;
         private ulong _fenceValue;
-        private IntPtr _fenceEvent;
-        private ID3D12GraphicsCommandList* _graphicsCommandList;
-        private Allocator* _allocator;
-        private ALLOCATION_CALLBACKS* _allocs;
+        private readonly IntPtr _fenceEvent;
+        private readonly ID3D12GraphicsCommandList* _graphicsCommandList;
+        private readonly Allocator* _allocator;
+        private readonly ALLOCATION_CALLBACKS* _allocs;
 
         public TestRunner()
         {
@@ -41,11 +41,28 @@ namespace TerraFX.Interop.UnitTests
 
             static IDXGIFactory4* CreateDxgiFactory()
             {
+                uint dxgiFactoryFlags = TryEnableDebugLayer() ? DXGI_CREATE_FACTORY_DEBUG : 0u;
+
                 IDXGIFactory4* dxgiFactory;
 
-                ThrowIfFailed(CreateDXGIFactory2(0u, __uuidof<IDXGIFactory4>(), (void**)&dxgiFactory));
+                ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, __uuidof<IDXGIFactory4>(), (void**)&dxgiFactory));
 
                 return dxgiFactory;
+            }
+
+            static bool TryEnableDebugLayer()
+            {
+#if DEBUG
+                using ComPtr<ID3D12Debug> debugController = null;
+
+                if (SUCCEEDED(D3D12GetDebugInterface(__uuidof<ID3D12Debug>(), (void**)&debugController)))
+                {
+                    debugController.Get()->EnableDebugLayer();
+                    return true;
+                }
+#endif
+
+                return false;
             }
 
             static IDXGIAdapter* GetAdapter(IDXGIFactory4* pFactory)
