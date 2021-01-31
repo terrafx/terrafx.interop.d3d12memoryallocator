@@ -56,7 +56,7 @@ namespace TerraFX.Interop
         /// <summary>Retrieves statistics from the current state of this pool.</summary>
         public void CalculateStats(StatInfo* pStats)
         {
-            D3D12MA_ASSERT(pStats != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pStats != null));
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
             m_Pimpl->CalculateStats(pStats);
         }

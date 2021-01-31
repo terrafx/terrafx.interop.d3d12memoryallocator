@@ -26,7 +26,7 @@ namespace TerraFX.Interop
             m_FirstBlockCapacity = firstBlockCapacity;
             m_ItemBlocks = new Vector<ItemBlock>(allocationCallbacks);
 
-            D3D12MA_ASSERT(m_FirstBlockCapacity > 1);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_FirstBlockCapacity > 1));
         }
 
         public void Dispose()

@@ -133,7 +133,7 @@ namespace TerraFX.Interop
         internal static void* Malloc(ALLOCATION_CALLBACKS* allocs, [NativeTypeName("size_t")] nuint size, [NativeTypeName("size_t")] nuint alignment)
         {
             void* result = allocs->pAllocate(size, alignment, allocs->pUserData);
-            D3D12MA_ASSERT(result != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (result != null));
             return result;
         }
 
@@ -308,7 +308,7 @@ namespace TerraFX.Interop
             if (allocationCallbacks is not null)
             {
                 *outAllocs = *allocationCallbacks;
-                D3D12MA_ASSERT((outAllocs->pAllocate != null) && (outAllocs->pFree != null));
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((outAllocs->pAllocate != null) && (outAllocs->pFree != null)));
             }
             else
             {
@@ -406,14 +406,14 @@ namespace TerraFX.Interop
         /// <summary>Aligns given value up to nearest multiply of align value. For example: AlignUp(11, 8) = 16.</summary>
         internal static nuint AlignUp(nuint val, nuint alignment)
         {
-            D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (IsPow2(alignment)));
             return (val + alignment - 1) & ~(alignment - 1);
         }
 
         /// <summary>Aligns given value up to nearest multiply of align value. For example: AlignUp(11, 8) = 16.</summary>
         internal static ulong AlignUp(ulong val, ulong alignment)
         {
-            D3D12MA_HEAVY_ASSERT(IsPow2(alignment));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (IsPow2(alignment)));
             return (val + alignment - 1) & ~(alignment - 1);
         }
 

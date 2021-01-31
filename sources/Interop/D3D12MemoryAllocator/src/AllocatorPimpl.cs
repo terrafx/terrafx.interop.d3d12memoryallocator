@@ -257,8 +257,8 @@ namespace TerraFX.Interop
             D3D12_RESOURCE_DESC finalResourceDesc = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&finalResourceDesc);
             resAllocInfo.Alignment = D3D12MA_MAX(resAllocInfo.Alignment, D3D12MA_DEBUG_ALIGNMENT);
-            D3D12MA_ASSERT(IsPow2(resAllocInfo.Alignment));
-            D3D12MA_ASSERT(resAllocInfo.SizeInBytes > 0);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (IsPow2(resAllocInfo.Alignment)));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
 
             if (pAllocDesc->CustomPool != null)
             {
@@ -268,7 +268,7 @@ namespace TerraFX.Interop
                 }
 
                 BlockVector* blockVector = pAllocDesc->CustomPool->m_Pimpl->GetBlockVector();
-                D3D12MA_ASSERT(blockVector != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
                 return blockVector->CreateResource(
                     resAllocInfo.SizeInBytes,
                     resAllocInfo.Alignment,
@@ -298,7 +298,7 @@ namespace TerraFX.Interop
                 }
 
                 BlockVector* blockVector = m_BlockVectors[(int)defaultPoolIndex];
-                D3D12MA_ASSERT(blockVector != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
 
                 ulong preferredBlockSize = blockVector->GetPreferredBlockSize();
                 bool preferCommittedMemory =
@@ -384,8 +384,8 @@ namespace TerraFX.Interop
             D3D12_RESOURCE_DESC finalResourceDesc = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&finalResourceDesc);
             resAllocInfo.Alignment = D3D12MA_MAX(resAllocInfo.Alignment, D3D12MA_DEBUG_ALIGNMENT);
-            D3D12MA_ASSERT(IsPow2(resAllocInfo.Alignment));
-            D3D12MA_ASSERT(resAllocInfo.SizeInBytes > 0);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (IsPow2(resAllocInfo.Alignment)));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
 
             return AllocateCommittedResource1(
                 pAllocDesc,
@@ -423,8 +423,8 @@ namespace TerraFX.Interop
             D3D12_RESOURCE_DESC1 finalResourceDesc = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&finalResourceDesc);
             resAllocInfo.Alignment = D3D12MA_MAX(resAllocInfo.Alignment, D3D12MA_DEBUG_ALIGNMENT);
-            D3D12MA_ASSERT(IsPow2(resAllocInfo.Alignment));
-            D3D12MA_ASSERT(resAllocInfo.SizeInBytes > 0);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (IsPow2(resAllocInfo.Alignment)));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
 
             bool requireCommittedMemory = pProtectedSession != null || (finalAllocDesc.Flags & ALLOCATION_FLAG_COMMITTED) != 0;
 
@@ -436,7 +436,7 @@ namespace TerraFX.Interop
                 }
 
                 BlockVector* blockVector = pAllocDesc->CustomPool->m_Pimpl->GetBlockVector();
-                D3D12MA_ASSERT(blockVector != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
                 return blockVector->CreateResource2(
                     resAllocInfo.SizeInBytes,
                     resAllocInfo.Alignment,
@@ -468,7 +468,7 @@ namespace TerraFX.Interop
                 }
 
                 BlockVector* blockVector = m_BlockVectors[(int)defaultPoolIndex];
-                D3D12MA_ASSERT(blockVector != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
 
                 ulong preferredBlockSize = blockVector->GetPreferredBlockSize();
                 bool preferCommittedMemory =
@@ -535,7 +535,7 @@ namespace TerraFX.Interop
             if (pAllocDesc->CustomPool != null)
             {
                 BlockVector* blockVector = pAllocDesc->CustomPool->m_Pimpl->GetBlockVector();
-                D3D12MA_ASSERT(blockVector != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
                 return blockVector->Allocate(
                     pAllocInfo->SizeInBytes,
                     pAllocInfo->Alignment,
@@ -560,7 +560,7 @@ namespace TerraFX.Interop
                 }
 
                 BlockVector* blockVector = m_BlockVectors[(int)defaultPoolIndex];
-                D3D12MA_ASSERT(blockVector != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
 
                 ulong preferredBlockSize = blockVector->GetPreferredBlockSize();
                 bool preferCommittedMemory =
@@ -634,8 +634,8 @@ namespace TerraFX.Interop
             D3D12_RESOURCE_DESC resourceDesc2 = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&resourceDesc2);
             resAllocInfo.Alignment = D3D12MA_MAX(resAllocInfo.Alignment, D3D12MA_DEBUG_ALIGNMENT);
-            D3D12MA_ASSERT(IsPow2(resAllocInfo.Alignment));
-            D3D12MA_ASSERT(resAllocInfo.SizeInBytes > 0);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (IsPow2(resAllocInfo.Alignment)));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
 
             ID3D12Heap* existingHeap = pAllocation->GetHeap();
             ulong existingOffset = pAllocation->GetOffset();
@@ -729,7 +729,7 @@ namespace TerraFX.Interop
         public void FreeCommittedMemory([NativeTypeName("Allocation*")] ref Allocation allocation)
         {
             Allocation* pAllocation = (Allocation*)Unsafe.AsPointer(ref allocation);
-            D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_COMMITTED);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_COMMITTED));
             UnregisterCommittedAllocation(pAllocation, pAllocation->m_Committed.heapType);
 
             ulong allocationSize = pAllocation->GetSize();
@@ -745,12 +745,12 @@ namespace TerraFX.Interop
         public void FreePlacedMemory([NativeTypeName("Allocation*")] ref Allocation allocation)
         {
             Allocation* pAllocation = (Allocation*)Unsafe.AsPointer(ref allocation);
-            D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_PLACED);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_PLACED));
 
             NormalBlock* block = pAllocation->m_Placed.block;
-            D3D12MA_ASSERT(block != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (block != null));
             BlockVector* blockVector = block->GetBlockVector();
-            D3D12MA_ASSERT(blockVector != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
             m_Budget.RemoveAllocation(HeapTypeToIndex(block->GetHeapType()), pAllocation->GetSize());
             blockVector->Free(pAllocation);
         }
@@ -762,7 +762,7 @@ namespace TerraFX.Interop
         public void FreeHeapMemory([NativeTypeName("Allocation*")] ref Allocation allocation)
         {
             Allocation* pAllocation = (Allocation*)Unsafe.AsPointer(ref allocation);
-            D3D12MA_ASSERT(pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_HEAP);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pAllocation != null && pAllocation->m_PackedData.GetType() == Allocation.Type.TYPE_HEAP));
             UnregisterCommittedAllocation(pAllocation, pAllocation->m_Heap.heapType);
             SAFE_RELEASE(&pAllocation->m_Union.m_Heap.heap);
 
@@ -801,7 +801,7 @@ namespace TerraFX.Interop
             for (nuint i = 0; i < HEAP_TYPE_COUNT; ++i)
             {
                 BlockVector* pBlockVector = m_BlockVectors[(int)i];
-                D3D12MA_ASSERT(pBlockVector != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pBlockVector != null));
                 pBlockVector->AddStats(outStats);
             }
 
@@ -810,7 +810,7 @@ namespace TerraFX.Interop
             {
                 using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_PoolsMutex[(int)heapTypeIndex]), m_UseMutex);
                 PoolVectorType* poolVector = m_pPools[(int)heapTypeIndex];
-                D3D12MA_ASSERT(poolVector != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (poolVector != null));
                 for (nuint poolIndex = 0, count = poolVector->size(); poolIndex < count; ++poolIndex)
                 {
                     Pool* pool = *(*poolVector)[poolIndex];
@@ -824,7 +824,7 @@ namespace TerraFX.Interop
                 StatInfo* heapStatInfo = (StatInfo*)Unsafe.AsPointer(ref outStats->HeapType[(int)heapTypeIndex]);
                 using MutexLockRead @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_CommittedAllocationsMutex[(int)heapTypeIndex]), m_UseMutex);
                 AllocationVectorType* allocationVector = m_pCommittedAllocations[(int)heapTypeIndex];
-                D3D12MA_ASSERT(allocationVector != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocationVector != null));
                 for (nuint allocIndex = 0, count = allocationVector->size(); allocIndex < count; ++allocIndex)
                 {
                     ulong size = (*allocationVector)[allocIndex]->Value->GetSize();
@@ -1048,7 +1048,7 @@ namespace TerraFX.Interop
                             json.WriteString("Blocks");
 
                             BlockVector* blockVector = m_BlockVectors[(int)heapType];
-                            D3D12MA_ASSERT(blockVector != null);
+                            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
                             blockVector->WriteBlockInfoToJson(&json);
 
                             json.EndObject(); // heap name
@@ -1069,7 +1069,7 @@ namespace TerraFX.Interop
                                 json.WriteString("Blocks");
 
                                 BlockVector* blockVector = m_BlockVectors[(int)(heapType * 3 + heapSubType)];
-                                D3D12MA_ASSERT(blockVector != null);
+                                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
                                 blockVector->WriteBlockInfoToJson(&json);
 
                                 json.EndObject(); // heap name
@@ -1089,11 +1089,11 @@ namespace TerraFX.Interop
 
                         json.BeginArray();
                         AllocationVectorType* allocationVector = m_pCommittedAllocations[(int)heapType];
-                        D3D12MA_ASSERT(allocationVector != null);
+                        D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocationVector != null));
                         for (nuint i = 0, count = allocationVector->size(); i < count; ++i)
                         {
                             Allocation* alloc = *(*allocationVector)[i];
-                            D3D12MA_ASSERT(alloc != null);
+                            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (alloc != null));
 
                             json.BeginObject(true);
                             json.AddAllocationToObject(alloc);
@@ -1120,7 +1120,7 @@ namespace TerraFX.Interop
 
         public void FreeStatsString([NativeTypeName("WCHAR*")] ushort* pStatsString)
         {
-            D3D12MA_ASSERT(pStatsString != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pStatsString != null));
             Free(GetAllocs(), pStatsString);
         }
 
@@ -1632,7 +1632,7 @@ namespace TerraFX.Interop
 
             using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_CommittedAllocationsMutex[(int)heapTypeIndex]), m_UseMutex);
             AllocationVectorType* committedAllocations = m_pCommittedAllocations[(int)heapTypeIndex];
-            D3D12MA_ASSERT(committedAllocations != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocations != null));
             committedAllocations->InsertSorted((Ptr<Allocation>*)&alloc, new PointerLess<Ptr<Allocation>>());
         }
 
@@ -1643,9 +1643,9 @@ namespace TerraFX.Interop
 
             using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_CommittedAllocationsMutex[(int)heapTypeIndex]), m_UseMutex);
             AllocationVectorType* committedAllocations = m_pCommittedAllocations[(int)heapTypeIndex];
-            D3D12MA_ASSERT(committedAllocations != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocations != null));
             bool success = committedAllocations->RemoveSorted((Ptr<Allocation>*)&alloc, new PointerLess<Ptr<Allocation>>());
-            D3D12MA_ASSERT(success);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (success));
         }
 
         /// <summary>Registers Pool object in m_pPools.</summary>
@@ -1655,7 +1655,7 @@ namespace TerraFX.Interop
 
             using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_PoolsMutex[(int)heapTypeIndex]), m_UseMutex);
             PoolVectorType* pools = m_pPools[(int)heapTypeIndex];
-            D3D12MA_ASSERT(pools != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pools != null));
             pools->InsertSorted((Ptr<Pool>*)&pool, new PointerLess<Ptr<Pool>>());
         }
 
@@ -1668,9 +1668,9 @@ namespace TerraFX.Interop
 
                 using MutexLockWrite @lock = new((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_PoolsMutex[(int)heapTypeIndex]), m_UseMutex);
                 PoolVectorType* pools = m_pPools[(int)heapTypeIndex];
-                D3D12MA_ASSERT(pools != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pools != null));
                 bool success = pools->RemoveSorted((Ptr<Pool>*)&pPool, new PointerLess<Ptr<Pool>>());
-                D3D12MA_ASSERT(success);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (success));
             }
         }
 
@@ -1679,7 +1679,7 @@ namespace TerraFX.Interop
         {
             if (D3D12MA_DXGI_1_4 > 0)
             {
-                D3D12MA_ASSERT(m_Adapter3 != null);
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_Adapter3 != null));
 
                 DXGI_QUERY_VIDEO_MEMORY_INFO infoLocal = default;
                 DXGI_QUERY_VIDEO_MEMORY_INFO infoNonLocal = default;
@@ -1724,7 +1724,7 @@ namespace TerraFX.Interop
 
         private D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfoNative(D3D12_RESOURCE_DESC1* resourceDesc)
         {
-            D3D12MA_ASSERT(m_Device8 != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_Device8 != null));
             D3D12_RESOURCE_ALLOCATION_INFO1 info1Unused;
             return m_Device8->GetResourceAllocationInfo2(0, 1, resourceDesc, &info1Unused);
         }

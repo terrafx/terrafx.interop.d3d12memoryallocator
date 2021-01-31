@@ -284,28 +284,28 @@ namespace TerraFX.Interop
             public void SetType(Type type)
             {
                 uint u = (uint)type;
-                D3D12MA_ASSERT(u < (1u << 2));
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (u < (1u << 2)));
                 m_Type = u;
             }
 
             public void SetResourceDimension(D3D12_RESOURCE_DIMENSION resourceDimension)
             {
                 uint u = (uint)resourceDimension;
-                D3D12MA_ASSERT(u < (1u << 3));
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (u < (1u << 3)));
                 m_ResourceDimension = u;
             }
 
             public void SetResourceFlags(D3D12_RESOURCE_FLAGS resourceFlags)
             {
                 uint u = (uint)resourceFlags;
-                D3D12MA_ASSERT(u < (1u << 24));
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (u < (1u << 24)));
                 m_ResourceFlags = u;
             }
 
             public void SetTextureLayout(D3D12_TEXTURE_LAYOUT textureLayout)
             {
                 uint u = (uint)textureLayout;
-                D3D12MA_ASSERT(u < (1u << 9));
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (u < (1u << 9)));
                 m_TextureLayout = u;
             }
 
@@ -355,7 +355,7 @@ namespace TerraFX.Interop
             m_CreationFrameIndex = allocator->GetCurrentFrameIndex();
             m_Name = null;
 
-            D3D12MA_ASSERT(allocator != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocator != null));
 
             m_PackedData.SetType(TYPE_COUNT);
             m_PackedData.SetResourceDimension(D3D12_RESOURCE_DIMENSION_UNKNOWN);
@@ -391,7 +391,7 @@ namespace TerraFX.Interop
 
         internal void SetResource(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] D3D12_RESOURCE_DESC* pResourceDesc)
         {
-            D3D12MA_ASSERT((m_Resource == null) && (pResourceDesc != null));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_Resource == null) && (pResourceDesc != null)));
             m_Resource = resource;
             m_PackedData.SetResourceDimension(pResourceDesc->Dimension);
             m_PackedData.SetResourceFlags(pResourceDesc->Flags);

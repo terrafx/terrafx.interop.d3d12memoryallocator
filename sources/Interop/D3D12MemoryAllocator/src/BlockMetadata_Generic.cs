@@ -59,7 +59,7 @@ namespace TerraFX.Interop
             m_FreeSuballocationsBySize = new Vector<SuballocationList.iterator>(allocationCallbacks);
             m_ZeroInitializedRange = default;
 
-            D3D12MA_ASSERT(allocationCallbacks != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocationCallbacks != null));
         }
 
         public void Dispose()
@@ -203,7 +203,7 @@ namespace TerraFX.Interop
             suballoc.type = SUBALLOCATION_TYPE_FREE;
             suballoc.userData = null;
 
-            D3D12MA_ASSERT(size > MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (size > MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER));
             @this->m_Suballocations.push_back(&suballoc);
             SuballocationList.iterator suballocItem = @this->m_Suballocations.end();
             suballocItem.op_MoveBack();
@@ -343,9 +343,9 @@ namespace TerraFX.Interop
 
         public static bool CreateAllocationRequest(BlockMetadata_Generic* @this, ulong allocSize, ulong allocAlignment, AllocationRequest* pAllocationRequest)
         {
-            D3D12MA_ASSERT(allocSize > 0);
-            D3D12MA_ASSERT(pAllocationRequest != null);
-            D3D12MA_HEAVY_ASSERT(@this->Validate());
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocSize > 0));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pAllocationRequest != null));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (@this->Validate()));
 
             // There is not enough total free space in this block to fullfill the request: Early return.
             if (@this->m_SumFreeSize < allocSize + 2 * D3D12MA_DEBUG_MARGIN)
@@ -386,14 +386,14 @@ namespace TerraFX.Interop
 
         public static void Alloc(BlockMetadata_Generic* @this, AllocationRequest* request, ulong allocSize, void* userData)
         {
-            D3D12MA_ASSERT(request->item != @this->m_Suballocations.end());
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (request->item != @this->m_Suballocations.end()));
             Suballocation* suballoc = request->item.op_Arrow();
             // Given suballocation is a free block.
-            D3D12MA_ASSERT(suballoc->type == SUBALLOCATION_TYPE_FREE);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (suballoc->type == SUBALLOCATION_TYPE_FREE));
             // Given offset is inside this suballocation.
-            D3D12MA_ASSERT(request->offset >= suballoc->offset);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (request->offset >= suballoc->offset));
             ulong paddingBegin = request->offset - suballoc->offset;
-            D3D12MA_ASSERT(suballoc->size >= paddingBegin + allocSize);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (suballoc->size >= paddingBegin + allocSize));
             ulong paddingEnd = suballoc->size - paddingBegin - allocSize;
 
             // Unregister this free suballocation from m_FreeSuballocationsBySize and update
@@ -500,16 +500,16 @@ namespace TerraFX.Interop
 
         public static bool CheckAllocation(BlockMetadata_Generic* @this, ulong allocSize, ulong allocAlignment, SuballocationList.iterator suballocItem, ulong* pOffset, ulong* pSumFreeSize, ulong* pSumItemSize, int* pZeroInitialized)
         {
-            D3D12MA_ASSERT(allocSize > 0);
-            D3D12MA_ASSERT(suballocItem != @this->m_Suballocations.end());
-            D3D12MA_ASSERT(pOffset != null && pZeroInitialized != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocSize > 0));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (suballocItem != @this->m_Suballocations.end()));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pOffset != null && pZeroInitialized != null));
 
             *pSumFreeSize = 0;
             *pSumItemSize = 0;
             *pZeroInitialized = FALSE;
 
             Suballocation* suballoc = suballocItem.op_Arrow();
-            D3D12MA_ASSERT(suballoc->type == SUBALLOCATION_TYPE_FREE);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (suballoc->type == SUBALLOCATION_TYPE_FREE));
 
             *pSumFreeSize = suballoc->size;
 
@@ -550,13 +550,13 @@ namespace TerraFX.Interop
 
         public static void MergeFreeWithNext(BlockMetadata_Generic* @this, SuballocationList.iterator item)
         {
-            D3D12MA_ASSERT(item != @this->m_Suballocations.end());
-            D3D12MA_ASSERT(item.op_Arrow()->type == SUBALLOCATION_TYPE_FREE);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item != @this->m_Suballocations.end()));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.op_Arrow()->type == SUBALLOCATION_TYPE_FREE));
 
             SuballocationList.iterator nextItem = item;
             nextItem.op_MoveNext();
-            D3D12MA_ASSERT(nextItem != @this->m_Suballocations.end());
-            D3D12MA_ASSERT(nextItem.op_Arrow()->type == SUBALLOCATION_TYPE_FREE);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (nextItem != @this->m_Suballocations.end()));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (nextItem.op_Arrow()->type == SUBALLOCATION_TYPE_FREE));
 
             item.op_Arrow()->size += nextItem.op_Arrow()->size;
             --@this->m_FreeCount;
@@ -617,12 +617,12 @@ namespace TerraFX.Interop
 
         public static void RegisterFreeSuballocation(BlockMetadata_Generic* @this, SuballocationList.iterator item)
         {
-            D3D12MA_ASSERT(item.op_Arrow()->type == SUBALLOCATION_TYPE_FREE);
-            D3D12MA_ASSERT(item.op_Arrow()->size > 0);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.op_Arrow()->type == SUBALLOCATION_TYPE_FREE));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.op_Arrow()->size > 0));
 
             // You may want to enable this validation at the beginning or at the end of
             // this function, depending on what do you want to check.
-            D3D12MA_HEAVY_ASSERT(@this->ValidateFreeSuballocationList());
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (@this->ValidateFreeSuballocationList()));
 
             if (item.op_Arrow()->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER)
             {
@@ -636,17 +636,17 @@ namespace TerraFX.Interop
                 }
             }
 
-            //D3D12MA_HEAVY_ASSERT(ValidateFreeSuballocationList());
+            //D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (ValidateFreeSuballocationList()));
         }
 
         public static void UnregisterFreeSuballocation(BlockMetadata_Generic* @this, SuballocationList.iterator item)
         {
-            D3D12MA_ASSERT(item.op_Arrow()->type == SUBALLOCATION_TYPE_FREE);
-            D3D12MA_ASSERT(item.op_Arrow()->size > 0);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.op_Arrow()->type == SUBALLOCATION_TYPE_FREE));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.op_Arrow()->size > 0));
 
             // You may want to enable this validation at the beginning or at the end of
             // this function, depending on what do you want to check.
-            D3D12MA_HEAVY_ASSERT(@this->ValidateFreeSuballocationList());
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (@this->ValidateFreeSuballocationList()));
 
             if (item.op_Arrow()->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER)
             {
@@ -665,13 +665,13 @@ namespace TerraFX.Interop
                         return;
                     }
 
-                    D3D12MA_ASSERT(@this->m_FreeSuballocationsBySize[index]->op_Arrow()->size == item.op_Arrow()->size); // "Not found!"
+                    D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (@this->m_FreeSuballocationsBySize[index]->op_Arrow()->size == item.op_Arrow()->size)); // "Not found!"
                 }
 
                 D3D12MA_ASSERT(false); // "Not found!"
             }
 
-            //D3D12MA_HEAVY_ASSERT(ValidateFreeSuballocationList());
+            //D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (ValidateFreeSuballocationList()));
         }
 
         public static void SetAllocationUserData(BlockMetadata_Generic* @this, ulong offset, void* userData)
@@ -768,7 +768,7 @@ namespace TerraFX.Interop
                 else
                 {
                     Allocation* alloc = (Allocation*)suballoc->userData;
-                    D3D12MA_ASSERT(alloc != null);
+                    D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (alloc != null));
                     json->AddAllocationToObject(alloc);
                 }
 

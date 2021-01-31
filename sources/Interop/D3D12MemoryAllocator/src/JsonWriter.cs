@@ -21,13 +21,13 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
-            D3D12MA_ASSERT(!m_InsideString);
-            D3D12MA_ASSERT(m_Stack.empty());
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_Stack.empty()));
         }
 
         public void BeginObject(bool singleLine = false)
         {
-            D3D12MA_ASSERT(!m_InsideString);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
 
             BeginValue(false);
             m_SB->Add('{');
@@ -41,9 +41,9 @@ namespace TerraFX.Interop
 
         public void EndObject()
         {
-            D3D12MA_ASSERT(!m_InsideString);
-            D3D12MA_ASSERT(!m_Stack.empty() && m_Stack.back()->type == COLLECTION_TYPE_OBJECT);
-            D3D12MA_ASSERT(m_Stack.back()->valueCount % 2 == 0);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_Stack.empty() && m_Stack.back()->type == COLLECTION_TYPE_OBJECT));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_Stack.back()->valueCount % 2 == 0));
 
             WriteIndent(true);
             m_SB->Add('}');
@@ -53,7 +53,7 @@ namespace TerraFX.Interop
 
         public void BeginArray(bool singleLine = false)
         {
-            D3D12MA_ASSERT(!m_InsideString);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
 
             BeginValue(false);
             m_SB->Add('[');
@@ -67,8 +67,8 @@ namespace TerraFX.Interop
 
         public void EndArray()
         {
-            D3D12MA_ASSERT(!m_InsideString);
-            D3D12MA_ASSERT(!m_Stack.empty() && m_Stack.back()->type == COLLECTION_TYPE_ARRAY);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_Stack.empty() && m_Stack.back()->type == COLLECTION_TYPE_ARRAY));
 
             WriteIndent(true);
             m_SB->Add(']');
@@ -86,7 +86,7 @@ namespace TerraFX.Interop
 
         public void BeginString([NativeTypeName("LPCWSTR")] ushort* pStr = null)
         {
-            D3D12MA_ASSERT(!m_InsideString);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
 
             BeginValue(true);
             m_InsideString = true;
@@ -99,8 +99,8 @@ namespace TerraFX.Interop
 
         public void ContinueString([NativeTypeName("LPCWSTR")] ushort* pStr)
         {
-            D3D12MA_ASSERT(m_InsideString);
-            D3D12MA_ASSERT(pStr != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_InsideString));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pStr != null));
 
             for (ushort* p = pStr; *p != 0; ++p)
             {
@@ -110,7 +110,7 @@ namespace TerraFX.Interop
                 // and everything else takes more than two bytes. We will reject any
                 // multi wchar character encodings for simplicity.
                 uint val = *p;
-                D3D12MA_ASSERT((val <= 0xD7FF) || (0xE000 <= val && val <= 0xFFFF));
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((val <= 0xD7FF) || (0xE000 <= val && val <= 0xFFFF)));
                 switch (*p)
                 {
                     case '"':
@@ -200,13 +200,13 @@ namespace TerraFX.Interop
 
         public void ContinueString([NativeTypeName("UINT")] uint num)
         {
-            D3D12MA_ASSERT(m_InsideString);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_InsideString));
             m_SB->AddNumber(num);
         }
 
         public void ContinueString([NativeTypeName("UINT64")] ulong num)
         {
-            D3D12MA_ASSERT(m_InsideString);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_InsideString));
             m_SB->AddNumber(num);
         }
 
@@ -283,7 +283,7 @@ namespace TerraFX.Interop
         // void ContinueString_Pointer(const void* ptr);
         public void EndString([NativeTypeName("LPCWSTR")] ushort* pStr = null)
         {
-            D3D12MA_ASSERT(m_InsideString);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_InsideString));
 
             if (pStr != null)
                 ContinueString(pStr);
@@ -293,21 +293,21 @@ namespace TerraFX.Interop
 
         public void WriteNumber([NativeTypeName("UINT")] uint num)
         {
-            D3D12MA_ASSERT(!m_InsideString);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
             BeginValue(false);
             m_SB->AddNumber(num);
         }
 
         public void WriteNumber([NativeTypeName("UINT64")] ulong num)
         {
-            D3D12MA_ASSERT(!m_InsideString);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
             BeginValue(false);
             m_SB->AddNumber(num);
         }
 
         public void WriteBool(bool b)
         {
-            D3D12MA_ASSERT(!m_InsideString);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
             BeginValue(false);
             if (b)
                 m_SB->Add("true");
@@ -317,7 +317,7 @@ namespace TerraFX.Interop
 
         public void WriteNull()
         {
-            D3D12MA_ASSERT(!m_InsideString);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
             BeginValue(false);
             m_SB->Add("null");
         }
@@ -347,7 +347,7 @@ namespace TerraFX.Interop
                 StackItem* currItem = m_Stack.back();
                 if (currItem->type == COLLECTION_TYPE_OBJECT && currItem->valueCount % 2 == 0)
                 {
-                    D3D12MA_ASSERT(isString);
+                    D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (isString));
                 }
 
                 if (currItem->type == COLLECTION_TYPE_OBJECT && currItem->valueCount % 2 == 1)

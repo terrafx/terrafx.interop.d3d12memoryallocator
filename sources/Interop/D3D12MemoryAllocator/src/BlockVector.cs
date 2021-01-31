@@ -150,7 +150,7 @@ namespace TerraFX.Interop
                 NormalBlock* pBlock = hAllocation->m_Placed.block;
 
                 pBlock->m_pMetadata->FreeAtOffset(hAllocation->GetOffset());
-                D3D12MA_HEAVY_ASSERT(pBlock->Validate());
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (pBlock->Validate()));
 
                 nuint blockCount = m_Blocks.size();
                 ulong sumBlockSize = CalcSumBlockSize();
@@ -240,7 +240,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         public int CreateResource2([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, ALLOCATION_DESC* allocDesc, D3D12_RESOURCE_DESC1* resourceDesc, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession *pProtectedSession, Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
-            D3D12MA_ASSERT(pProtectedSession == null); // "Should never get here. pProtectedSession != NULL currently requires committed resources."
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pProtectedSession == null)); // "Should never get here. pProtectedSession != NULL currently requires committed resources."
 
             ID3D12Device8* device8 = m_hAllocator->GetDevice8();
             if (device8 == null)
@@ -377,8 +377,8 @@ namespace TerraFX.Interop
             for (nuint i = 0; i < m_Blocks.size(); ++i)
             {
                 NormalBlock* pBlock = *m_Blocks[i];
-                D3D12MA_ASSERT(pBlock != null);
-                D3D12MA_HEAVY_ASSERT(pBlock->Validate());
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pBlock != null));
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (pBlock->Validate()));
                 StatInfo blockStatInfo;
                 pBlock->m_pMetadata->CalcAllocationStatInfo(&blockStatInfo);
                 AddStatInfo(ref *outStats, ref blockStatInfo);
@@ -395,8 +395,8 @@ namespace TerraFX.Interop
             for (nuint i = 0; i < m_Blocks.size(); ++i)
             {
                 NormalBlock* pBlock = *m_Blocks[i];
-                D3D12MA_ASSERT(pBlock != null);
-                D3D12MA_HEAVY_ASSERT(pBlock->Validate());
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pBlock != null));
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (pBlock->Validate()));
                 StatInfo blockStatInfo;
                 pBlock->m_pMetadata->CalcAllocationStatInfo(&blockStatInfo);
                 AddStatInfo(ref outStats->Total, ref blockStatInfo);
@@ -413,8 +413,8 @@ namespace TerraFX.Interop
             for (nuint i = 0, count = m_Blocks.size(); i < count; ++i)
             {
                 NormalBlock* pBlock = *m_Blocks[i];
-                D3D12MA_ASSERT(pBlock != null);
-                D3D12MA_HEAVY_ASSERT(pBlock->Validate());
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pBlock != null));
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (pBlock->Validate()));
                 json->BeginString();
                 json->ContinueString(pBlock->GetId());
                 json->EndString();
@@ -512,7 +512,7 @@ namespace TerraFX.Interop
                 for (nuint blockIndex = 0; blockIndex < m_Blocks.size(); ++blockIndex)
                 {
                     NormalBlock* pCurrBlock = *m_Blocks[blockIndex];
-                    D3D12MA_ASSERT(pCurrBlock != null);
+                    D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pCurrBlock != null));
                     HRESULT hr = AllocateFromBlock(
                         pCurrBlock,
                         size,
@@ -578,7 +578,7 @@ namespace TerraFX.Interop
                 if (SUCCEEDED(hr))
                 {
                     NormalBlock* pBlock = *m_Blocks[newBlockIndex];
-                    D3D12MA_ASSERT(pBlock->m_pMetadata->GetSize() >= size);
+                    D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pBlock->m_pMetadata->GetSize() >= size));
 
                     hr = AllocateFromBlock(
                         pBlock,
@@ -619,7 +619,7 @@ namespace TerraFX.Interop
                 *pAllocation = m_hAllocator->GetAllocationObjectAllocator()->Allocate(m_hAllocator, size, currRequest.zeroInitialized);
                 pBlock->m_pMetadata->Alloc(&currRequest, size, *pAllocation);
                 (*pAllocation)->InitPlaced(currRequest.offset, alignment, pBlock);
-                D3D12MA_HEAVY_ASSERT(pBlock->Validate());
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (pBlock->Validate()));
                 m_hAllocator->m_Budget.AddAllocation(HeapTypeToIndex(m_HeapType), size);
                 return S_OK;
             }

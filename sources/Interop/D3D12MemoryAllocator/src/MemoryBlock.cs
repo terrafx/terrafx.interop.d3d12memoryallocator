@@ -64,7 +64,7 @@ namespace TerraFX.Interop
 
         public HRESULT Init()
         {
-            D3D12MA_ASSERT(m_Heap == null && m_Size > 0);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_Heap == null && m_Size > 0));
 
             D3D12_HEAP_DESC heapDesc = default;
             heapDesc.SizeInBytes = m_Size;

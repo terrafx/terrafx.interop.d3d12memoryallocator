@@ -129,7 +129,7 @@ namespace TerraFX.Interop
 
         public void PopBack()
         {
-            D3D12MA_HEAVY_ASSERT(m_Count > 0);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
             Item* pBackItem = m_pBack;
             Item* pPrevItem = pBackItem->pPrev;
             if (pPrevItem != null)
@@ -144,7 +144,7 @@ namespace TerraFX.Interop
 
         public void PopFront()
         {
-            D3D12MA_HEAVY_ASSERT(m_Count > 0);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
             Item* pFrontItem = m_pFront;
             Item* pNextItem = pFrontItem->pNext;
             if (pNextItem != null)
@@ -174,7 +174,7 @@ namespace TerraFX.Interop
                 }
                 else
                 {
-                    D3D12MA_HEAVY_ASSERT(m_pFront == pItem);
+                    D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pFront == pItem));
                     m_pFront = newItem;
                 }
                 ++m_Count;
@@ -202,7 +202,7 @@ namespace TerraFX.Interop
                 }
                 else
                 {
-                    D3D12MA_HEAVY_ASSERT(m_pBack == pItem);
+                    D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pBack == pItem));
                     m_pBack = newItem;
                 }
                 ++m_Count;
@@ -228,8 +228,8 @@ namespace TerraFX.Interop
 
         public void Remove(Item* pItem)
         {
-            D3D12MA_HEAVY_ASSERT(pItem != null);
-            D3D12MA_HEAVY_ASSERT(m_Count > 0);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (pItem != null));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
 
             if (pItem->pPrev != null)
             {
@@ -237,7 +237,7 @@ namespace TerraFX.Interop
             }
             else
             {
-                D3D12MA_HEAVY_ASSERT(m_pFront == pItem);
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pFront == pItem));
                 m_pFront = pItem->pNext;
             }
 
@@ -247,7 +247,7 @@ namespace TerraFX.Interop
             }
             else
             {
-                D3D12MA_HEAVY_ASSERT(m_pBack == pItem);
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pBack == pItem));
                 m_pBack = pItem->pPrev;
             }
 
@@ -264,13 +264,13 @@ namespace TerraFX.Interop
 
             public T* op_Arrow()
             {
-                D3D12MA_HEAVY_ASSERT(m_pItem != null);
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pItem != null));
                 return &m_pItem->Value;
             }
 
             public void op_MoveNext()
             {
-                D3D12MA_HEAVY_ASSERT(m_pItem != null);
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pItem != null));
                 m_pItem = m_pItem->pNext;
             }
 
@@ -282,20 +282,20 @@ namespace TerraFX.Interop
                 }
                 else
                 {
-                    D3D12MA_HEAVY_ASSERT(!m_pList->IsEmpty());
+                    D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (!m_pList->IsEmpty()));
                     m_pItem = m_pList->Back();
                 }
             }
 
             public static bool operator ==(iterator lhs, iterator rhs)
             {
-                D3D12MA_HEAVY_ASSERT(lhs.m_pList == rhs.m_pList);
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (lhs.m_pList == rhs.m_pList));
                 return lhs.m_pItem == rhs.m_pItem;
             }
 
             public static bool operator !=(iterator lhs, iterator rhs)
             {
-                D3D12MA_HEAVY_ASSERT(lhs.m_pList == rhs.m_pList);
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (lhs.m_pList == rhs.m_pList));
                 return lhs.m_pItem != rhs.m_pItem;
             }
 

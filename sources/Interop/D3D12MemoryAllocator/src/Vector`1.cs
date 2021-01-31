@@ -78,20 +78,20 @@ namespace TerraFX.Interop
         {
             get
             {
-                D3D12MA_HEAVY_ASSERT(index < m_Count);
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (index < m_Count));
                 return m_pArray + index;
             }
         }
 
         public readonly T* front()
         {
-            D3D12MA_HEAVY_ASSERT(m_Count > 0);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
             return m_pArray;
         }
 
         public readonly T* back()
         {
-            D3D12MA_HEAVY_ASSERT(m_Count > 0);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
             return m_pArray + m_Count - 1;
         }
 
@@ -154,7 +154,7 @@ namespace TerraFX.Interop
 
         public void insert([NativeTypeName("size_t")] nuint index, T* src)
         {
-            D3D12MA_HEAVY_ASSERT(index <= m_Count);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (index <= m_Count));
             nuint oldCount = size();
             resize(oldCount + 1);
             if (index < oldCount)
@@ -167,7 +167,7 @@ namespace TerraFX.Interop
 
         public void remove([NativeTypeName("size_t")] nuint index)
         {
-            D3D12MA_HEAVY_ASSERT(index < m_Count);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (index < m_Count));
             nuint oldCount = size();
             if (index < oldCount - 1)
             {
@@ -186,7 +186,7 @@ namespace TerraFX.Interop
 
         public void pop_back()
         {
-            D3D12MA_HEAVY_ASSERT(m_Count > 0);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
             resize(size() - 1);
         }
 
@@ -197,7 +197,7 @@ namespace TerraFX.Interop
 
         public void pop_front()
         {
-            D3D12MA_HEAVY_ASSERT(m_Count > 0);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
             remove(0);
         }
 

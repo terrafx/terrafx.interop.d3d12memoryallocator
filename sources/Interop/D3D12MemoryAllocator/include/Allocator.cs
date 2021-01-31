@@ -284,7 +284,7 @@ namespace TerraFX.Interop
         /// <summary>Retrieves statistics from the current state of the allocator.</summary>
         public void CalculateStats(Stats* pStats)
         {
-            D3D12MA_ASSERT(pStats != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pStats != null));
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
             m_Pimpl->CalculateStats(pStats);
         }
@@ -313,7 +313,7 @@ namespace TerraFX.Interop
         /// <param name="DetailedMap"><see langword="true"/> to include full list of allocations (can make the string quite long), <see langword="false"/> to only return statistics.</param>
         public void BuildStatsString([NativeTypeName("WCHAR**")] ushort** ppStatsString, [NativeTypeName("BOOL")] int DetailedMap)
         {
-            D3D12MA_ASSERT(ppStatsString != null);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (ppStatsString != null));
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
             m_Pimpl->BuildStatsString(ppStatsString, DetailedMap);
         }
