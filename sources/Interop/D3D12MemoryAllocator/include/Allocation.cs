@@ -314,36 +314,36 @@ namespace TerraFX.Interop
             [NativeTypeName("UINT : 2")]
             private uint m_Type
             {
-                readonly get => _bitfield0 & 3u;
-                set => _bitfield0 = (0xFFFFFFFCu & _bitfield0) | (value & 3u);
+                readonly get => _bitfield0 & 0x3u;
+                set => _bitfield0 = (_bitfield0 & ~0x3u) | (value & 0x3u);
             }
 
             [NativeTypeName("UINT : 3")]
             private uint m_ResourceDimension
             {
-                readonly get => (_bitfield0 >> 2) & 7u;
-                set => _bitfield0 = (0xFFFFFFE3u & _bitfield0) | ((value & 7) << 2);
+                readonly get => (_bitfield0 >> 2) & 0x7u;
+                set => _bitfield0 = (_bitfield0 & ~(0x7u << 2)) | ((value & 0x7u) << 2);
             }
 
             [NativeTypeName("UINT : 24")]
             private uint m_ResourceFlags
             {
                 readonly get => (_bitfield0 >> 5) & 0xFFFFFFu;
-                set => _bitfield0 = (0xE000001Fu & _bitfield0) | ((value & 0xFFFFFF) << 5);
+                set => _bitfield0 = (_bitfield0 & ~(0xFFFFFFu << 5)) | ((value & 0xFFFFFFu) << 5);
             }
 
             [NativeTypeName("UINT : 9")]
             private uint m_TextureLayout
             {
                 readonly get => _bitfield1 & 0x1FFu;
-                set => _bitfield1 = (0xFFFFFE00u & _bitfield1) | (value & 0x1FFu);
+                set => _bitfield1 = (_bitfield1 & ~0x1FFu) | (value & 0x1FFu);
             }
 
             [NativeTypeName("UINT : 1")]
             private uint m_WasZeroInitialized
             {
-                readonly get => (_bitfield1 >> 9) & 1u;
-                set => _bitfield1 = (0xFFFFFDFFu & _bitfield1) | ((value & 1) << 9);
+                readonly get => (_bitfield1 >> 9) & 0x1u;
+                set => _bitfield1 = (_bitfield1 & ~(0x1u << 9)) | ((value & 0x1u) << 9);
             }
         }
 

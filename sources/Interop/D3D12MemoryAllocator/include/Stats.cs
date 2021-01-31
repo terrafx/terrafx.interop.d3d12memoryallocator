@@ -20,9 +20,9 @@ namespace TerraFX.Interop
         [EditorBrowsable(EditorBrowsableState.Never)]
         public struct __Stats_e__FixedBuffer
         {
-            public StatInfo _HeapType0;
-            public StatInfo _HeapType1;
-            public StatInfo _HeapType2;
+            public StatInfo e0;
+            public StatInfo e1;
+            public StatInfo e2;
 
             public ref StatInfo this[int index]
             {
@@ -31,7 +31,7 @@ namespace TerraFX.Interop
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Span<StatInfo> AsSpan() => MemoryMarshal.CreateSpan(ref _HeapType0, 3);
+            public Span<StatInfo> AsSpan() => MemoryMarshal.CreateSpan(ref e0, 3);
         }
     }
 }

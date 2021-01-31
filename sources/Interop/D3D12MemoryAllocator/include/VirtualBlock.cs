@@ -42,7 +42,7 @@ namespace TerraFX.Interop
         /// <summary>Returns information about an allocation at given offset - its size and custom pointer.</summary>
         public readonly void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, VIRTUAL_ALLOCATION_INFO* pInfo)
         {
-            D3D12MA_ASSERT(offset != UINT64_MAX && pInfo != null);
+            D3D12MA_ASSERT((offset != UINT64_MAX) && (pInfo != null));
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
             m_Pimpl->m_Metadata.GetAllocationInfo(offset, pInfo);

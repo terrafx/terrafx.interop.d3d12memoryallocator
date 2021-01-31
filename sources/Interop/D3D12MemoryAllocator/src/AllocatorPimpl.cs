@@ -1810,14 +1810,14 @@ namespace TerraFX.Interop
         public struct __m_Buffer_HEAP_TYPE_COUNT_e__FixedBuffer<T>
             where T : unmanaged
         {
-            public T _0;
-            public T _1;
-            public T _2;
+            public T e0;
+            public T e1;
+            public T e2;
 
             public ref T this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get => ref ((T*)Unsafe.AsPointer(ref _0))[index];
+                get => ref ((T*)Unsafe.AsPointer(ref e0))[index];
             }
         }
 
@@ -1825,20 +1825,20 @@ namespace TerraFX.Interop
         public struct __m_Buffer_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<T>
             where T : unmanaged
         {
-            public T _0;
-            public T _1;
-            public T _2;
-            public T _3;
-            public T _4;
-            public T _5;
-            public T _6;
-            public T _7;
-            public T _8;
+            public T e0;
+            public T e1;
+            public T e2;
+            public T e3;
+            public T e4;
+            public T e5;
+            public T e6;
+            public T e7;
+            public T e8;
 
             public ref T this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get => ref ((T*)Unsafe.AsPointer(ref _0))[index];
+                get => ref ((T*)Unsafe.AsPointer(ref e0))[index];
             }
         }
     }
