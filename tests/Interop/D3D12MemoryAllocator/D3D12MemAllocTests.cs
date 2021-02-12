@@ -22,6 +22,7 @@ using VirtualBlockUniquePtr = TerraFX.Interop.UnitTests.unique_ptr<TerraFX.Inter
 
 namespace TerraFX.Interop.UnitTests
 {
+    [Platform("Win")]
     internal unsafe static partial class D3D12MemAllocTests
     {
         [Test]
@@ -1329,14 +1330,14 @@ namespace TerraFX.Interop.UnitTests
             using AllocationUniquePtr bufAllocPtr = alloc;
 
             // Create a heap
+            // Temporarily commented out as it caues BSOD on RTX2080Ti driver 461.40.
+            //D3D12_RESOURCE_ALLOCATION_INFO heapAllocInfo = new(
+            //    D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT * 100, // SizeInBytes
+            //    D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT // Alignment
+            //);
 
-            D3D12_RESOURCE_ALLOCATION_INFO heapAllocInfo = new(
-                D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT * 100, // SizeInBytes
-                D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT // Alignment
-            );
-
-            CHECK_HR(ctx.allocator->AllocateMemory1(&allocDesc, &heapAllocInfo, session, &alloc));
-            using AllocationUniquePtr heapAllocPtr = alloc;
+            //CHECK_HR(ctx.allocator->AllocateMemory1(&allocDesc, &heapAllocInfo, session, &alloc));
+            //using AllocationUniquePtr heapAllocPtr = alloc;
         }
 
         [Test]
