@@ -218,6 +218,19 @@ namespace TerraFX.Interop
             return indexToInsert;
         }
 
+        // Used when T is some Ptr<T> instantiation
+        [return: NativeTypeName("size_t")]
+        public nuint InsertSorted(T* value, in PointerLess cmp)
+        {
+            nuint indexToInsert = (nuint)(BinaryFindFirstNotLess(
+                (void**)m_pArray,
+                (void**)m_pArray + m_Count,
+                (void**)value,
+                cmp) - (void**)m_pArray);
+            insert(indexToInsert, value);
+            return indexToInsert;
+        }
+
         public bool RemoveSorted<CmpLess>(T* value, in CmpLess cmp)
             where CmpLess : struct, ICmpLess<T>
         {
@@ -229,6 +242,24 @@ namespace TerraFX.Interop
             if ((it != end()) && !cmp.Invoke(it, value) && !cmp.Invoke(value, it))
             {
                 nuint indexToRemove = (nuint)(it - begin());
+                remove(indexToRemove);
+                return true;
+            }
+
+            return false;
+        }
+
+        // Used when T is some Ptr<T> instantiation
+        public bool RemoveSorted(T* value, in PointerLess cmp)
+        {
+            void** it = BinaryFindFirstNotLess(
+                (void**)m_pArray,
+                (void**)m_pArray + m_Count,
+                (void**)value,
+                cmp);
+            if ((it != (void**)end()) && !cmp.Invoke(*it, *(void**)value) && !cmp.Invoke(*(void**)value, *it))
+            {
+                nuint indexToRemove = (nuint)(it - (void**)begin());
                 remove(indexToRemove);
                 return true;
             }

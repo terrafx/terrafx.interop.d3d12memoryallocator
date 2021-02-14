@@ -1633,7 +1633,7 @@ namespace TerraFX.Interop
             using var @lock = new MutexLockWrite((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_CommittedAllocationsMutex[(int)heapTypeIndex]), m_UseMutex);
             AllocationVectorType* committedAllocations = m_pCommittedAllocations[(int)heapTypeIndex];
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocations != null));
-            committedAllocations->InsertSorted((Ptr<Allocation>*)&alloc, new PointerLess<Ptr<Allocation>>());
+            committedAllocations->InsertSorted((Ptr<Allocation>*)&alloc, new PointerLess());
         }
 
         /// <summary>Unregisters Allocation object from m_pCommittedAllocations.</summary>
@@ -1644,7 +1644,7 @@ namespace TerraFX.Interop
             using var @lock = new MutexLockWrite((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_CommittedAllocationsMutex[(int)heapTypeIndex]), m_UseMutex);
             AllocationVectorType* committedAllocations = m_pCommittedAllocations[(int)heapTypeIndex];
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocations != null));
-            bool success = committedAllocations->RemoveSorted((Ptr<Allocation>*)&alloc, new PointerLess<Ptr<Allocation>>());
+            bool success = committedAllocations->RemoveSorted((Ptr<Allocation>*)&alloc, new PointerLess());
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (success));
         }
 
@@ -1656,7 +1656,7 @@ namespace TerraFX.Interop
             using var @lock = new MutexLockWrite((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_PoolsMutex[(int)heapTypeIndex]), m_UseMutex);
             PoolVectorType* pools = m_pPools[(int)heapTypeIndex];
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pools != null));
-            pools->InsertSorted((Ptr<Pool>*)&pool, new PointerLess<Ptr<Pool>>());
+            pools->InsertSorted((Ptr<Pool>*)&pool, new PointerLess());
         }
 
         /// <summary>Unregisters Pool object from m_pPools.</summary>
@@ -1669,7 +1669,7 @@ namespace TerraFX.Interop
                 using var @lock = new MutexLockWrite((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref m_PoolsMutex[(int)heapTypeIndex]), m_UseMutex);
                 PoolVectorType* pools = m_pPools[(int)heapTypeIndex];
                 D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pools != null));
-                bool success = pools->RemoveSorted((Ptr<Pool>*)&pPool, new PointerLess<Ptr<Pool>>());
+                bool success = pools->RemoveSorted((Ptr<Pool>*)&pPool, new PointerLess());
                 D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (success));
             }
         }

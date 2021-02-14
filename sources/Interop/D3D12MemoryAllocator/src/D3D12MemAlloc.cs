@@ -525,6 +525,26 @@ namespace TerraFX.Interop
         }
 
         /// <summary>Overload of <see cref="BinaryFindFirstNotLess{TCmpLess,TKey}(TKey*,TKey*,TKey*,in TCmpLess)"/> to work around lack of templates.</summary>
+        internal static void** BinaryFindFirstNotLess(void** beg, void** end, void** key, in PointerLess cmp)
+        {
+            nuint down = 0, up = (nuint)(end - beg);
+            while (down < up)
+            {
+                nuint mid = (down + up) / 2;
+                if (cmp.Invoke(*(beg + mid), *key))
+                {
+                    down = mid + 1;
+                }
+                else
+                {
+                    up = mid;
+                }
+            }
+
+            return beg + down;
+        }
+
+        /// <summary>Overload of <see cref="BinaryFindFirstNotLess{TCmpLess,TKey}(TKey*,TKey*,TKey*,in TCmpLess)"/> to work around lack of templates.</summary>
         internal static TKey* BinaryFindFirstNotLess<TCmpLess, TKey>(TKey* beg, TKey* end, ulong key, in TCmpLess cmp)
             where TCmpLess : struct, ICmpLess64<TKey>
             where TKey : unmanaged
@@ -563,6 +583,14 @@ namespace TerraFX.Interop
             }
 
             return end;
+        }
+
+        internal readonly struct PointerLess
+        {
+            public bool Invoke(void* lhs, void* rhs)
+            {
+                return lhs < rhs;
+            }
         }
 
         internal readonly struct PointerLess<T> : ICmpLess<T>
