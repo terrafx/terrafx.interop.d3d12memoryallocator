@@ -22,12 +22,16 @@ using VirtualBlockUniquePtr = TerraFX.Interop.UnitTests.unique_ptr<TerraFX.Inter
 
 namespace TerraFX.Interop.UnitTests
 {
-    [Platform("Win")]
     internal unsafe static partial class D3D12MemAllocTests
     {
         [Test]
         public static void TestVirtualBlocks()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -149,6 +153,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestFrameIndexAndJson()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -199,6 +208,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestCommittedResourcesAndJson()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -277,6 +291,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestCustomHeapFlags()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -339,6 +358,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestPlacedResources()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -448,6 +472,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestOtherComInterface()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -486,6 +515,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestCustomPools()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -646,6 +680,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestDefaultPoolMinBytes()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -670,6 +709,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestAliasingMemory()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -746,6 +790,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestMapping()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -824,6 +873,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestStats()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -895,6 +949,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestTransfer()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -1009,6 +1068,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestZeroInitialized()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -1161,6 +1225,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestMultithreading()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -1301,6 +1370,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestDevice4()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
@@ -1343,6 +1417,11 @@ namespace TerraFX.Interop.UnitTests
         [Test]
         public static void TestDevice8()
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 

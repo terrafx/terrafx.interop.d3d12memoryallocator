@@ -44,12 +44,9 @@ namespace TerraFX.Interop
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void D3D12MA_ASSERT_FAIL(string assertion, string fname, uint line, string func)
         {
-            Console.WriteLine($"D3D12MemoryAllocator: assertion failed.\n at \"{fname}\":{line}, \"{func ?? ""}\"\n assertion: \"{assertion}\"");
-            Environment.Exit(-1);
-
+            throw new Exception($"D3D12MemoryAllocator: assertion failed.\n at \"{fname}\":{line}, \"{func ?? ""}\"\n assertion: \"{assertion}\"");
         }
 
         private static uint get_app_context_data(string name, uint defaultValue)
