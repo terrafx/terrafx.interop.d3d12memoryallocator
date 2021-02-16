@@ -798,11 +798,26 @@ namespace TerraFX.Interop
             }
 
             // Process deafult pools.
-            for (nuint i = 0; i < HEAP_TYPE_COUNT; ++i)
+            if (SupportsResourceHeapTier2())
             {
-                BlockVector* pBlockVector = m_BlockVectors[(int)i];
-                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pBlockVector != null));
-                pBlockVector->AddStats(outStats);
+                for (nuint heapTypeIndex = 0; heapTypeIndex < HEAP_TYPE_COUNT; ++heapTypeIndex)
+                {
+                    BlockVector* pBlockVector = m_BlockVectors[(int)heapTypeIndex];
+                    D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pBlockVector != null));
+                    pBlockVector->AddStats(outStats);
+                }
+            }
+            else
+            {
+                for (nuint heapTypeIndex = 0; heapTypeIndex < HEAP_TYPE_COUNT; ++heapTypeIndex)
+                {
+                    for (nuint heapSubType = 0; heapSubType < 3; ++heapSubType)
+                    {
+                        BlockVector* pBlockVector = m_BlockVectors[(int)((heapTypeIndex * 3) + heapSubType)];
+                        D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pBlockVector != null));
+                        pBlockVector->AddStats(outStats);
+                    }
+                }
             }
 
             // Process custom pools
