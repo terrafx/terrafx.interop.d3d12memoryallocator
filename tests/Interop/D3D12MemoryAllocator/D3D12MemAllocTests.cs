@@ -656,8 +656,10 @@ namespace TerraFX.Interop.UnitTests
 
             // # Make room, AllocateMemory, CreateAliasingResource
 
-            allocs[3].reset();
             allocs[0].reset();
+            allocs[1].reset();
+            allocs[2].reset();
+            allocs[3].reset();
 
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = default;
             resAllocInfo.SizeInBytes = 5 * MEGABYTE;
@@ -667,14 +669,22 @@ namespace TerraFX.Interop.UnitTests
             allocs[0].reset(allocPtr);
 
             resDesc.Width = 1 * MEGABYTE;
-            using ComPtr<ID3D12Resource> res = default;
-            CHECK_HR(ctx.allocator->CreateAliasingResource(allocs[0].Get(),
-                0, // AllocationLocalOffset
-                &resDesc,
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                null, // pOptimizedClearValue
-                __uuidof<ID3D12Resource>(),
-                (void**)&res));
+            using (ComPtr<ID3D12Resource> res = default)
+            {
+                CHECK_HR(ctx.allocator->CreateAliasingResource(
+                    allocs[0].Get(),
+                    0, // AllocationLocalOffset
+                    &resDesc,
+                    D3D12_RESOURCE_STATE_GENERIC_READ,
+                    null, // pOptimizedClearValue
+                    __uuidof<ID3D12Resource>(),
+                    (void**)&res));
+            }
+
+            allocs[0].reset();
+            allocs[1].reset();
+            allocs[2].reset();
+            allocs[3].reset();
         }
 
         [Test]
