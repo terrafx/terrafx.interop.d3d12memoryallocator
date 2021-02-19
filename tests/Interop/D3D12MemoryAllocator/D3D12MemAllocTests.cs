@@ -1388,15 +1388,26 @@ namespace TerraFX.Interop.UnitTests
             using TestRunner runner = new();
             runner.CreateContext(out TestContext ctx);
 
+            D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT support;
+            CHECK_HR(ctx.device->CheckFeatureSupport(
+                D3D12_FEATURE.D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_SUPPORT,
+                &support,
+                (uint)sizeof(D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT)));
+
+            if (support.Support == D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS.D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAG_NONE)
+            {
+                Assert.Inconclusive();
+            }
+
             using ComPtr<ID3D12Device4> dev4 = default;
-            CHECK_HR(ctx.device->QueryInterface(__uuidof<ID3D12Device4>(), (void**)&dev4));
+            CHECK_HR(ctx.device->QueryInterface(__uuidof<ID3D12Device4>(), (void**)&dev4), "TestDevice4.QueryInterface<ID3D12Device4>");
 
             D3D12_PROTECTED_RESOURCE_SESSION_DESC sessionDesc = default;
             using ComPtr<ID3D12ProtectedResourceSession> session = default;
             CHECK_HR(dev4.Get()->CreateProtectedResourceSession(
                 &sessionDesc,
                 __uuidof<ID3D12ProtectedResourceSession>(),
-                (void**)&session));
+                (void**)&session), "TestDevice4.CreateProtectedResourceSession");
 
             // Create a buffer
 
@@ -1410,7 +1421,7 @@ namespace TerraFX.Interop.UnitTests
             using ComPtr<ID3D12Resource> bufRes = default;
             CHECK_HR(ctx.allocator->CreateResource1(&allocDesc, &resourceDesc,
                 D3D12_RESOURCE_STATE_COMMON, null,
-                session, &alloc, __uuidof<ID3D12Resource>(), (void**)&bufRes));
+                session, &alloc, __uuidof<ID3D12Resource>(), (void**)&bufRes), "TestDevice4.CreateResource1");
             using AllocationUniquePtr bufAllocPtr = alloc;
 
             // Create a heap
@@ -1436,7 +1447,10 @@ namespace TerraFX.Interop.UnitTests
             runner.CreateContext(out TestContext ctx);
 
             using ComPtr<ID3D12Device8> dev8 = default;
-            CHECK_HR(ctx.device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)&dev8));
+            if (FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)&dev8)))
+            {
+                Assert.Inconclusive();
+            }
 
             D3D12_RESOURCE_DESC1 resourceDesc = default;
             FillResourceDescForBuffer(&resourceDesc, 1024 * 1024);
@@ -1451,7 +1465,7 @@ namespace TerraFX.Interop.UnitTests
             using ComPtr<ID3D12Resource> res0 = default;
             CHECK_HR(ctx.allocator->CreateResource2(&allocDesc, &resourceDesc,
                 D3D12_RESOURCE_STATE_COMMON, null, null,
-                &alloc0, __uuidof<ID3D12Resource>(), (void**)&res0));
+                &alloc0, __uuidof<ID3D12Resource>(), (void**)&res0), "TestDevice8.CreateResource2, #0");
             using AllocationUniquePtr allocPtr0 = alloc0;
             CHECK_BOOL(alloc0->GetHeap() == null);
 
@@ -1461,14 +1475,17 @@ namespace TerraFX.Interop.UnitTests
 
             Allocation* alloc1 = null;
             using ComPtr<ID3D12Resource> res1 = null;
-            CHECK_HR(ctx.allocator->CreateResource2(&allocDesc, &resourceDesc,
+            var hr = ctx.allocator->CreateResource2(&allocDesc, &resourceDesc,
                 D3D12_RESOURCE_STATE_COMMON, null, null,
-                &alloc1, __uuidof<ID3D12Resource>(), (void**)&res1));
+                &alloc1, __uuidof<ID3D12Resource>(), (void**)&res1);
+            CHECK_HR(hr, "TestDevice8.CreateResource2, #1");
             using AllocationUniquePtr allocPtr1 = alloc1;
             CHECK_BOOL(alloc1->GetHeap() != null);
         }
 
-        public static void CHECK_HR(int hResult) => Assert.IsTrue(SUCCEEDED(hResult));
+        public static void CHECK_HR(int hResult) => Assert.IsTrue(SUCCEEDED(hResult), "HRESULT: {0}", hResult);
+
+        public static void CHECK_HR(int hResult, string message) => Assert.IsTrue(SUCCEEDED(hResult), "HRESULT: {0}, message: \"{1}\"", hResult, message);
 
         public static void CHECK_BOOL(bool cond) => Assert.IsTrue(cond);
 
