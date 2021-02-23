@@ -9,6 +9,7 @@ using static TerraFX.Interop.D3D12_COMMAND_LIST_TYPE;
 using static TerraFX.Interop.D3D12_FENCE_FLAGS;
 using static TerraFX.Interop.ALLOCATOR_FLAGS;
 using System.Diagnostics;
+using NUnit.Framework;
 
 namespace TerraFX.Interop.UnitTests
 {
@@ -68,7 +69,7 @@ namespace TerraFX.Interop.UnitTests
 
             static IDXGIAdapter* GetAdapter(IDXGIFactory4* pFactory)
             {
-                IDXGIAdapter1* adapter;
+                IDXGIAdapter1* adapter = null;
 
                 for (var adapterIndex = 0u; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
                 {
@@ -77,12 +78,20 @@ namespace TerraFX.Interop.UnitTests
 
                     string name = new string((char*)desc.Description);
                     bool isSoftware = (desc.Flags & (uint)DXGI_ADAPTER_FLAG_SOFTWARE) != 0;
+                    bool isWarp = desc.VendorId == 0x1414 && desc.DeviceId == 0x8C;
 
-                    Console.WriteLine($"Adapter #{adapterIndex}: {name}, SOFTWARE = {isSoftware}");
+                    Console.WriteLine($"Adapter #{adapterIndex}: {name}, SOFTWARE = {isSoftware}, WARP = {isWarp}");
 
-                    if ((desc.Flags & (uint)DXGI_ADAPTER_FLAG_SOFTWARE) != 0)
+                    if (isSoftware)
                     {
-                        Console.WriteLine($"Adapter #{adapterIndex}: SKIPPED");
+                        Console.WriteLine($"Adapter #{adapterIndex}: SKIPPED (software)");
+
+                        continue;
+                    }
+
+                    if (isWarp)
+                    {
+                        Console.WriteLine($"Adapter #{adapterIndex}: SKIPPED (WARP)");
 
                         continue;
                     }
@@ -95,6 +104,27 @@ namespace TerraFX.Interop.UnitTests
                     }
 
                     Console.WriteLine($"Adapter #{adapterIndex}: FAILED");
+
+                    adapter->Release();
+                    adapter = null;
+                }
+
+                if (adapter == null)
+                {
+                    if (SUCCEEDED(pFactory->EnumWarpAdapter(__uuidof<IDXGIAdapter1>(), (void**)&adapter)))
+                    {
+                        if (SUCCEEDED(D3D12CreateDevice((IUnknown*)adapter, D3D_FEATURE_LEVEL_11_0, __uuidof<ID3D12Device>(), null)))
+                        {
+                            Console.WriteLine($"Fallback WARP adapter: SELECTED");
+
+                            return (IDXGIAdapter*)adapter;
+                        }
+
+                        adapter->Release();
+                        adapter = null;
+                    }
+
+                    Assert.Inconclusive();
                 }
 
                 return (IDXGIAdapter*)adapter;
