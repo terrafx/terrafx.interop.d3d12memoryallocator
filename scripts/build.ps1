@@ -9,7 +9,7 @@ Param(
   [switch] $restore,
   [string] $solution = "",
   [switch] $test,
-  [ValidateSet("quiet", "minimal", "normal", "detailed", "diagnostic")][string] $verbosity = "minimal",
+  [ValidateSet("quiet", "minimal", "normal", "detailed", "diagnostic")][string] $verbosity = "normal",
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -73,7 +73,7 @@ function Restore() {
 
 function Test() {
   $logFile = Join-Path -Path $LogDir -ChildPath "$configuration\test.binlog"
-  & dotnet test -c "$configuration" --no-build --no-restore -v "$verbosity" /bl:"$logFile" /err "$properties" "$solution"
+  & dotnet test -c "$configuration" --no-build --no-restore -v "$verbosity" -l "console;verbosity=detailed" /bl:"$logFile" /err "$properties" "$solution"
 
   if ($LastExitCode -ne 0) {
     throw "'Test' failed for '$solution'"
