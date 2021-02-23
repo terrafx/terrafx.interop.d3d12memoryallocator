@@ -8,6 +8,7 @@ using static TerraFX.Interop.D3D_FEATURE_LEVEL;
 using static TerraFX.Interop.D3D12_COMMAND_LIST_TYPE;
 using static TerraFX.Interop.D3D12_FENCE_FLAGS;
 using static TerraFX.Interop.ALLOCATOR_FLAGS;
+using System.Diagnostics;
 
 namespace TerraFX.Interop.UnitTests
 {
@@ -74,15 +75,26 @@ namespace TerraFX.Interop.UnitTests
                     DXGI_ADAPTER_DESC1 desc;
                     _ = adapter->GetDesc1(&desc);
 
+                    string name = new string((char*)desc.Description);
+                    bool isSoftware = (desc.Flags & (uint)DXGI_ADAPTER_FLAG_SOFTWARE) != 0;
+
+                    Console.WriteLine($"Adapter #{adapterIndex}: {name}, SOFTWARE = {isSoftware}");
+
                     if ((desc.Flags & (uint)DXGI_ADAPTER_FLAG_SOFTWARE) != 0)
                     {
+                        Console.WriteLine($"Adapter #{adapterIndex}: SKIPPED");
+
                         continue;
                     }
 
                     if (SUCCEEDED(D3D12CreateDevice((IUnknown*)adapter, D3D_FEATURE_LEVEL_11_0, __uuidof<ID3D12Device>(), null)))
                     {
+                        Console.WriteLine($"Adapter #{adapterIndex}: SELECTED");
+
                         break;
                     }
+
+                    Console.WriteLine($"Adapter #{adapterIndex}: FAILED");
                 }
 
                 return (IDXGIAdapter*)adapter;

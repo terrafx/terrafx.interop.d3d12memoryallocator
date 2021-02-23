@@ -656,10 +656,8 @@ namespace TerraFX.Interop.UnitTests
 
             // # Make room, AllocateMemory, CreateAliasingResource
 
-            allocs[0].reset();
-            allocs[1].reset();
-            allocs[2].reset();
             allocs[3].reset();
+            allocs[0].reset();
 
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = default;
             resAllocInfo.SizeInBytes = 5 * MEGABYTE;
