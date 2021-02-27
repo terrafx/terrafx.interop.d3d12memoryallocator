@@ -26,7 +26,7 @@ namespace TerraFX.Interop
         ///     coverage, but it might have a noticeable impact on performance when using the library.
         /// </code>
         /// </summary>
-        public static readonly uint D3D12MA_DEBUG_LEVEL = get_app_context_data(nameof(D3D12MA_DEBUG_LEVEL), IsDebug ? 1 : 0);
+        public static readonly uint D3D12MA_DEBUG_LEVEL = get_app_context_data(nameof(D3D12MA_DEBUG_LEVEL), IsDebug ? 1u : 0u);
 
         /// <summary>
         /// When defined to value other than 0, the library will try to use

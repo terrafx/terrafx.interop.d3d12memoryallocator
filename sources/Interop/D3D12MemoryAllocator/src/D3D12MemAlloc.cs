@@ -662,8 +662,8 @@ namespace TerraFX.Interop
             const D3D12_HEAP_FLAGS denyAllTexturesFlags = D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES;
             bool canContainAnyTextures = (flags & denyAllTexturesFlags) != denyAllTexturesFlags;
             return canContainAnyTextures
-                ? D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT
-                : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+                ? (ulong)D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT
+                : (ulong)D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
         }
 
         internal static bool IsFormatCompressed(DXGI_FORMAT format)

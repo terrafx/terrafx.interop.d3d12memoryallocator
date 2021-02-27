@@ -1774,8 +1774,8 @@ namespace TerraFX.Interop
                     https://github.com/microsoft/DirectX-Graphics-Samples/tree/master/Samples/Desktop/D3D12SmallResources
                     */
                     ulong smallAlignmentToTry = inOutResourceDesc->SampleDesc.Count > 1 ?
-                        D3D12_SMALL_MSAA_RESOURCE_PLACEMENT_ALIGNMENT :
-                        D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT;
+                        (ulong)D3D12_SMALL_MSAA_RESOURCE_PLACEMENT_ALIGNMENT :
+                        (ulong)D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT;
                     inOutResourceDesc->Alignment = smallAlignmentToTry;
                     D3D12_RESOURCE_ALLOCATION_INFO smallAllocInfo = GetResourceAllocationInfoNative(inOutResourceDesc);
                     // Check if alignment requested has been granted.

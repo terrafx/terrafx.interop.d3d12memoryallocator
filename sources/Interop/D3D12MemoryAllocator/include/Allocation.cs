@@ -309,7 +309,7 @@ namespace TerraFX.Interop
                 m_TextureLayout = u;
             }
 
-            public void SetWasZeroInitialized([NativeTypeName("BOOL")] int wasZeroInitialized) => m_WasZeroInitialized = wasZeroInitialized != 0 ? 1 : 0;
+            public void SetWasZeroInitialized([NativeTypeName("BOOL")] int wasZeroInitialized) => m_WasZeroInitialized = (wasZeroInitialized != 0) ? 1u : 0u;
 
             [NativeTypeName("UINT : 2")]
             private uint m_Type
