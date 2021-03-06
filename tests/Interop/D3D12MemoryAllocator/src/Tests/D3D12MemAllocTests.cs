@@ -1649,7 +1649,7 @@ namespace TerraFX.Interop.UnitTests
 
             using ComPtr<ID3D12Device4> dev4 = default;
 
-            if (FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device>(), (void**)&dev4))
+            if (FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device>(), (void**)&dev4)))
             {
                 Assert.Inconclusive();
             }
