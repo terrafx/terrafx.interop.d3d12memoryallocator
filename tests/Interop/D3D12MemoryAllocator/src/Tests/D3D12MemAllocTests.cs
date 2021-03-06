@@ -309,12 +309,6 @@ namespace TerraFX.Interop.UnitTests
                 ResourceWithAllocation._ctor(ref resources[i]);
             }
 
-            var x0 = ctx.allocator->m_Pimpl->m_BlockVectors.e0.Value->m_Blocks.m_pArray->Value->m_pMetadata->m_Suballocations.m_pFront;
-            var x1 = x0->pNext;
-            var x2 = x1->pNext;
-            var x3 = x2->pNext;
-            var x4 = x3->pNext;
-
             try
             {
                 D3D12MA_ALLOCATION_DESC allocDesc = default;
