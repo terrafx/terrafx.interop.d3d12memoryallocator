@@ -11,6 +11,7 @@ using System.Threading;
 using NUnit.Framework;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.D3D12_HEAP_TYPE;
+using static TerraFX.Interop.D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS;
 using static TerraFX.Interop.D3D12_RESOURCE_BARRIER_TYPE;
 using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
@@ -1650,6 +1651,18 @@ namespace TerraFX.Interop.UnitTests
             using ComPtr<ID3D12Device4> dev4 = default;
 
             if (FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device>(), (void**)&dev4)))
+            {
+                Assert.Inconclusive();
+            }
+
+            D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT support;
+            CHECK_HR(ctx.device->CheckFeatureSupport(
+                D3D12_FEATURE.D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_SUPPORT,
+                &support,
+                (uint)sizeof(D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT))
+            );
+
+            if (support.Support == D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAG_NONE)
             {
                 Assert.Inconclusive();
             }
