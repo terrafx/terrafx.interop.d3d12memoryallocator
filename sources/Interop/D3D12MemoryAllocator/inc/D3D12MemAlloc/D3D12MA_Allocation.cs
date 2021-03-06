@@ -1,9 +1,12 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
+// Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static TerraFX.Interop.D3D12MemoryAllocator;
+using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.D3D12_TEXTURE_LAYOUT;
@@ -348,21 +351,21 @@ namespace TerraFX.Interop
             }
         }
 
-        internal void Ctor(D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
+        internal static void _ctor(ref D3D12MA_Allocation pThis, D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
         {
-            m_Allocator = allocator;
-            m_Size = size;
-            m_Resource = null;
-            m_CreationFrameIndex = allocator->GetCurrentFrameIndex();
-            m_Name = null;
+            pThis.m_Allocator = allocator;
+            pThis.m_Size = size;
+            pThis.m_Resource = null;
+            pThis.m_CreationFrameIndex = allocator->GetCurrentFrameIndex();
+            pThis.m_Name = null;
 
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocator != null));
 
-            m_PackedData.SetType(TYPE_COUNT);
-            m_PackedData.SetResourceDimension(D3D12_RESOURCE_DIMENSION_UNKNOWN);
-            m_PackedData.SetResourceFlags(D3D12_RESOURCE_FLAG_NONE);
-            m_PackedData.SetTextureLayout(D3D12_TEXTURE_LAYOUT_UNKNOWN);
-            m_PackedData.SetWasZeroInitialized(wasZeroInitialized);
+            pThis.m_PackedData.SetType(TYPE_COUNT);
+            pThis.m_PackedData.SetResourceDimension(D3D12_RESOURCE_DIMENSION_UNKNOWN);
+            pThis.m_PackedData.SetResourceFlags(D3D12_RESOURCE_FLAG_NONE);
+            pThis.m_PackedData.SetTextureLayout(D3D12_TEXTURE_LAYOUT_UNKNOWN);
+            pThis.m_PackedData.SetWasZeroInitialized(wasZeroInitialized);
         }
 
         void IDisposable.Dispose()
@@ -392,7 +395,7 @@ namespace TerraFX.Interop
 
         internal void SetResource(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] D3D12_RESOURCE_DESC* pResourceDesc)
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_Resource == null) && (pResourceDesc != null)));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_Resource == null) && (pResourceDesc != null));
             m_Resource = resource;
             m_PackedData.SetResourceDimension(pResourceDesc->Dimension);
             m_PackedData.SetResourceFlags(pResourceDesc->Flags);

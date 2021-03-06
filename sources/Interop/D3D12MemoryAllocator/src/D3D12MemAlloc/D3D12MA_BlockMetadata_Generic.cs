@@ -1,36 +1,40 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
+// Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
+
+using System;
 using System.Runtime.CompilerServices;
 using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12MemoryAllocator;
+using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.D3D12MA_SuballocationType;
-
-using SuballocationList = TerraFX.Interop.D3D12MA_List<TerraFX.Interop.D3D12MA_Suballocation>;
 
 namespace TerraFX.Interop
 {
-    internal unsafe struct D3D12MA_BlockMetadata_Generic // : BlockMetadata
+    internal unsafe struct D3D12MA_BlockMetadata_Generic : IDisposable
     {
-        private static readonly void** SharedLpVtbl = InitLpVtbl();
+        private static readonly void** Vtbl = InitVtbl();
 
-        private static void** InitLpVtbl()
+        private static void** InitVtbl()
         {
             void** lpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_BlockMetadata_Generic), sizeof(void*) * 15);
-            lpVtbl[0] = (delegate*<D3D12MA_BlockMetadata_Generic*, void>)&Dispose;
-            lpVtbl[1] = (delegate*<D3D12MA_BlockMetadata_Generic*, ulong, void>)&Init;
-            lpVtbl[2] = (delegate*<D3D12MA_BlockMetadata_Generic*, bool>)&Validate;
-            lpVtbl[3] = (delegate*<D3D12MA_BlockMetadata_Generic*, nuint>)&GetAllocationCount;
-            lpVtbl[4] = (delegate*<D3D12MA_BlockMetadata_Generic*, ulong>)&GetSumFreeSize;
-            lpVtbl[5] = (delegate*<D3D12MA_BlockMetadata_Generic*, ulong>)&GetUnusedRangeSizeMax;
-            lpVtbl[6] = (delegate*<D3D12MA_BlockMetadata_Generic*, bool>)&IsEmpty;
-            lpVtbl[7] = (delegate*<D3D12MA_BlockMetadata_Generic*, ulong, D3D12MA_VIRTUAL_ALLOCATION_INFO*, void>)&GetAllocationInfo;
-            lpVtbl[8] = (delegate*<D3D12MA_BlockMetadata_Generic*, ulong, ulong, D3D12MA_AllocationRequest*, bool>)&CreateAllocationRequest;
-            lpVtbl[9] = (delegate*<D3D12MA_BlockMetadata_Generic*, D3D12MA_AllocationRequest*, ulong, void*, void>)&Alloc;
-            lpVtbl[10] = (delegate*<D3D12MA_BlockMetadata_Generic*, ulong, void>)&FreeAtOffset;
-            lpVtbl[11] = (delegate*<D3D12MA_BlockMetadata_Generic*, void>)&Clear;
-            lpVtbl[12] = (delegate*<D3D12MA_BlockMetadata_Generic*, ulong, void*, void>)&SetAllocationUserData;
-            lpVtbl[13] = (delegate*<D3D12MA_BlockMetadata_Generic*, D3D12MA_StatInfo*, void>)&CalcAllocationStatInfo;
-            lpVtbl[14] = (delegate*<D3D12MA_BlockMetadata_Generic*, D3D12MA_JsonWriter*, void>)&WriteAllocationInfoToJson;
+
+            /* Finalizer                 */ lpVtbl[0] = (delegate*<ref D3D12MA_BlockMetadata_Generic, void>)&Dispose;
+            /* Init                      */ lpVtbl[1] = (delegate*<ref D3D12MA_BlockMetadata_Generic, ulong, void>)&Init;
+            /* Validate                  */ lpVtbl[2] = (delegate*<in D3D12MA_BlockMetadata_Generic, bool>)&Validate;
+            /* GetAllocationCount        */ lpVtbl[3] = (delegate*<in D3D12MA_BlockMetadata_Generic, nuint>)&GetAllocationCount;
+            /* GetSumFreeSize            */ lpVtbl[4] = (delegate*<in D3D12MA_BlockMetadata_Generic, ulong>)&GetSumFreeSize;
+            /* GetUnusedRangeSizeMax     */ lpVtbl[5] = (delegate*<in D3D12MA_BlockMetadata_Generic, ulong>)&GetUnusedRangeSizeMax;
+            /* IsEmpty                   */ lpVtbl[6] = (delegate*<in D3D12MA_BlockMetadata_Generic, bool>)&IsEmpty;
+            /* GetAllocationInfo         */ lpVtbl[7] = (delegate*<in D3D12MA_BlockMetadata_Generic, ulong, D3D12MA_VIRTUAL_ALLOCATION_INFO*, void>)&GetAllocationInfo;
+            /* CreateAllocationRequest   */ lpVtbl[8] = (delegate*<ref D3D12MA_BlockMetadata_Generic, ulong, ulong, D3D12MA_AllocationRequest*, bool>)&CreateAllocationRequest;
+            /* Alloc                     */ lpVtbl[9] = (delegate*<ref D3D12MA_BlockMetadata_Generic, D3D12MA_AllocationRequest*, ulong, void*, void>)&Alloc;
+            /* FreeAtOffset              */ lpVtbl[10] = (delegate*<ref D3D12MA_BlockMetadata_Generic, ulong, void>)&FreeAtOffset;
+            /* Clear                     */ lpVtbl[11] = (delegate*<ref D3D12MA_BlockMetadata_Generic, void>)&Clear;
+            /* SetAllocationUserData     */ lpVtbl[12] = (delegate*<ref D3D12MA_BlockMetadata_Generic, ulong, void*, void>)&SetAllocationUserData;
+            /* CalcAllocationStatInfo    */ lpVtbl[13] = (delegate*<in D3D12MA_BlockMetadata_Generic, D3D12MA_StatInfo*, void>)&CalcAllocationStatInfo;
+            /* WriteAllocationInfoToJson */ lpVtbl[14] = (delegate*<in D3D12MA_BlockMetadata_Generic, D3D12MA_JsonWriter*, void>)&WriteAllocationInfoToJson;
+
             return lpVtbl;
         }
 
@@ -42,160 +46,110 @@ namespace TerraFX.Interop
         [NativeTypeName("UINT")]
         private ulong m_SumFreeSize;
 
-        private SuballocationList m_Suballocations;
+        internal D3D12MA_List<D3D12MA_Suballocation> m_Suballocations;
 
         // Suballocations that are free and have size greater than certain threshold.
         // Sorted by size, ascending.
-        private D3D12MA_Vector<SuballocationList.iterator> m_FreeSuballocationsBySize;
+        private D3D12MA_Vector<D3D12MA_List<D3D12MA_Suballocation>.iterator> m_FreeSuballocationsBySize;
+
         private D3D12MA_ZeroInitializedRange m_ZeroInitializedRange;
 
-        public D3D12MA_BlockMetadata_Generic(D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, bool isVirtual)
+        internal static void _ctor(ref D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("const D3D12MA_ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, bool isVirtual)
         {
-            Base = new D3D12MA_BlockMetadata(allocationCallbacks, isVirtual);
-            Base.lpVtbl = SharedLpVtbl;
-            m_FreeCount = 0;
-            m_SumFreeSize = 0;
-            m_Suballocations = new SuballocationList(allocationCallbacks);
-            m_FreeSuballocationsBySize = new D3D12MA_Vector<SuballocationList.iterator>(allocationCallbacks);
-            m_ZeroInitializedRange = default;
+            pThis.Base = new D3D12MA_BlockMetadata(allocationCallbacks, isVirtual);
+            pThis.Base.lpVtbl = Vtbl;
+
+            pThis.m_FreeCount = 0;
+            pThis.m_SumFreeSize = 0;
+            D3D12MA_List<D3D12MA_Suballocation>._ctor(ref pThis.m_Suballocations, allocationCallbacks);
+            D3D12MA_Vector<D3D12MA_List<D3D12MA_Suballocation>.iterator>._ctor(ref pThis.m_FreeSuballocationsBySize, allocationCallbacks);
+            Unsafe.SkipInit(out pThis.m_ZeroInitializedRange);
 
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocationCallbacks != null));
         }
 
         public void Dispose()
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, void>)&Dispose == Base.lpVtbl[0]));
-            Dispose((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
+            Base.Dispose();
+
+            m_FreeSuballocationsBySize.Dispose();
+            m_Suballocations.Dispose();
         }
 
-        public void Init([NativeTypeName("UINT64")] ulong size)
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, ulong, void>)&Init == Base.lpVtbl[1]));
-            Init((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref this), size);
-        }
+        public void Init([NativeTypeName("UINT64")] ulong size) => Base.Init(size);
 
-        public readonly bool Validate()
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, bool>)&Validate == Base.lpVtbl[2]));
-            return Validate((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
-        }
+        public readonly bool Validate() => Base.Validate();
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetSize() => Base.m_Size;
+        public readonly ulong GetSize() => Base.GetSize();
 
-        public readonly bool IsVirtual() => Base.m_IsVirtual;
+        public readonly bool IsVirtual() => Base.IsVirtual();
 
         [return: NativeTypeName("size_t")]
-        public readonly nuint GetAllocationCount()
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, nuint>)&GetAllocationCount == Base.lpVtbl[3]));
-            return GetAllocationCount((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
-        }
+        public readonly nuint GetAllocationCount() => Base.GetAllocationCount();
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetSumFreeSize()
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, ulong>)&GetSumFreeSize == Base.lpVtbl[4]));
-            return GetSumFreeSize((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
-        }
+        public readonly ulong GetSumFreeSize() => Base.GetSumFreeSize();
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetUnusedRangeSizeMax()
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, ulong>)&GetUnusedRangeSizeMax == Base.lpVtbl[5]));
-            return GetUnusedRangeSizeMax((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
-        }
+        public readonly ulong GetUnusedRangeSizeMax() => Base.GetUnusedRangeSizeMax();
 
-        public readonly bool IsEmpty()
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, bool>)&IsEmpty == Base.lpVtbl[6]));
-            return IsEmpty((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)));
-        }
+        public readonly bool IsEmpty() => Base.IsEmpty();
 
-        public readonly void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, D3D12MA_VIRTUAL_ALLOCATION_INFO* outInfo)
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, ulong, D3D12MA_VIRTUAL_ALLOCATION_INFO*, void>)&GetAllocationInfo == Base.lpVtbl[7]));
-            GetAllocationInfo((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref Unsafe.AsRef(this)), offset, outInfo);
-        }
+        public readonly void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("D3D12MA_VIRTUAL_ALLOCATION_INFO&")] D3D12MA_VIRTUAL_ALLOCATION_INFO* outInfo)
+            => Base.GetAllocationInfo(offset, outInfo);
 
         public bool CreateAllocationRequest([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, D3D12MA_AllocationRequest* pAllocationRequest)
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, ulong, ulong, D3D12MA_AllocationRequest*, bool>)&CreateAllocationRequest == Base.lpVtbl[8]));
-            return CreateAllocationRequest(
-                (D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref this),
-                allocSize,
-                allocAlignment,
-                pAllocationRequest);
-        }
+            => Base.CreateAllocationRequest(allocSize, allocAlignment, pAllocationRequest);
 
-        public void Alloc(D3D12MA_AllocationRequest* request, [NativeTypeName("UINT64")] ulong allocSize, void* userData)
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, D3D12MA_AllocationRequest*, ulong, void*, void>)&Alloc == Base.lpVtbl[9]));
-            Alloc(
-                (D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref this),
-                request,
-                allocSize,
-                userData);
-        }
+        public void Alloc([NativeTypeName("const D3D12MA_AllocationRequest&")] D3D12MA_AllocationRequest* request, [NativeTypeName("UINT64")] ulong allocSize, void* userData)
+            => Base.Alloc(request, allocSize, userData);
 
         public void FreeAtOffset([NativeTypeName("UINT64")] ulong offset)
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, ulong, void>)&FreeAtOffset == Base.lpVtbl[10]));
-            FreeAtOffset((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref this), offset);
-        }
+            => Base.FreeAtOffset(offset);
 
         public void Clear()
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, void>)&Clear == Base.lpVtbl[11]));
-            Clear((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref this));
-        }
+            => Base.Clear();
 
         public void SetAllocationUserData([NativeTypeName("UINT64")] ulong offset, void* userData)
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, ulong, void*, void>)&SetAllocationUserData == Base.lpVtbl[12]));
-            SetAllocationUserData((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref this), offset, userData);
-        }
+            => Base.SetAllocationUserData(offset, userData);
 
-        public void CalcAllocationStatInfo(D3D12MA_StatInfo* outInfo)
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, D3D12MA_StatInfo*, void>)&CalcAllocationStatInfo == Base.lpVtbl[13]));
-            CalcAllocationStatInfo((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref this), outInfo);
-        }
+        public readonly void CalcAllocationStatInfo([NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outInfo)
+            => Base.CalcAllocationStatInfo(outInfo);
 
-        public void WriteAllocationInfoToJson(D3D12MA_JsonWriter* json)
-        {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((delegate*<D3D12MA_BlockMetadata_Generic*, D3D12MA_JsonWriter*, void>)&WriteAllocationInfoToJson == Base.lpVtbl[14]));
-            WriteAllocationInfoToJson((D3D12MA_BlockMetadata_Generic*)Unsafe.AsPointer(ref this), json);
-        }
+        public readonly void WriteAllocationInfoToJson([NativeTypeName("JsonWriter&")] D3D12MA_JsonWriter* json)
+            => Base.WriteAllocationInfoToJson(json);
 
-        public bool ValidateFreeSuballocationList()
+        public readonly bool ValidateFreeSuballocationList()
         {
             ulong lastSize = 0;
+
             for (nuint i = 0, count = m_FreeSuballocationsBySize.size(); i < count; ++i)
             {
-                SuballocationList.iterator it = *m_FreeSuballocationsBySize[i];
+                D3D12MA_List<D3D12MA_Suballocation>.iterator it = *m_FreeSuballocationsBySize[i];
 
-                D3D12MA_VALIDATE(it.op_Arrow()->type == D3D12MA_SUBALLOCATION_TYPE_FREE);
-                D3D12MA_VALIDATE(it.op_Arrow()->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER);
-                D3D12MA_VALIDATE(it.op_Arrow()->size >= lastSize);
-                lastSize = it.op_Arrow()->size;
+                D3D12MA_VALIDATE(it.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE);
+                D3D12MA_VALIDATE(it.Get()->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER);
+                D3D12MA_VALIDATE(it.Get()->size >= lastSize);
+
+                lastSize = it.Get()->size;
             }
 
             return true;
         }
 
         /// <summary>Checks if requested suballocation with given parameters can be placed in given pFreeSuballocItem. If yes, fills pOffset and returns true. If no, returns false.</summary>
-        public bool CheckAllocation([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, SuballocationList.iterator suballocItem, [NativeTypeName("UINT64*")] ulong* pOffset, [NativeTypeName("UINT64*")] ulong* pSumFreeSize, [NativeTypeName("UINT64*")] ulong* pSumItemSize, [NativeTypeName("BOOL")] int* pZeroInitialized)
+        public readonly bool CheckAllocation([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem, [NativeTypeName("UINT64*")] ulong* pOffset, [NativeTypeName("UINT64*")] ulong* pSumFreeSize, [NativeTypeName("UINT64*")] ulong* pSumItemSize, [NativeTypeName("BOOL")] int* pZeroInitialized)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocSize > 0));
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (suballocItem != m_Suballocations.end()));
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pOffset != null && pZeroInitialized != null));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pOffset != null) && (pZeroInitialized != null));
 
             *pSumFreeSize = 0;
             *pSumItemSize = 0;
             *pZeroInitialized = FALSE;
 
-            D3D12MA_Suballocation* suballoc = suballocItem.op_Arrow();
+            D3D12MA_Suballocation* suballoc = suballocItem.Get();
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (suballoc->type == D3D12MA_SUBALLOCATION_TYPE_FREE));
 
             *pSumFreeSize = suballoc->size;
@@ -216,7 +170,7 @@ namespace TerraFX.Interop
             }
 
             // Apply alignment.
-            *pOffset = AlignUp((nuint)(*pOffset), (nuint)allocAlignment);
+            *pOffset = AlignUp(*pOffset, allocAlignment);
 
             // Calculate padding at the beginning based on current offset.
             ulong paddingBegin = *pOffset - suballoc->offset;
@@ -236,26 +190,28 @@ namespace TerraFX.Interop
         }
 
         /// <summary>Given free suballocation, it merges it with following one, which must also be free.</summary>
-        public void MergeFreeWithNext(SuballocationList.iterator item)
+        public void MergeFreeWithNext(D3D12MA_List<D3D12MA_Suballocation>.iterator item)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item != m_Suballocations.end()));
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.op_Arrow()->type == D3D12MA_SUBALLOCATION_TYPE_FREE));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE));
 
-            SuballocationList.iterator nextItem = item;
-            nextItem.op_MoveNext();
+            D3D12MA_List<D3D12MA_Suballocation>.iterator nextItem = item;
+            nextItem = nextItem.MoveNext();
+
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (nextItem != m_Suballocations.end()));
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (nextItem.op_Arrow()->type == D3D12MA_SUBALLOCATION_TYPE_FREE));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (nextItem.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE));
 
-            item.op_Arrow()->size += nextItem.op_Arrow()->size;
+            item.Get()->size += nextItem.Get()->size;
             --m_FreeCount;
+
             m_Suballocations.erase(nextItem);
         }
 
         /// <summary>Releases given suballocation, making it free. Merges it with adjacent free suballocations if applicable. Returns iterator to new free suballocation at this place.</summary>
-        public SuballocationList.iterator FreeSuballocation(SuballocationList.iterator suballocItem)
+        public D3D12MA_List<D3D12MA_Suballocation>.iterator FreeSuballocation(D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem)
         {
             // Change this suballocation to be marked as free.
-            D3D12MA_Suballocation* suballoc = suballocItem.op_Arrow();
+            D3D12MA_Suballocation* suballoc = suballocItem.Get();
             suballoc->type = D3D12MA_SUBALLOCATION_TYPE_FREE;
             suballoc->userData = null;
 
@@ -267,18 +223,21 @@ namespace TerraFX.Interop
             bool mergeWithNext = false;
             bool mergeWithPrev = false;
 
-            SuballocationList.iterator nextItem = suballocItem;
-            nextItem.op_MoveNext();
-            if ((nextItem != m_Suballocations.end()) && (nextItem.op_Arrow()->type == D3D12MA_SUBALLOCATION_TYPE_FREE))
+            D3D12MA_List<D3D12MA_Suballocation>.iterator nextItem = suballocItem;
+            nextItem = nextItem.MoveNext();
+
+            if ((nextItem != m_Suballocations.end()) && (nextItem.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE))
             {
                 mergeWithNext = true;
             }
 
-            SuballocationList.iterator prevItem = suballocItem;
+            D3D12MA_List<D3D12MA_Suballocation>.iterator prevItem = suballocItem;
+
             if (suballocItem != m_Suballocations.begin())
             {
-                prevItem.op_MoveBack();
-                if (prevItem.op_Arrow()->type == D3D12MA_SUBALLOCATION_TYPE_FREE)
+                prevItem = prevItem.MoveBack();
+
+                if (prevItem.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE)
                 {
                     mergeWithPrev = true;
                 }
@@ -305,50 +264,50 @@ namespace TerraFX.Interop
         }
 
         /// <summary>Given free suballocation, it inserts it into sorted list of <see cref="m_FreeSuballocationsBySize"/> if it's suitable.</summary>
-        public void RegisterFreeSuballocation(SuballocationList.iterator item)
+        public void RegisterFreeSuballocation(D3D12MA_List<D3D12MA_Suballocation>.iterator item)
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.op_Arrow()->type == D3D12MA_SUBALLOCATION_TYPE_FREE));
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.op_Arrow()->size > 0));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.Get()->size > 0));
 
             // You may want to enable this validation at the beginning or at the end of
             // this function, depending on what do you want to check.
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (ValidateFreeSuballocationList()));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && ValidateFreeSuballocationList());
 
-            if (item.op_Arrow()->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER)
+            if (item.Get()->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER)
             {
                 if (m_FreeSuballocationsBySize.empty())
                 {
-                    m_FreeSuballocationsBySize.push_back(&item);
+                    m_FreeSuballocationsBySize.push_back(in item);
                 }
                 else
                 {
-                    m_FreeSuballocationsBySize.InsertSorted(&item, new SuballocationItemSizeLess());
+                    m_FreeSuballocationsBySize.InsertSorted(in item, new D3D12MA_SuballocationItemSizeLess());
                 }
             }
 
-            //D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (ValidateFreeSuballocationList()));
+            // D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && ValidateFreeSuballocatioNList());
         }
 
         /// <summary>Given free suballocation, it removes it from sorted list of <see cref="m_FreeSuballocationsBySize"/> if it's suitable.</summary>
-        public void UnregisterFreeSuballocation(SuballocationList.iterator item)
+        public void UnregisterFreeSuballocation(D3D12MA_List<D3D12MA_Suballocation>.iterator item)
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.op_Arrow()->type == D3D12MA_SUBALLOCATION_TYPE_FREE));
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.op_Arrow()->size > 0));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (item.Get()->size > 0));
 
             // You may want to enable this validation at the beginning or at the end of
             // this function, depending on what do you want to check.
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (ValidateFreeSuballocationList()));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && ValidateFreeSuballocationList());
 
-            if (item.op_Arrow()->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER)
+            if (item.Get()->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER)
             {
-                SuballocationList.iterator* it = BinaryFindFirstNotLess(
+                D3D12MA_List<D3D12MA_Suballocation>.iterator* it = BinaryFindFirstNotLess(
                      m_FreeSuballocationsBySize.data(),
                      m_FreeSuballocationsBySize.data() + m_FreeSuballocationsBySize.size(),
-                     &item,
-                     new SuballocationItemSizeLess());
-                for (nuint index = (nuint)(it - m_FreeSuballocationsBySize.data());
-                     index < m_FreeSuballocationsBySize.size();
-                     ++index)
+                     in item,
+                     new D3D12MA_SuballocationItemSizeLess()
+                );
+
+                for (nuint index = (nuint)(it - m_FreeSuballocationsBySize.data()); index < m_FreeSuballocationsBySize.size(); ++index)
                 {
                     if (*m_FreeSuballocationsBySize[index] == item)
                     {
@@ -356,26 +315,27 @@ namespace TerraFX.Interop
                         return;
                     }
 
-                    D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_FreeSuballocationsBySize[index]->op_Arrow()->size == item.op_Arrow()->size)); // "Not found!"
+                    D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_FreeSuballocationsBySize[index]->Get()->size == item.Get()->size)); // "Not found!"
                 }
 
                 D3D12MA_ASSERT(false); // "Not found!"
             }
 
-            //D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (ValidateFreeSuballocationList()));
+            // D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && ValidateFreeSuballocationList());
         }
 
-        public static void Dispose(D3D12MA_BlockMetadata_Generic* pThis)
+        public static void Dispose(ref D3D12MA_BlockMetadata_Generic pThis)
         {
+            D3D12MA_BlockMetadata.Dispose(ref pThis.Base);
         }
 
-        public static void Init(D3D12MA_BlockMetadata_Generic* pThis, ulong size)
+        public static void Init(ref D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("UINT64")] ulong size)
         {
-            D3D12MA_BlockMetadata.Init((D3D12MA_BlockMetadata*)pThis, size);
-            pThis->m_ZeroInitializedRange.Reset(size);
+            D3D12MA_BlockMetadata.Init(ref pThis.Base, size);
+            pThis.m_ZeroInitializedRange.Reset(size);
 
-            pThis->m_FreeCount = 1;
-            pThis->m_SumFreeSize = size;
+            pThis.m_FreeCount = 1;
+            pThis.m_SumFreeSize = size;
 
             D3D12MA_Suballocation suballoc = default;
             suballoc.offset = 0;
@@ -384,43 +344,49 @@ namespace TerraFX.Interop
             suballoc.userData = null;
 
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (size > MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER));
-            pThis->m_Suballocations.push_back(&suballoc);
-            SuballocationList.iterator suballocItem = pThis->m_Suballocations.end();
-            suballocItem.op_MoveBack();
-            pThis->m_FreeSuballocationsBySize.push_back(&suballocItem);
+            pThis.m_Suballocations.push_back(in suballoc);
+
+            D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = pThis.m_Suballocations.end();
+            suballocItem = suballocItem.MoveBack();
+
+            pThis.m_FreeSuballocationsBySize.push_back(in suballocItem);
         }
 
-        public static bool Validate(D3D12MA_BlockMetadata_Generic* pThis)
+        public static bool Validate(in D3D12MA_BlockMetadata_Generic pThis)
         {
-            D3D12MA_VALIDATE(!pThis->m_Suballocations.empty());
+            D3D12MA_VALIDATE(!pThis.m_Suballocations.empty());
 
             // Expected offset of new suballocation as calculated from previous ones.
             ulong calculatedOffset = 0;
+
             // Expected number of free suballocations as calculated from traversing their list.
             uint calculatedFreeCount = 0;
+
             // Expected sum size of free suballocations as calculated from traversing their list.
             ulong calculatedSumFreeSize = 0;
+
             // Expected number of free suballocations that should be registered in
             // m_FreeSuballocationsBySize calculated from traversing their list.
             nuint freeSuballocationsToRegister = 0;
+
             // True if previous visited suballocation was free.
             bool prevFree = false;
 
-            for (SuballocationList.iterator suballocItem = pThis->m_Suballocations.begin();
-                suballocItem != pThis->m_Suballocations.end();
-                suballocItem.op_MoveNext())
+            for (D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = pThis.m_Suballocations.begin(); suballocItem != pThis.m_Suballocations.end(); suballocItem = suballocItem.MoveNext())
             {
-                D3D12MA_Suballocation* subAlloc = suballocItem.op_Arrow();
+                D3D12MA_Suballocation* subAlloc = suballocItem.Get();
 
                 // Actual offset of this suballocation doesn't match expected one.
                 D3D12MA_VALIDATE(subAlloc->offset == calculatedOffset);
 
-                bool currFree = (subAlloc->type == D3D12MA_SUBALLOCATION_TYPE_FREE);
+                bool currFree = subAlloc->type == D3D12MA_SUBALLOCATION_TYPE_FREE;
+
                 // Two adjacent free suballocations are invalid. They should be merged.
                 D3D12MA_VALIDATE(!prevFree || !currFree);
 
                 D3D12MA_Allocation* alloc = (D3D12MA_Allocation*)subAlloc->userData;
-                if (!pThis->IsVirtual())
+
+                if (!pThis.IsVirtual())
                 {
                     D3D12MA_VALIDATE(currFree == (alloc == null));
                 }
@@ -429,6 +395,7 @@ namespace TerraFX.Interop
                 {
                     calculatedSumFreeSize += subAlloc->size;
                     ++calculatedFreeCount;
+
                     if (subAlloc->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER)
                     {
                         ++freeSuballocationsToRegister;
@@ -439,7 +406,7 @@ namespace TerraFX.Interop
                 }
                 else
                 {
-                    if (!pThis->IsVirtual())
+                    if (!pThis.IsVirtual())
                     {
                         D3D12MA_VALIDATE(alloc->GetOffset() == subAlloc->offset);
                         D3D12MA_VALIDATE(alloc->GetSize() == subAlloc->size);
@@ -455,42 +422,43 @@ namespace TerraFX.Interop
 
             // Number of free suballocations registered in m_FreeSuballocationsBySize doesn't
             // match expected one.
-            D3D12MA_VALIDATE(pThis->m_FreeSuballocationsBySize.size() == freeSuballocationsToRegister);
+            D3D12MA_VALIDATE(pThis.m_FreeSuballocationsBySize.size() == freeSuballocationsToRegister);
 
             ulong lastSize = 0;
-            for (nuint i = 0; i < pThis->m_FreeSuballocationsBySize.size(); ++i)
+            for (nuint i = 0; i < pThis.m_FreeSuballocationsBySize.size(); ++i)
             {
-                SuballocationList.iterator suballocItem = *pThis->m_FreeSuballocationsBySize[i];
+                D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = *pThis.m_FreeSuballocationsBySize[i];
 
                 // Only free suballocations can be registered in m_FreeSuballocationsBySize.
-                D3D12MA_VALIDATE(suballocItem.op_Arrow()->type == D3D12MA_SUBALLOCATION_TYPE_FREE);
-                // They must be sorted by size ascending.
-                D3D12MA_VALIDATE(suballocItem.op_Arrow()->size >= lastSize);
+                D3D12MA_VALIDATE(suballocItem.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE);
 
-                lastSize = suballocItem.op_Arrow()->size;
+                // They must be sorted by size ascending.
+                D3D12MA_VALIDATE(suballocItem.Get()->size >= lastSize);
+
+                lastSize = suballocItem.Get()->size;
             }
 
             // Check if totals match calculacted values.
-            D3D12MA_VALIDATE(pThis->ValidateFreeSuballocationList());
-            D3D12MA_VALIDATE(calculatedOffset == pThis->GetSize());
-            D3D12MA_VALIDATE(calculatedSumFreeSize == pThis->m_SumFreeSize);
-            D3D12MA_VALIDATE(calculatedFreeCount == pThis->m_FreeCount);
+            D3D12MA_VALIDATE(pThis.ValidateFreeSuballocationList());
+            D3D12MA_VALIDATE(calculatedOffset == pThis.GetSize());
+            D3D12MA_VALIDATE(calculatedSumFreeSize == pThis.m_SumFreeSize);
+            D3D12MA_VALIDATE(calculatedFreeCount == pThis.m_FreeCount);
 
             return true;
         }
 
-        public static nuint GetAllocationCount(D3D12MA_BlockMetadata_Generic* pThis)
+        public static nuint GetAllocationCount(in D3D12MA_BlockMetadata_Generic pThis)
         {
-            return pThis->m_Suballocations.size() - pThis->m_FreeCount;
+            return pThis.m_Suballocations.size() - pThis.m_FreeCount;
         }
 
-        public static ulong GetSumFreeSize(D3D12MA_BlockMetadata_Generic* pThis) => pThis->m_SumFreeSize;
+        public static ulong GetSumFreeSize(in D3D12MA_BlockMetadata_Generic pThis) => pThis.m_SumFreeSize;
 
-        public static ulong GetUnusedRangeSizeMax(D3D12MA_BlockMetadata_Generic* pThis)
+        public static ulong GetUnusedRangeSizeMax(in D3D12MA_BlockMetadata_Generic pThis)
         {
-            if (!pThis->m_FreeSuballocationsBySize.empty())
+            if (!pThis.m_FreeSuballocationsBySize.empty())
             {
-                return pThis->m_FreeSuballocationsBySize.back()->op_Arrow()->size;
+                return pThis.m_FreeSuballocationsBySize.back()->Get()->size;
             }
             else
             {
@@ -498,18 +466,17 @@ namespace TerraFX.Interop
             }
         }
 
-        public static bool IsEmpty(D3D12MA_BlockMetadata_Generic* pThis)
+        public static bool IsEmpty(in D3D12MA_BlockMetadata_Generic pThis)
         {
-            return (pThis->m_Suballocations.size() == 1) && (pThis->m_FreeCount == 1);
+            return (pThis.m_Suballocations.size() == 1) && (pThis.m_FreeCount == 1);
         }
 
-        public static void GetAllocationInfo(D3D12MA_BlockMetadata_Generic* pThis, ulong offset, D3D12MA_VIRTUAL_ALLOCATION_INFO* outInfo)
+        public static void GetAllocationInfo(in D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("UINT64")] ulong offset, [NativeTypeName("D3D12MA_VIRTUAL_ALLOCATION_INFO&")] D3D12MA_VIRTUAL_ALLOCATION_INFO* outInfo)
         {
-            for (SuballocationList.iterator suballocItem = pThis->m_Suballocations.begin();
-                 suballocItem != pThis->m_Suballocations.end();
-                 suballocItem.op_MoveNext())
+            for (D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = pThis.m_Suballocations.begin(); suballocItem != pThis.m_Suballocations.end(); suballocItem = suballocItem.MoveNext())
             {
-                D3D12MA_Suballocation* suballoc = suballocItem.op_Arrow();
+                D3D12MA_Suballocation* suballoc = suballocItem.Get();
+
                 if (suballoc->offset == offset)
                 {
                     outInfo->size = suballoc->size;
@@ -521,41 +488,45 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(false); // "Not found!"
         }
 
-        public static bool CreateAllocationRequest(D3D12MA_BlockMetadata_Generic* pThis, ulong allocSize, ulong allocAlignment, D3D12MA_AllocationRequest* pAllocationRequest)
+        public static bool CreateAllocationRequest(ref D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, [NativeTypeName("AllocationRequest&")] D3D12MA_AllocationRequest* pAllocationRequest)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocSize > 0));
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pAllocationRequest != null));
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (pThis->Validate()));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && pThis.Validate());
 
             // There is not enough total free space in this block to fullfill the request: Early return.
-            if (pThis->m_SumFreeSize < allocSize + 2 * D3D12MA_DEBUG_MARGIN)
+            if (pThis.m_SumFreeSize < allocSize + (2 * D3D12MA_DEBUG_MARGIN))
             {
                 return false;
             }
 
             // New algorithm, efficiently searching freeSuballocationsBySize.
-            nuint freeSuballocCount = pThis->m_FreeSuballocationsBySize.size();
+            nuint freeSuballocCount = pThis.m_FreeSuballocationsBySize.size();
+
             if (freeSuballocCount > 0)
             {
                 // Find first free suballocation with size not less than allocSize + 2 * D3D12MA_DEBUG_MARGIN.
-                SuballocationList.iterator* it = BinaryFindFirstNotLess(
-                     pThis->m_FreeSuballocationsBySize.data(),
-                     pThis->m_FreeSuballocationsBySize.data() + freeSuballocCount,
-                     allocSize + 2 * D3D12MA_DEBUG_MARGIN,
-                     new SuballocationItemSizeLess());
-                nuint index = (nuint)(it - pThis->m_FreeSuballocationsBySize.data());
+                D3D12MA_List<D3D12MA_Suballocation>.iterator* it = BinaryFindFirstNotLess(
+                    pThis.m_FreeSuballocationsBySize.data(),
+                    pThis.m_FreeSuballocationsBySize.data() + freeSuballocCount,
+                    allocSize + (2 * D3D12MA_DEBUG_MARGIN),
+                    new D3D12MA_SuballocationItemSizeLess()
+                );
+
+                nuint index = (nuint)(it - pThis.m_FreeSuballocationsBySize.data());
+
                 for (; index < freeSuballocCount; ++index)
                 {
-                    if (pThis->CheckAllocation(
+                    if (pThis.CheckAllocation(
                         allocSize,
                         allocAlignment,
-                        *pThis->m_FreeSuballocationsBySize[index],
+                        *pThis.m_FreeSuballocationsBySize[index],
                         &pAllocationRequest->offset,
                         &pAllocationRequest->sumFreeSize,
                         &pAllocationRequest->sumItemSize,
                         &pAllocationRequest->zeroInitialized))
                     {
-                        pAllocationRequest->item = *pThis->m_FreeSuballocationsBySize[index];
+                        pAllocationRequest->item = *pThis.m_FreeSuballocationsBySize[index];
                         return true;
                     }
                 }
@@ -564,21 +535,24 @@ namespace TerraFX.Interop
             return false;
         }
 
-        public static void Alloc(D3D12MA_BlockMetadata_Generic* pThis, D3D12MA_AllocationRequest* request, ulong allocSize, void* userData)
+        public static void Alloc(ref D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("const D3D12MA_AllocationRequest&")] D3D12MA_AllocationRequest* request, ulong allocSize, void* userData)
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (request->item != pThis->m_Suballocations.end()));
-            D3D12MA_Suballocation* suballoc = request->item.op_Arrow();
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (request->item != pThis.m_Suballocations.end()));
+            D3D12MA_Suballocation* suballoc = request->item.Get();
+
             // Given suballocation is a free block.
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (suballoc->type == D3D12MA_SUBALLOCATION_TYPE_FREE));
+
             // Given offset is inside this suballocation.
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (request->offset >= suballoc->offset));
+
             ulong paddingBegin = request->offset - suballoc->offset;
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (suballoc->size >= paddingBegin + allocSize));
             ulong paddingEnd = suballoc->size - paddingBegin - allocSize;
 
             // Unregister this free suballocation from m_FreeSuballocationsBySize and update
             // it to become used.
-            pThis->UnregisterFreeSuballocation(request->item);
+            pThis.UnregisterFreeSuballocation(request->item);
 
             suballoc->offset = request->offset;
             suballoc->size = allocSize;
@@ -586,58 +560,58 @@ namespace TerraFX.Interop
             suballoc->userData = userData;
 
             // If there are any free bytes remaining at the end, insert new free suballocation after current one.
-            if (paddingEnd > 0)
+            if (paddingEnd != 0)
             {
                 D3D12MA_Suballocation paddingSuballoc = default;
                 paddingSuballoc.offset = request->offset + allocSize;
                 paddingSuballoc.size = paddingEnd;
                 paddingSuballoc.type = D3D12MA_SUBALLOCATION_TYPE_FREE;
-                SuballocationList.iterator next = request->item;
-                next.op_MoveNext();
-                SuballocationList.iterator paddingEndItem =
-                    pThis->m_Suballocations.insert(next, &paddingSuballoc);
-                pThis->RegisterFreeSuballocation(paddingEndItem);
+
+                D3D12MA_List<D3D12MA_Suballocation>.iterator next = request->item;
+                next = next.MoveNext();
+
+                D3D12MA_List<D3D12MA_Suballocation>.iterator paddingEndItem = pThis.m_Suballocations.insert(next, in paddingSuballoc);
+                pThis.RegisterFreeSuballocation(paddingEndItem);
             }
 
             // If there are any free bytes remaining at the beginning, insert new free suballocation before current one.
-            if (paddingBegin > 0)
+            if (paddingBegin != 0)
             {
                 D3D12MA_Suballocation paddingSuballoc = default;
                 paddingSuballoc.offset = request->offset - paddingBegin;
                 paddingSuballoc.size = paddingBegin;
                 paddingSuballoc.type = D3D12MA_SUBALLOCATION_TYPE_FREE;
-                SuballocationList.iterator paddingBeginItem =
-                    pThis->m_Suballocations.insert(request->item, &paddingSuballoc);
-                pThis->RegisterFreeSuballocation(paddingBeginItem);
+
+                D3D12MA_List<D3D12MA_Suballocation>.iterator paddingBeginItem = pThis.m_Suballocations.insert(request->item, in paddingSuballoc);
+                pThis.RegisterFreeSuballocation(paddingBeginItem);
             }
 
             // Update totals.
-            pThis->m_FreeCount = pThis->m_FreeCount - 1;
+            pThis.m_FreeCount = pThis.m_FreeCount - 1;
+
             if (paddingBegin > 0)
             {
-                ++pThis->m_FreeCount;
+                ++pThis.m_FreeCount;
             }
 
             if (paddingEnd > 0)
             {
-                ++pThis->m_FreeCount;
+                ++pThis.m_FreeCount;
             }
 
-            pThis->m_SumFreeSize -= allocSize;
-
-            pThis->m_ZeroInitializedRange.MarkRangeAsUsed(request->offset, request->offset + allocSize);
+            pThis.m_SumFreeSize -= allocSize;
+            pThis.m_ZeroInitializedRange.MarkRangeAsUsed(request->offset, request->offset + allocSize);
         }
 
-        public static void FreeAtOffset(D3D12MA_BlockMetadata_Generic* pThis, ulong offset)
+        public static void FreeAtOffset(ref D3D12MA_BlockMetadata_Generic pThis, ulong offset)
         {
-            for (SuballocationList.iterator suballocItem = pThis->m_Suballocations.begin();
-                 suballocItem != pThis->m_Suballocations.end();
-                 suballocItem.op_MoveNext())
+            for (D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = pThis.m_Suballocations.begin(); suballocItem != pThis.m_Suballocations.end(); suballocItem = suballocItem.MoveNext())
             {
-                D3D12MA_Suballocation* suballoc = suballocItem.op_Arrow();
+                D3D12MA_Suballocation* suballoc = suballocItem.Get();
+
                 if (suballoc->offset == offset)
                 {
-                    pThis->FreeSuballocation(suballocItem);
+                    pThis.FreeSuballocation(suballocItem);
                     return;
                 }
             }
@@ -645,30 +619,31 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(false); // "Not found!"
         }
 
-        public static void Clear(D3D12MA_BlockMetadata_Generic* pThis)
+        public static void Clear(ref D3D12MA_BlockMetadata_Generic pThis)
         {
-            pThis->m_FreeCount = 1;
-            pThis->m_SumFreeSize = pThis->GetSize();
+            pThis.m_FreeCount = 1;
+            pThis.m_SumFreeSize = pThis.GetSize();
 
-            pThis->m_Suballocations.clear();
+            pThis.m_Suballocations.clear();
+
             D3D12MA_Suballocation suballoc = default;
             suballoc.offset = 0;
-            suballoc.size = pThis->GetSize();
+            suballoc.size = pThis.GetSize();
             suballoc.type = D3D12MA_SUBALLOCATION_TYPE_FREE;
-            pThis->m_Suballocations.push_back(&suballoc);
 
-            pThis->m_FreeSuballocationsBySize.clear();
-            SuballocationList.iterator it = pThis->m_Suballocations.begin();
-            pThis->m_FreeSuballocationsBySize.push_back(&it);
+            pThis.m_Suballocations.push_back(in suballoc);
+            pThis.m_FreeSuballocationsBySize.clear();
+
+            D3D12MA_List<D3D12MA_Suballocation>.iterator it = pThis.m_Suballocations.begin();
+            pThis.m_FreeSuballocationsBySize.push_back(in it);
         }
 
-        public static void SetAllocationUserData(D3D12MA_BlockMetadata_Generic* pThis, ulong offset, void* userData)
+        public static void SetAllocationUserData(ref D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("UINT64")] ulong offset, void* userData)
         {
-            for (SuballocationList.iterator suballocItem = pThis->m_Suballocations.begin();
-                 suballocItem != pThis->m_Suballocations.end();
-                 suballocItem.op_MoveNext())
+            for (D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = pThis.m_Suballocations.begin(); suballocItem != pThis.m_Suballocations.end(); suballocItem = suballocItem.MoveNext())
             {
-                D3D12MA_Suballocation* suballoc = suballocItem.op_Arrow();
+                D3D12MA_Suballocation* suballoc = suballocItem.Get();
+
                 if (suballoc->offset == offset)
                 {
                     suballoc->userData = userData;
@@ -679,27 +654,27 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT(false); // "Not found!"
         }
 
-        public static void CalcAllocationStatInfo(D3D12MA_BlockMetadata_Generic* pThis, D3D12MA_StatInfo* outInfo)
+        public static void CalcAllocationStatInfo(in D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outInfo)
         {
             outInfo->BlockCount = 1;
 
-            uint rangeCount = (uint)pThis->m_Suballocations.size();
-            outInfo->AllocationCount = rangeCount - pThis->m_FreeCount;
-            outInfo->UnusedRangeCount = pThis->m_FreeCount;
+            uint rangeCount = (uint)pThis.m_Suballocations.size();
+            outInfo->AllocationCount = rangeCount - pThis.m_FreeCount;
+            outInfo->UnusedRangeCount = pThis.m_FreeCount;
 
-            outInfo->UsedBytes = pThis->GetSize() - pThis->m_SumFreeSize;
-            outInfo->UnusedBytes = pThis->m_SumFreeSize;
+            outInfo->UsedBytes = pThis.GetSize() - pThis.m_SumFreeSize;
+            outInfo->UnusedBytes = pThis.m_SumFreeSize;
 
             outInfo->AllocationSizeMin = UINT64_MAX;
             outInfo->AllocationSizeMax = 0;
+
             outInfo->UnusedRangeSizeMin = UINT64_MAX;
             outInfo->UnusedRangeSizeMax = 0;
 
-            for (SuballocationList.iterator suballocItem = pThis->m_Suballocations.begin();
-                 suballocItem != pThis->m_Suballocations.end();
-                 suballocItem.op_MoveNext())
+            for (D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = pThis.m_Suballocations.begin(); suballocItem != pThis.m_Suballocations.end(); suballocItem = suballocItem.MoveNext())
             {
-                D3D12MA_Suballocation* suballoc = suballocItem.op_Arrow();
+                D3D12MA_Suballocation* suballoc = suballocItem.Get();
+
                 if (suballoc->type == D3D12MA_SUBALLOCATION_TYPE_FREE)
                 {
                     outInfo->UnusedRangeSizeMin = D3D12MA_MIN(suballoc->size, outInfo->UnusedRangeSizeMin);
@@ -713,27 +688,34 @@ namespace TerraFX.Interop
             }
         }
 
-        public static void WriteAllocationInfoToJson(D3D12MA_BlockMetadata_Generic* pThis, D3D12MA_JsonWriter* json)
+        public static void WriteAllocationInfoToJson(in D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("JsonWriter&")] D3D12MA_JsonWriter* json)
         {
             json->BeginObject();
+
             json->WriteString("TotalBytes");
-            json->WriteNumber(pThis->GetSize());
+            json->WriteNumber(pThis.GetSize());
+
             json->WriteString("UnusuedBytes");
-            json->WriteNumber(pThis->GetSumFreeSize());
+            json->WriteNumber(pThis.GetSumFreeSize());
+
             json->WriteString("Allocations");
-            json->WriteNumber(pThis->GetAllocationCount());
+            json->WriteNumber(pThis.GetAllocationCount());
+
             json->WriteString("UnusedRanges");
-            json->WriteNumber(pThis->m_FreeCount);
+            json->WriteNumber(pThis.m_FreeCount);
+
             json->WriteString("Suballocations");
             json->BeginArray();
-            for (SuballocationList.iterator suballocItem = pThis->m_Suballocations.begin();
-                 suballocItem != pThis->m_Suballocations.end();
-                 suballocItem.op_MoveNext())
+
+            for (D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = pThis.m_Suballocations.begin(); suballocItem != pThis.m_Suballocations.end(); suballocItem = suballocItem.MoveNext())
             {
-                D3D12MA_Suballocation* suballoc = suballocItem.op_Arrow();
+                D3D12MA_Suballocation* suballoc = suballocItem.Get();
+
                 json->BeginObject(true);
+
                 json->WriteString("Offset");
                 json->WriteNumber(suballoc->offset);
+
                 if (suballoc->type == D3D12MA_SUBALLOCATION_TYPE_FREE)
                 {
                     json->WriteString("Type");
@@ -741,12 +723,13 @@ namespace TerraFX.Interop
                     json->WriteString("Size");
                     json->WriteNumber(suballoc->size);
                 }
-                else if (pThis->IsVirtual())
+                else if (pThis.IsVirtual())
                 {
                     json->WriteString("Type");
                     json->WriteString("ALLOCATION");
                     json->WriteString("Size");
                     json->WriteNumber(suballoc->size);
+
                     if (suballoc->userData != null)
                     {
                         json->WriteString("UserData");

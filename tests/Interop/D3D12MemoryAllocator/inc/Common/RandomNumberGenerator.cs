@@ -35,7 +35,7 @@ namespace TerraFX.Interop.UnitTests
         [return: NativeTypeName("uint32_t")]
         private uint GenerateFast()
         {
-            return unchecked(m_Value = m_Value * 196314165 + 907633515);
+            return m_Value = unchecked((m_Value * 196314165) + 907633515);
         }
     }
 }

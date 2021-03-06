@@ -6,7 +6,7 @@
 using System;
 using System.Diagnostics;
 using NUnit.Framework;
-using static TerraFX.Interop.D3D12MemoryAllocator;
+using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.Windows;
 
 namespace TerraFX.Interop.UnitTests

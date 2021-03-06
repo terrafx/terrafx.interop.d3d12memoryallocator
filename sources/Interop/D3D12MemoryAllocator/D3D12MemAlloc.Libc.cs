@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace TerraFX.Interop
 {
-    public static unsafe partial class D3D12MemoryAllocator
+    public static unsafe partial class D3D12MemAlloc
     {
         [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern void* _aligned_malloc([NativeTypeName("size_t")] nuint _Size, [NativeTypeName("size_t")] nuint _Alignment);

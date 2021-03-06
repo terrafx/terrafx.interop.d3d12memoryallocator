@@ -1,8 +1,11 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
+// Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
+
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12MemoryAllocator;
+using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.D3D12MA_ALLOCATION_FLAGS;
@@ -239,8 +242,10 @@ namespace TerraFX.Interop
             }
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
+
             *ppPool = D3D12MA_NEW<D3D12MA_Pool>(m_Pimpl->GetAllocs());
-            **ppPool = new D3D12MA_Pool((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), pPoolDesc);
+            D3D12MA_Pool._ctor(ref **ppPool, ref this, pPoolDesc);
+
             HRESULT hr = (*ppPool)->m_Pimpl->Init();
 
             if (SUCCEEDED(hr))
@@ -328,10 +333,10 @@ namespace TerraFX.Interop
             }
         }
 
-        internal D3D12MA_Allocator([NativeTypeName("const ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("const ALLOCATOR_DESC&")] D3D12MA_ALLOCATOR_DESC* desc)
+        internal static void _ctor(ref D3D12MA_Allocator pThis, [NativeTypeName("const ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("const ALLOCATOR_DESC&")] D3D12MA_ALLOCATOR_DESC* desc)
         {
-            m_Pimpl = D3D12MA_NEW<D3D12MA_AllocatorPimpl>(allocationCallbacks);
-            m_Pimpl->Ctor(allocationCallbacks, desc);
+            pThis.m_Pimpl = D3D12MA_NEW<D3D12MA_AllocatorPimpl>(allocationCallbacks);
+            D3D12MA_AllocatorPimpl._ctor(ref *pThis.m_Pimpl, allocationCallbacks, desc);
         }
 
         void IDisposable.Dispose()

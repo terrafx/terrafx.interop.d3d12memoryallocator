@@ -45,7 +45,7 @@ using static TerraFX.Interop.D3D12_STENCIL_OP;
 using static TerraFX.Interop.D3D12_TEXTURE_ADDRESS_MODE;
 using static TerraFX.Interop.D3D12_TEXTURE_LAYOUT;
 using static TerraFX.Interop.D3D12MA_ALLOCATOR_FLAGS;
-using static TerraFX.Interop.D3D12MemoryAllocator;
+using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.DXGI_ADAPTER_FLAG;
 using static TerraFX.Interop.DXGI_FORMAT;
 using static TerraFX.Interop.DXGI_SWAP_EFFECT;
@@ -355,6 +355,7 @@ namespace TerraFX.Interop.UnitTests
             g_Device.Attach(device);
 
             // Create allocator
+            D3D12MA_Allocator* allocator = null;
 
             {
                 D3D12MA_ALLOCATOR_DESC desc = default;
@@ -370,7 +371,6 @@ namespace TerraFX.Interop.UnitTests
                     desc.pAllocationCallbacks = g_AllocationCallbacks;
                 }
 
-                D3D12MA_Allocator* allocator = null;
                 CHECK_HR(D3D12MA_CreateAllocator(&desc, &allocator));
                 g_Allocator = allocator;
 
@@ -1279,7 +1279,7 @@ namespace TerraFX.Interop.UnitTests
 
                 worldViewProjection = cube2World * viewProjection;
                 cb.WorldViewProj = worldViewProjection.Transposed();
-                memcpy((char*)g_CbPerObjectAddress[(int)g_FrameIndex] + ConstantBufferPerObjectAlignedSize, &cb, (nuint)sizeof(ConstantBuffer1_VS));
+                memcpy((byte*)g_CbPerObjectAddress[(int)g_FrameIndex] + ConstantBufferPerObjectAlignedSize, &cb, (nuint)sizeof(ConstantBuffer1_VS));
             }
         }
 

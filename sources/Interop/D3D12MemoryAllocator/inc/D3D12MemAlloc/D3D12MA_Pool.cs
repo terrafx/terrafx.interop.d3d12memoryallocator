@@ -1,8 +1,11 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
+// Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
+
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12MemoryAllocator;
+using static TerraFX.Interop.D3D12MemAlloc;
 
 namespace TerraFX.Interop
 {
@@ -83,10 +86,10 @@ namespace TerraFX.Interop
             return m_Pimpl->GetName();
         }
 
-        internal D3D12MA_Pool(D3D12MA_Allocator* allocator, [NativeTypeName("const POOL_DESC&")] D3D12MA_POOL_DESC* desc)
+        internal static void _ctor(ref D3D12MA_Pool pThis, ref D3D12MA_Allocator allocator, [NativeTypeName("const POOL_DESC&")] D3D12MA_POOL_DESC* desc)
         {
-            m_Pimpl = D3D12MA_NEW<D3D12MA_PoolPimpl>(allocator->m_Pimpl->GetAllocs());
-            *m_Pimpl = new D3D12MA_PoolPimpl(allocator->m_Pimpl, desc);
+            pThis.m_Pimpl = D3D12MA_NEW<D3D12MA_PoolPimpl>(allocator.m_Pimpl->GetAllocs());
+            D3D12MA_PoolPimpl._ctor(ref *pThis.m_Pimpl, allocator.m_Pimpl, desc);
         }
 
         void IDisposable.Dispose()

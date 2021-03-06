@@ -2,10 +2,9 @@
 
 namespace TerraFX.Interop
 {
-    // Minimal port of std::atomic<T> for the purposes of this project
-    internal struct atomic<T>
+    internal interface ICmpLess<T, U>
         where T : unmanaged
     {
-        internal T value;
+        bool Invoke(T lhs, U rhs);
     }
 }

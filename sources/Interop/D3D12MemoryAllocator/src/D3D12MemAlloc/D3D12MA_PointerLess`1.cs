@@ -5,10 +5,12 @@
 
 namespace TerraFX.Interop
 {
-    internal enum D3D12MA_SuballocationType
+    internal unsafe struct D3D12MA_PointerLess<T> : ICmpLess<Pointer<T>, Pointer<T>>
+        where T : unmanaged
     {
-        D3D12MA_SUBALLOCATION_TYPE_FREE = 0,
-
-        D3D12MA_SUBALLOCATION_TYPE_ALLOCATION = 1
-    };
+        public bool Invoke([NativeTypeName("const void*")] Pointer<T> lhs, [NativeTypeName("const void*")] Pointer<T> rhs)
+        {
+            return lhs.Value < rhs.Value;
+        }
+    }
 }

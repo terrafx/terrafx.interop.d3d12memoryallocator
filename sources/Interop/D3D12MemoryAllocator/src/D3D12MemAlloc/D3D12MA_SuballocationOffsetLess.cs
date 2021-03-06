@@ -5,10 +5,11 @@
 
 namespace TerraFX.Interop
 {
-    internal enum D3D12MA_SuballocationType
+    internal unsafe struct D3D12MA_SuballocationOffsetLess : ICmpLess<D3D12MA_Suballocation, D3D12MA_Suballocation>
     {
-        D3D12MA_SUBALLOCATION_TYPE_FREE = 0,
-
-        D3D12MA_SUBALLOCATION_TYPE_ALLOCATION = 1
-    };
+        public bool Invoke(D3D12MA_Suballocation lhs, D3D12MA_Suballocation rhs)
+        {
+            return lhs.offset < rhs.offset;
+        }
+    }
 }

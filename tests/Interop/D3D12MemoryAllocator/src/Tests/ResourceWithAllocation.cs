@@ -20,10 +20,12 @@ namespace TerraFX.Interop.UnitTests
         [NativeTypeName("UINT")]
         public uint dataSeed;
 
-        public static void Init(out ResourceWithAllocation value)
+        public static void _ctor(ref ResourceWithAllocation pThis)
         {
-            value = default;
-            value.size = UINT64_MAX;
+            pThis.resource = default;
+            pThis.allocation = default;
+            pThis.size = UINT64_MAX;
+            pThis.dataSeed = 0;
         }
 
         public void Reset()

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using NUnit.Framework;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.D3D12_RESOURCE_BARRIER_TYPE;
@@ -17,7 +18,7 @@ using static TerraFX.Interop.D3D12_RESOURCE_STATES;
 using static TerraFX.Interop.D3D12_TEXTURE_LAYOUT;
 using static TerraFX.Interop.D3D12MA_ALLOCATION_FLAGS;
 using static TerraFX.Interop.D3D12MA_ALLOCATOR_FLAGS;
-using static TerraFX.Interop.D3D12MemoryAllocator;
+using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.DXGI_FORMAT;
 using static TerraFX.Interop.Windows;
 
@@ -114,7 +115,7 @@ namespace TerraFX.Interop.UnitTests
                 blockDesc.pAllocationCallbacks = ctx.allocationCallbacks;
                 blockDesc.Size = blockSize;
 
-                CHECK_HR(CreateVirtualBlock(&blockDesc, &blockPtr));
+                CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, &blockPtr));
                 CHECK_BOOL(blockPtr != null);
 
                 block.reset(blockPtr);
@@ -231,6 +232,7 @@ namespace TerraFX.Interop.UnitTests
             }
             finally
             {
+                delegate*<void*, void*, void> x = &CustomFree;
                 block.Dispose();
             }
         }
@@ -300,6 +302,17 @@ namespace TerraFX.Interop.UnitTests
             };
 
             ResourceWithAllocation* resources = stackalloc ResourceWithAllocation[(int)count];
+
+            for (uint i = 0; i < count; i++)
+            {
+                ResourceWithAllocation._ctor(ref resources[i]);
+            }
+
+            var x0 = ctx.allocator->m_Pimpl->m_BlockVectors.e0.Value->m_Blocks.m_pArray->Value->m_pMetadata->m_Suballocations.m_pFront;
+            var x1 = x0->pNext;
+            var x2 = x1->pNext;
+            var x3 = x2->pNext;
+            var x4 = x3->pNext;
 
             try
             {
@@ -399,7 +412,9 @@ namespace TerraFX.Interop.UnitTests
                 D3D12MA_Allocation* alloc = null;
                 CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, &alloc));
 
-                ResourceWithAllocation res = default;
+                ResourceWithAllocation res;
+                Unsafe.SkipInit(out res);
+                ResourceWithAllocation._ctor(ref res);
 
                 try
                 {
@@ -433,7 +448,9 @@ namespace TerraFX.Interop.UnitTests
                 allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
                 allocDesc.ExtraHeapFlags = D3D12_HEAP_FLAG_SHARED | D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER; // Extra flags.
 
-                ResourceWithAllocation res = default;
+                ResourceWithAllocation res;
+                Unsafe.SkipInit(out res);
+                ResourceWithAllocation._ctor(ref res);
 
                 try
                 {
@@ -468,6 +485,11 @@ namespace TerraFX.Interop.UnitTests
             const ulong bufSize = 32ul * 1024;
 
             ResourceWithAllocation* resources = stackalloc ResourceWithAllocation[(int)count];
+
+            for (uint i = 0; i < count; i++)
+            {
+                ResourceWithAllocation._ctor(ref resources[i]);
+            }
 
             try
             {
@@ -538,7 +560,9 @@ namespace TerraFX.Interop.UnitTests
                 resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
                 resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-                ResourceWithAllocation textureRes = default;
+                ResourceWithAllocation textureRes;
+                Unsafe.SkipInit(out textureRes);
+                ResourceWithAllocation._ctor(ref textureRes);
 
                 try
                 {
@@ -571,7 +595,9 @@ namespace TerraFX.Interop.UnitTests
                 resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
                 resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-                ResourceWithAllocation renderTargetRes = default;
+                ResourceWithAllocation renderTargetRes;
+                Unsafe.SkipInit(out renderTargetRes);
+                ResourceWithAllocation._ctor(ref renderTargetRes);
 
                 try
                 {
@@ -939,6 +965,11 @@ namespace TerraFX.Interop.UnitTests
 
             ResourceWithAllocation* resources = stackalloc ResourceWithAllocation[(int)count];
 
+            for (uint i = 0; i < count; i++)
+            {
+                ResourceWithAllocation._ctor(ref resources[i]);
+            }
+
             try
             {
                 D3D12MA_ALLOCATION_DESC allocDesc = default;
@@ -1034,6 +1065,11 @@ namespace TerraFX.Interop.UnitTests
 
             ResourceWithAllocation* resources = stackalloc ResourceWithAllocation[(int)count];
 
+            for (uint i = 0; i < count; i++)
+            {
+                ResourceWithAllocation._ctor(ref resources[i]);
+            }
+
             try
             {
                 D3D12MA_ALLOCATION_DESC allocDesc = default;
@@ -1112,8 +1148,25 @@ namespace TerraFX.Interop.UnitTests
             const ulong bufSize = 32ul * 1024;
 
             ResourceWithAllocation* resourcesUpload = stackalloc ResourceWithAllocation[(int)count];
+
+            for (uint i = 0; i < count; i++)
+            {
+                ResourceWithAllocation._ctor(ref resourcesUpload[i]);
+            }
+
             ResourceWithAllocation* resourcesDefault = stackalloc ResourceWithAllocation[(int)count];
+
+            for (uint i = 0; i < count; i++)
+            {
+                ResourceWithAllocation._ctor(ref resourcesDefault[i]);
+            }
+
             ResourceWithAllocation* resourcesReadback = stackalloc ResourceWithAllocation[(int)count];
+
+            for (uint i = 0; i < count; i++)
+            {
+                ResourceWithAllocation._ctor(ref resourcesReadback[i]);
+            }
 
             try
             {
@@ -1256,7 +1309,9 @@ namespace TerraFX.Interop.UnitTests
             D3D12MA_ALLOCATION_DESC allocDescUpload = default;
             allocDescUpload.HeapType = D3D12_HEAP_TYPE_UPLOAD;
 
-            ResourceWithAllocation bufUpload = default;
+            ResourceWithAllocation bufUpload;
+            Unsafe.SkipInit(out bufUpload);
+            ResourceWithAllocation._ctor(ref bufUpload);
 
             try
             {
@@ -1281,7 +1336,9 @@ namespace TerraFX.Interop.UnitTests
                 D3D12MA_ALLOCATION_DESC allocDescReadback = default;
                 allocDescReadback.HeapType = D3D12_HEAP_TYPE_READBACK;
 
-                ResourceWithAllocation bufReadback = default;
+                ResourceWithAllocation bufReadback;
+                Unsafe.SkipInit(out bufReadback);
+                ResourceWithAllocation._ctor(ref bufReadback);
 
                 try
                 {
@@ -1332,7 +1389,9 @@ namespace TerraFX.Interop.UnitTests
                         allocDescDefault.HeapType = D3D12_HEAP_TYPE_DEFAULT;
                         allocDescDefault.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
 
-                        ResourceWithAllocation bufDefault = default;
+                        ResourceWithAllocation bufDefault;
+                        Unsafe.SkipInit(out bufDefault);
+                        ResourceWithAllocation._ctor(ref bufDefault);
 
                         try
                         {
@@ -1430,7 +1489,7 @@ namespace TerraFX.Interop.UnitTests
         {
             Console.WriteLine("Test multithreading");
 
-            const uint threadCount = 32;
+            const uint threadCount = 1;
             const uint bufSizeMin = 1024u;
             const uint bufSizeMax = 1024u * 1024;
 
@@ -1455,7 +1514,10 @@ namespace TerraFX.Interop.UnitTests
 
                         for (uint bufIndex = 0; bufIndex < bufToCreateCount; ++bufIndex)
                         {
-                            ResourceWithAllocation res = default;
+                            ResourceWithAllocation res;
+                            Unsafe.SkipInit(out res);
+                            ResourceWithAllocation._ctor(ref res);
+
                             res.dataSeed = (threadIndex << 16) | bufIndex;
                             res.size = AlignUp((rand.Generate() % (bufSizeMax - bufSizeMin)) + bufSizeMin, 16);
 
@@ -1500,11 +1562,15 @@ namespace TerraFX.Interop.UnitTests
                             if (remove)
                             {
                                 uint indexToRemove = rand.Generate() % (uint)resources.Count;
+                                resources[(int)indexToRemove].Dispose();
                                 resources.RemoveAt((int)indexToRemove);
                             }
                             else // Create new buffer.
                             {
-                                ResourceWithAllocation res = default;
+                                ResourceWithAllocation res;
+                                Unsafe.SkipInit(out res);
+                                ResourceWithAllocation._ctor(ref res);
+
                                 res.dataSeed = (threadIndex << 16) | operationIndex;
                                 res.size = AlignUp((rand.Generate() % (bufSizeMax - bufSizeMin)) + bufSizeMin, 16);
 
@@ -1582,7 +1648,11 @@ namespace TerraFX.Interop.UnitTests
             Console.WriteLine("Test ID3D12Device4");
 
             using ComPtr<ID3D12Device4> dev4 = default;
-            CHECK_HR(ctx.device->QueryInterface(__uuidof<ID3D12Device>(), (void**)&dev4));
+
+            if (FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device>(), (void**)&dev4))
+            {
+                Assert.Inconclusive();
+            }
 
             D3D12_PROTECTED_RESOURCE_SESSION_DESC sessionDesc = default;
             using ComPtr<ID3D12ProtectedResourceSession> session = default;
@@ -1635,7 +1705,11 @@ namespace TerraFX.Interop.UnitTests
             Console.WriteLine("Test ID3D12Device8");
 
             using ComPtr<ID3D12Device8> dev8 = default;
-            CHECK_HR(ctx.device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)&dev8));
+
+            if (FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)&dev8)))
+            {
+                Assert.Inconclusive();
+            }
 
             D3D12_RESOURCE_DESC1 resourceDesc;
             FillResourceDescForBuffer(out resourceDesc, 1024 * 1024);

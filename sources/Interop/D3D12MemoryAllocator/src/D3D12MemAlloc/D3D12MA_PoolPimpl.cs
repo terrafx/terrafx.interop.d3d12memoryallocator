@@ -1,40 +1,46 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
+// Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
+
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12MemoryAllocator;
+using static TerraFX.Interop.D3D12MemAlloc;
 
 namespace TerraFX.Interop
 {
     internal unsafe struct D3D12MA_PoolPimpl : IDisposable
     {
         public D3D12MA_AllocatorPimpl* m_Allocator; // Externally owned object
+
         public D3D12MA_POOL_DESC m_Desc;
+
         public D3D12MA_BlockVector* m_BlockVector; // Owned object
 
         [NativeTypeName("wchar_t*")]
         public ushort* m_Name;
 
-        public D3D12MA_PoolPimpl(D3D12MA_AllocatorPimpl* allocator, D3D12MA_POOL_DESC* desc)
+        internal static void _ctor(ref D3D12MA_PoolPimpl pThis, D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("const D3D12MA_POOL_DESC&")] D3D12MA_POOL_DESC* desc)
         {
-            m_Allocator = allocator;
-            m_Desc = *desc;
-            m_BlockVector = null;
-            m_Name = null;
+            pThis.m_Allocator = allocator;
+            pThis.m_Desc = *desc;
+            pThis.m_BlockVector = null;
+            pThis.m_Name = null;
 
             bool explicitBlockSize = desc->BlockSize != 0;
             ulong preferredBlockSize = explicitBlockSize ? desc->BlockSize : D3D12MA_DEFAULT_BLOCK_SIZE;
 
             D3D12_HEAP_FLAGS heapFlags = desc->HeapFlags;
-
             uint maxBlockCount = desc->MaxBlockCount != 0 ? desc->MaxBlockCount : uint.MaxValue;
 
-            m_BlockVector = D3D12MA_NEW<D3D12MA_BlockVector>(allocator->GetAllocs());
-            *m_BlockVector = new D3D12MA_BlockVector(
+            pThis.m_BlockVector = D3D12MA_NEW<D3D12MA_BlockVector>(allocator->GetAllocs());
+            D3D12MA_BlockVector._ctor(
+                ref *pThis.m_BlockVector,
                 allocator, desc->HeapType, heapFlags,
                 preferredBlockSize,
                 desc->MinBlockCount, maxBlockCount,
-                explicitBlockSize);
+                explicitBlockSize
+            );
         }
 
         [return: NativeTypeName("HRESULT")]
@@ -58,14 +64,14 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         public int SetMinBytes([NativeTypeName("UINT64")] ulong minBytes) => m_BlockVector->SetMinBytes(minBytes);
 
-        public void CalculateStats(D3D12MA_StatInfo* outStats)
+        public void CalculateStats([NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outStats)
         {
             ZeroMemory(outStats, (nuint)sizeof(D3D12MA_StatInfo));
+
             outStats->AllocationSizeMin = ulong.MaxValue;
             outStats->UnusedRangeSizeMin = ulong.MaxValue;
 
             m_BlockVector->AddStats(outStats);
-
             PostProcessStatInfo(ref *outStats);
         }
 
@@ -82,9 +88,9 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("LPCWSTR")]
-        public ushort* GetName() => m_Name;
+        public readonly ushort* GetName() => m_Name;
 
-        public void FreeName()
+        private void FreeName()
         {
             if (m_Name != null)
             {
