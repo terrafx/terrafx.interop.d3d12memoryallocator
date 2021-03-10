@@ -41,20 +41,25 @@ namespace TerraFX.Interop
             return default(TItemTypeTraits).GetNext(item);
         }
 
-        public D3D12MA_IntrusiveLinkedList([NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits>** src)
+        public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits> pThis, [NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits>** src)
         {
-            m_Front = (*src)->m_Front;
-            m_Back = (*src)->m_Back;
-            m_Count = (*src)->m_Count;
+            pThis.m_Front = (*src)->m_Front;
+            pThis.m_Back = (*src)->m_Back;
+            pThis.m_Count = (*src)->m_Count;
 
             (*src)->m_Front = (*src)->m_Back = null;
             (*src)->m_Count = 0;
         }
 
+        public void Dispose()
+        {
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (IsEmpty()));
+        }
+
         [return: NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&")]
         public D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits>* op_Assignment([NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits>** src)
         {
-            if (src != null)
+            if (*src != Unsafe.AsPointer(ref this))
             {
                 D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (IsEmpty()));
                 m_Front = (*src)->m_Front;
@@ -184,7 +189,9 @@ namespace TerraFX.Interop
                 ++m_Count;
             }
             else
+            {
                 PushBack(newItem);
+            }
         }
 
         // MyItem can be null - it means PushFront.
@@ -209,7 +216,9 @@ namespace TerraFX.Interop
                 ++m_Count;
             }
             else
+            {
                 PushFront(newItem);
+            }
         }
 
         public void Remove(TItemType* item)
@@ -237,11 +246,6 @@ namespace TerraFX.Interop
             *default(TItemTypeTraits).AccessPrev(item) = null;
             *default(TItemTypeTraits).AccessNext(item) = null;
             --m_Count;
-        }
-
-        public void Dispose()
-        {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (IsEmpty()));
         }
     }
 }
