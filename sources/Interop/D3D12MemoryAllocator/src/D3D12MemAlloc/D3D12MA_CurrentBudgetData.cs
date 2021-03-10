@@ -71,6 +71,7 @@ namespace TerraFX.Interop
             public ulong e0;
             public ulong e1;
             public ulong e2;
+            public ulong e3;
 
             public ref ulong this[int index]
             {

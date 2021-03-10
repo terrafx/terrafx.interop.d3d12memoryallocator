@@ -17,7 +17,7 @@ namespace TerraFX.Interop
         /// <summary>Total statistics from all heap types.</summary>
         public D3D12MA_StatInfo Total;
 
-        /// <summary>One StatInfo for each type of heap located at the following indices: 0 - DEFAULT, 1 - UPLOAD, 2 - READBACK.</summary>
+        /// <summary>One StatInfo for each type of heap located at the following indices: 0 - DEFAULT, 1 - UPLOAD, 2 - READBACK, 3 - CUSTOM.</summary>
         [NativeTypeName("StatInfo HeapType[HEAP_TYPE_COUNT]")]
         public __Stats_e__FixedBuffer HeapType;
 
@@ -27,6 +27,7 @@ namespace TerraFX.Interop
             public D3D12MA_StatInfo e0;
             public D3D12MA_StatInfo e1;
             public D3D12MA_StatInfo e2;
+            public D3D12MA_StatInfo e3;
 
             public ref D3D12MA_StatInfo this[int index]
             {

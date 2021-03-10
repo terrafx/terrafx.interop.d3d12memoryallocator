@@ -36,7 +36,7 @@ namespace TerraFX.Interop
             pThis.m_BlockVector = D3D12MA_NEW<D3D12MA_BlockVector>(allocator->GetAllocs());
             D3D12MA_BlockVector._ctor(
                 ref *pThis.m_BlockVector,
-                allocator, desc->HeapType, heapFlags,
+                allocator, &desc->HeapProperties, heapFlags,
                 preferredBlockSize,
                 desc->MinBlockCount, maxBlockCount,
                 explicitBlockSize

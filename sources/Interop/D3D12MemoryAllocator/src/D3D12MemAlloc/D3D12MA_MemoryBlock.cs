@@ -27,7 +27,7 @@ namespace TerraFX.Interop
 
         internal readonly D3D12MA_AllocatorPimpl* m_Allocator;
 
-        internal readonly D3D12_HEAP_TYPE m_HeapType;
+        internal readonly D3D12_HEAP_PROPERTIES m_HeapProps;
 
         internal readonly D3D12_HEAP_FLAGS m_HeapFlags;
 
@@ -38,12 +38,12 @@ namespace TerraFX.Interop
 
         internal ID3D12Heap* m_Heap;
 
-        public D3D12MA_MemoryBlock(D3D12MA_AllocatorPimpl* allocator, D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
+        public D3D12MA_MemoryBlock(D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
         {
             lpVtbl = Vtbl;
 
             m_Allocator = allocator;
-            m_HeapType = heapType;
+            m_HeapProps = *heapProps;
             m_HeapFlags = heapFlags;
             m_Size = size;
             m_Id = id;
@@ -55,7 +55,8 @@ namespace TerraFX.Interop
             ((delegate*<ref D3D12MA_MemoryBlock, void>)lpVtbl[0])(ref this);
         }
 
-        public readonly D3D12_HEAP_TYPE GetHeapType() => m_HeapType;
+        [return: NativeTypeName("const D3D12_HEAP_PROPERTIES&")]
+        public readonly D3D12_HEAP_PROPERTIES* GetHeapProperties() => (D3D12_HEAP_PROPERTIES*)Unsafe.AsPointer(ref Unsafe.AsRef(in m_HeapProps));
 
         public readonly D3D12_HEAP_FLAGS GetHeapFlags() => m_HeapFlags;
 
@@ -73,7 +74,7 @@ namespace TerraFX.Interop
 
             D3D12_HEAP_DESC heapDesc = default;
             heapDesc.SizeInBytes = m_Size;
-            heapDesc.Properties.Type = m_HeapType;
+            heapDesc.Properties = m_HeapProps;
             heapDesc.Alignment = HeapFlagsToAlignment(m_HeapFlags);
             heapDesc.Flags = m_HeapFlags;
 
@@ -86,7 +87,7 @@ namespace TerraFX.Interop
 
             if (SUCCEEDED(hr))
             {
-                ref ulong blockBytes = ref m_Allocator->m_Budget.m_BlockBytes[(int)HeapTypeToIndex(m_HeapType)];
+                ref ulong blockBytes = ref m_Allocator->m_Budget.m_BlockBytes[(int)HeapTypeToIndex(m_HeapProps.Type)];
                 Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + m_Size);
             }
 
@@ -97,7 +98,7 @@ namespace TerraFX.Interop
         {
             if (pThis.m_Heap != null)
             {
-                ref ulong blockBytes = ref pThis.m_Allocator->m_Budget.m_BlockBytes[(int)HeapTypeToIndex(pThis.m_HeapType)];
+                ref ulong blockBytes = ref pThis.m_Allocator->m_Budget.m_BlockBytes[(int)HeapTypeToIndex(pThis.m_HeapProps.Type)];
                 Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) - pThis.m_Size);
                 pThis.m_Heap->Release();
             }
