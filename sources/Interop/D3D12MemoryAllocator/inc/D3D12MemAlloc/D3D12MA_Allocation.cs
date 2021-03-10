@@ -252,6 +252,8 @@ namespace TerraFX.Interop
             public struct _m_Committed_e__Struct
             {
                 public D3D12_HEAP_TYPE heapType;
+                public D3D12MA_Allocation* prev;
+                public D3D12MA_Allocation* next;
             }
 
             public struct _m_Placed_e__Struct
@@ -265,6 +267,8 @@ namespace TerraFX.Interop
             public struct _m_Heap_e__Struct
             {
                 public D3D12_HEAP_TYPE heapType;
+                public D3D12MA_Allocation* prev;
+                public D3D12MA_Allocation* next;
                 public ID3D12Heap* heap;
             }
         }
@@ -377,6 +381,8 @@ namespace TerraFX.Interop
         {
             m_PackedData.SetType(TYPE_COMMITTED);
             m_Committed.heapType = heapType;
+            m_Committed.prev = null;
+            m_Committed.next = null;
         }
 
         internal void InitPlaced([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong alignment, D3D12MA_NormalBlock* block)
@@ -391,6 +397,8 @@ namespace TerraFX.Interop
             m_PackedData.SetType(TYPE_HEAP);
             m_Heap.heapType = heapType;
             m_Heap.heap = heap;
+            m_Committed.prev = null;
+            m_Committed.next = null;
         }
 
         internal void SetResource(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] D3D12_RESOURCE_DESC* pResourceDesc)

@@ -56,8 +56,8 @@ namespace TerraFX.Interop
 
         private D3D12MA_AllocationObjectAllocator m_AllocationObjectAllocator;
 
-        [NativeTypeName("Vector<Pointer<D3D12MA_Allocation>>* m_pCommittedAllocations[HEAP_TYPE_COUNT]")]
-        private _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<Pointer<D3D12MA_Vector<Pointer<D3D12MA_Allocation>>>> m_pCommittedAllocations;
+        [NativeTypeName("IntrusiveLinkedList<CommittedAllocationListItemTraits> m_CommittedAllocations[HEAP_TYPE_COUNT]")]
+        private _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>> m_CommittedAllocations;
 
         [NativeTypeName("D3D12MA_RW_MUTEX m_CommittedAllocationsMutex[HEAP_TYPE_COUNT]")]
         private _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<D3D12MA_RW_MUTEX> m_CommittedAllocationsMutex;
@@ -117,7 +117,7 @@ namespace TerraFX.Interop
             // desc.pAllocationCallbacks intentionally ignored here, preprocessed by CreateAllocator.
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_D3D12Options), (nuint)sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS));
 
-            ZeroMemory(Unsafe.AsPointer(ref pThis.m_pCommittedAllocations), (nuint)sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<Pointer<D3D12MA_Vector<Pointer<D3D12MA_Allocation>>>>));
+            ZeroMemory(Unsafe.AsPointer(ref pThis.m_CommittedAllocations), (nuint)sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<Pointer<D3D12MA_Vector<Pointer<D3D12MA_Allocation>>>>));
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_pPools), (nuint)sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<Pointer<D3D12MA_Vector<Pointer<D3D12MA_Pool>>>>));
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_BlockVectors), (nuint)sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<Pointer<D3D12MA_BlockVector>>));
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_DefaultPoolTier1MinBytes), (nuint)sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<ulong>));
@@ -131,10 +131,6 @@ namespace TerraFX.Interop
 
             for (uint heapTypeIndex = 0; heapTypeIndex < D3D12MA_HEAP_TYPE_COUNT; ++heapTypeIndex)
             {
-                var committedAllocation = D3D12MA_NEW<D3D12MA_Vector<Pointer<D3D12MA_Allocation>>>(pThis.GetAllocs());
-                D3D12MA_Vector<Pointer<D3D12MA_Allocation>>._ctor(ref *committedAllocation, pThis.GetAllocs());
-                pThis.m_pCommittedAllocations[(int)heapTypeIndex] = committedAllocation;
-
                 var pool = D3D12MA_NEW<D3D12MA_Vector<Pointer<D3D12MA_Pool>>>(pThis.GetAllocs());
                 D3D12MA_Vector<Pointer<D3D12MA_Pool>>._ctor(ref *pool, pThis.GetAllocs());
                 pThis.m_pPools[(int)heapTypeIndex] = pool;
@@ -238,12 +234,10 @@ namespace TerraFX.Interop
 
             for (uint i = D3D12MA_HEAP_TYPE_COUNT; unchecked(i-- > 0);)
             {
-                if (m_pCommittedAllocations[(int)i].Value != null && !m_pCommittedAllocations[(int)i].Value->empty())
+                if (!m_CommittedAllocations[(int)i].IsEmpty())
                 {
                     D3D12MA_ASSERT(false); // "Unfreed committed allocations found!"
                 }
-
-                D3D12MA_DELETE(GetAllocs(), m_pCommittedAllocations[(int)i].Value);
             }
 
             m_AllocationObjectAllocator.Dispose();
@@ -933,12 +927,12 @@ namespace TerraFX.Interop
                 D3D12MA_StatInfo* heapStatInfo = (D3D12MA_StatInfo*)Unsafe.AsPointer(ref outStats->HeapType[(int)heapTypeIndex]);
                 using var @lock = new D3D12MA_MutexLockRead(ref m_CommittedAllocationsMutex[(int)heapTypeIndex], m_UseMutex);
 
-                D3D12MA_Vector<Pointer<D3D12MA_Allocation>>* allocationVector = m_pCommittedAllocations[(int)heapTypeIndex];
-                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocationVector != null));
-
-                for (nuint allocIndex = 0, count = allocationVector->size(); allocIndex < count; ++allocIndex)
+                D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>* committedAllocations =
+                    (D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>*)Unsafe.AsPointer(ref m_CommittedAllocations[(int)heapTypeIndex]);
+                for (D3D12MA_Allocation* alloc = committedAllocations->Front();
+                     alloc != null; alloc = D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>.GetNext(alloc))
                 {
-                    ulong size = (*allocationVector)[allocIndex]->Value->GetSize();
+                    ulong size = alloc->GetSize();
 
                     D3D12MA_StatInfo statInfo = default;
                     statInfo.BlockCount = 1;
@@ -1157,13 +1151,12 @@ namespace TerraFX.Interop
                         using var @lock = new D3D12MA_MutexLockRead(ref m_CommittedAllocationsMutex[(int)heapType], m_UseMutex);
 
                         json.BeginArray();
-                        D3D12MA_Vector<Pointer<D3D12MA_Allocation>>* allocationVector = m_pCommittedAllocations[(int)heapType];
-                        D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocationVector != null));
-                        for (nuint i = 0, count = allocationVector->size(); i < count; ++i)
+                        D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>* committedAllocations =
+                            (D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>*)Unsafe.AsPointer(ref m_CommittedAllocations[(int)heapType]);
+                        for (D3D12MA_Allocation* alloc = committedAllocations->Front();
+                             alloc != null; alloc = D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>.GetNext(alloc))
                         {
-                            D3D12MA_Allocation* alloc = (*allocationVector)[i]->Value;
                             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (alloc != null));
-
                             json.BeginObject(true);
                             json.AddAllocationToObject(alloc);
                             json.EndObject();
@@ -1718,11 +1711,10 @@ namespace TerraFX.Interop
 
             using var @lock = new D3D12MA_MutexLockWrite(ref m_CommittedAllocationsMutex[(int)heapTypeIndex], m_UseMutex);
 
-            D3D12MA_Vector<Pointer<D3D12MA_Allocation>>* committedAllocations = m_pCommittedAllocations[(int)heapTypeIndex];
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocations != null));
+            D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>* committedAllocations =
+                (D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>*)Unsafe.AsPointer(ref m_CommittedAllocations[(int)heapTypeIndex]);
 
-            Pointer<D3D12MA_Allocation> pAlloc = alloc;
-            committedAllocations->InsertSorted(in pAlloc, new D3D12MA_PointerLess<D3D12MA_Allocation>());
+            committedAllocations->PushBack(alloc);
         }
 
         /// <summary>Unregisters Allocation object from m_pCommittedAllocations.</summary>
@@ -1732,13 +1724,10 @@ namespace TerraFX.Interop
 
             using var @lock = new D3D12MA_MutexLockWrite(ref m_CommittedAllocationsMutex[(int)heapTypeIndex], m_UseMutex);
 
-            D3D12MA_Vector<Pointer<D3D12MA_Allocation>>* committedAllocations = m_pCommittedAllocations[(int)heapTypeIndex];
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocations != null));
+            D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>* committedAllocations =
+                (D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>*)Unsafe.AsPointer(ref m_CommittedAllocations[(int)heapTypeIndex]);
 
-            Pointer<D3D12MA_Allocation> pAlloc = alloc;
-            bool success = committedAllocations->RemoveSorted(in pAlloc, new D3D12MA_PointerLess<D3D12MA_Allocation>());
-
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && success);
+            committedAllocations->Remove(alloc);
         }
 
         /// <summary>Registers Pool object in m_pPools.</summary>
