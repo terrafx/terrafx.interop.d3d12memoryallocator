@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.D3D12MA_ALLOCATION_FLAGS;
+using static TerraFX.Interop.D3D12_HEAP_TYPE;
 
 namespace TerraFX.Interop
 {
@@ -19,7 +20,7 @@ namespace TerraFX.Interop
     {
         private D3D12MA_AllocatorPimpl* m_hAllocator;
 
-        private D3D12_HEAP_TYPE m_HeapType;
+        private D3D12_HEAP_PROPERTIES m_HeapProps;
 
         private D3D12_HEAP_FLAGS m_HeapFlags;
 
@@ -50,10 +51,10 @@ namespace TerraFX.Interop
         [NativeTypeName("UINT")]
         private uint m_NextBlockId;
 
-        internal static void _ctor(ref D3D12MA_BlockVector pThis, D3D12MA_AllocatorPimpl* hAllocator, D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize)
+        internal static void _ctor(ref D3D12MA_BlockVector pThis, D3D12MA_AllocatorPimpl* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize)
         {
             pThis.m_hAllocator = hAllocator;
-            pThis.m_HeapType = heapType;
+            pThis.m_HeapProps = *heapProps;
             pThis.m_HeapFlags = heapFlags;
             pThis.m_PreferredBlockSize = preferredBlockSize;
             pThis.m_MinBlockCount = minBlockCount;
@@ -93,8 +94,8 @@ namespace TerraFX.Interop
             return S_OK;
         }
 
-        [return: NativeTypeName("UINT")]
-        public readonly uint GetHeapType() => (uint)m_HeapType;
+        [return: NativeTypeName("const D3D12_HEAP_PROPERTIES&")]
+        public readonly D3D12_HEAP_PROPERTIES* GetHeapProperties() => (D3D12_HEAP_PROPERTIES*)Unsafe.AsPointer(ref Unsafe.AsRef(in m_HeapProps));
 
         [return: NativeTypeName("UINT64")]
         public readonly ulong GetPreferredBlockSize() => m_PreferredBlockSize;
@@ -143,9 +144,10 @@ namespace TerraFX.Interop
             D3D12MA_NormalBlock* pBlockToDelete = null;
 
             bool budgetExceeded = false;
+            if (IsHeapTypeStandard(m_HeapProps.Type))
             {
                 D3D12MA_Budget budget = default;
-                m_hAllocator->GetBudgetForHeapType(&budget, m_HeapType);
+                m_hAllocator->GetBudgetForHeapType(&budget, m_HeapProps.Type);
                 budgetExceeded = budget.UsageBytes >= budget.BudgetBytes;
             }
 
@@ -404,7 +406,7 @@ namespace TerraFX.Interop
 
         public void AddStats([NativeTypeName("Stats&")] D3D12MA_Stats* outStats)
         {
-            uint heapTypeIndex = HeapTypeToIndex(m_HeapType);
+            uint heapTypeIndex = HeapTypeToIndex(m_HeapProps.Type);
             ref D3D12MA_StatInfo pStatInfo = ref outStats->HeapType[(int)heapTypeIndex];
 
             using var @lock = new D3D12MA_MutexLockRead(ref m_Mutex, m_hAllocator->UseMutex());
@@ -516,10 +518,11 @@ namespace TerraFX.Interop
                 return E_OUTOFMEMORY;
             }
 
-            ulong freeMemory;
+            ulong freeMemory = UINT64_MAX;
+            if (IsHeapTypeStandard(m_HeapProps.Type))
             {
                 D3D12MA_Budget budget = default;
-                m_hAllocator->GetBudgetForHeapType(&budget, m_HeapType);
+                m_hAllocator->GetBudgetForHeapType(&budget, m_HeapProps.Type);
                 freeMemory = (budget.UsageBytes < budget.BudgetBytes) ? (budget.BudgetBytes - budget.UsageBytes) : 0;
             }
 
@@ -646,13 +649,10 @@ namespace TerraFX.Interop
                 }
 
                 *pAllocation = m_hAllocator->GetAllocationObjectAllocator()->Allocate(m_hAllocator, size, currRequest.zeroInitialized);
-
                 pBlock->m_pMetadata->Alloc(&currRequest, size, *pAllocation);
                 (*pAllocation)->InitPlaced(currRequest.offset, alignment, pBlock);
-
                 D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && pBlock->Validate());
-                m_hAllocator->m_Budget.AddAllocation(HeapTypeToIndex(m_HeapType), size);
-
+                m_hAllocator->m_Budget.AddAllocation(HeapTypeToIndex(m_HeapProps.Type), size);
                 return S_OK;
             }
 
@@ -668,7 +668,7 @@ namespace TerraFX.Interop
                 ref *pBlock,
                 m_hAllocator,
                 ref this,
-                m_HeapType,
+                (D3D12_HEAP_PROPERTIES*)Unsafe.AsPointer(ref m_HeapProps),
                 m_HeapFlags,
                 blockSize,
                 m_NextBlockId++

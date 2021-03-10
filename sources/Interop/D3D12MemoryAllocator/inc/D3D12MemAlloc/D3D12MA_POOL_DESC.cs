@@ -4,7 +4,6 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 
 namespace TerraFX.Interop
@@ -13,10 +12,10 @@ namespace TerraFX.Interop
     public struct D3D12MA_POOL_DESC
     {
         /// <summary>
-        /// The type of memory heap where allocations of this pool should be placed.
-        /// <para>It must be one of: <see cref="D3D12_HEAP_TYPE_DEFAULT"/>, <see cref="D3D12_HEAP_TYPE_UPLOAD"/>, <see cref="D3D12_HEAP_TYPE_READBACK"/>.</para>
+        /// The parameters of memory heap where allocations of this pool should be placed.
+        /// <para>In the simplest case, just fill it with zeros and set <see cref="D3D12_HEAP_PROPERTIES.Type"/> to one of: <see cref="D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_DEFAULT"/>, <see cref="D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_UPLOAD"/>, <see cref="D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_READBACK"/>. Additional parameters can be used e.g.to utilize UMA.</para>
         /// </summary>
-        public D3D12_HEAP_TYPE HeapType;
+        public D3D12_HEAP_PROPERTIES HeapProperties;
 
         /// <summary>
         /// Heap flags to be used when allocating heaps of this pool.

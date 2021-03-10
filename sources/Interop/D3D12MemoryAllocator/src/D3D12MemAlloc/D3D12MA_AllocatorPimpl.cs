@@ -176,19 +176,19 @@ namespace TerraFX.Interop
                 m_D3D12Options.ResourceHeapTier = (D3D12_RESOURCE_HEAP_TIER)D3D12MA_FORCE_RESOURCE_HEAP_TIER;
             }
 
+            D3D12_HEAP_PROPERTIES heapProps = default;
             uint defaultPoolCount = CalcDefaultPoolCount();
 
             for (uint i = 0; i < defaultPoolCount; ++i)
             {
-                D3D12_HEAP_TYPE heapType;
                 D3D12_HEAP_FLAGS heapFlags;
-                CalcDefaultPoolParams(&heapType, &heapFlags, i);
+                CalcDefaultPoolParams(&heapProps.Type, &heapFlags, i);
 
                 var blockVector = D3D12MA_NEW<D3D12MA_BlockVector>(GetAllocs());
                 D3D12MA_BlockVector._ctor(
                     ref *blockVector,
                     pThis, // hAllocator
-                    heapType, // heapType
+                    &heapProps, // heapType
                     heapFlags, // heapFlags
                     m_PreferredBlockSize,
                     0, // minBlockCount
@@ -294,11 +294,10 @@ namespace TerraFX.Interop
                 *ppvResource = null;
             }
 
-            if (pAllocDesc->CustomPool == null && !IsHeapTypeValid(pAllocDesc->HeapType))
+            if (pAllocDesc->CustomPool == null && !IsHeapTypeStandard(pAllocDesc->HeapType))
             {
                 return E_INVALIDARG;
             }
-
             D3D12MA_ALLOCATION_DESC finalAllocDesc = *pAllocDesc;
 
             D3D12_RESOURCE_DESC finalResourceDesc = *pResourceDesc;
@@ -473,7 +472,7 @@ namespace TerraFX.Interop
                 return E_NOINTERFACE;
             }
 
-            if (pAllocDesc->CustomPool == null && !IsHeapTypeValid(pAllocDesc->HeapType))
+            if (pAllocDesc->CustomPool == null && !IsHeapTypeStandard(pAllocDesc->HeapType))
             {
                 return E_INVALIDARG;
             }
@@ -616,11 +615,10 @@ namespace TerraFX.Interop
             }
             else
             {
-                if (!IsHeapTypeValid(pAllocDesc->HeapType))
+                if (!IsHeapTypeStandard(pAllocDesc->HeapType))
                 {
                     return E_INVALIDARG;
                 }
-
                 D3D12MA_ALLOCATION_DESC finalAllocDesc = *pAllocDesc;
 
                 uint defaultPoolIndex = CalcDefaultPoolIndex(pAllocDesc);
@@ -691,11 +689,10 @@ namespace TerraFX.Interop
                 return E_INVALIDARG;
             }
 
-            if (!IsHeapTypeValid(pAllocDesc->HeapType))
+            if (!IsHeapTypeStandard(pAllocDesc->HeapType))
             {
                 return E_INVALIDARG;
             }
-
             return AllocateHeap1(pAllocDesc, pAllocInfo, pProtectedSession, ppAllocation);
         }
 
@@ -736,7 +733,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         public int SetDefaultHeapMinBytes(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong minBytes)
         {
-            if (!IsHeapTypeValid(heapType))
+            if (!IsHeapTypeStandard(heapType))
             {
                 D3D12MA_ASSERT(false); // "Allocator::SetDefaultHeapMinBytes: Invalid heapType passed."
                 return E_INVALIDARG;
@@ -835,7 +832,7 @@ namespace TerraFX.Interop
             D3D12MA_BlockVector* blockVector = block->GetBlockVector();
 
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
-            m_Budget.RemoveAllocation(HeapTypeToIndex(block->GetHeapType()), allocation->GetSize());
+            m_Budget.RemoveAllocation(HeapTypeToIndex(block->GetHeapProperties()->Type), allocation->GetSize());
 
             blockVector->Free(allocation);
         }
@@ -892,9 +889,10 @@ namespace TerraFX.Interop
             }
 
             // Process deafult pools.
+
             if (SupportsResourceHeapTier2())
             {
-                for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_HEAP_TYPE_COUNT; ++heapTypeIndex)
+                for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapTypeIndex)
                 {
                     D3D12MA_BlockVector* pBlockVector = m_BlockVectors[(int)heapTypeIndex];
                     D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pBlockVector != null));
@@ -903,7 +901,7 @@ namespace TerraFX.Interop
             }
             else
             {
-                for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_HEAP_TYPE_COUNT; ++heapTypeIndex)
+                for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapTypeIndex)
                 {
                     for (nuint heapSubType = 0; heapSubType < 3; ++heapSubType)
                     {
@@ -979,6 +977,7 @@ namespace TerraFX.Interop
                 outCpuBudget->BlockBytes = Volatile.Read(ref m_Budget.m_BlockBytes[1]) + Volatile.Read(ref m_Budget.m_BlockBytes[2]);
                 outCpuBudget->AllocationBytes = Volatile.Read(ref m_Budget.m_AllocationBytes[1]) + Volatile.Read(ref m_Budget.m_AllocationBytes[2]);
             }
+            // TODO: What to do with CUSTOM?
 
             if (D3D12MA_DXGI_1_4 != 0)
             {
@@ -1110,7 +1109,7 @@ namespace TerraFX.Interop
 
                     if (SupportsResourceHeapTier2())
                     {
-                        for (nuint heapType = 0; heapType < D3D12MA_HEAP_TYPE_COUNT; ++heapType)
+                        for (nuint heapType = 0; heapType < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapType)
                         {
                             json.WriteString(HeapTypeNames[heapType]);
                             json.BeginObject();
@@ -1126,7 +1125,7 @@ namespace TerraFX.Interop
                     }
                     else
                     {
-                        for (nuint heapType = 0; heapType < D3D12MA_HEAP_TYPE_COUNT; ++heapType)
+                        for (nuint heapType = 0; heapType < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapType)
                         {
                             for (nuint heapSubType = 0; heapSubType < 3; ++heapSubType)
                             {
@@ -1920,6 +1919,7 @@ namespace TerraFX.Interop
             public T e0;
             public T e1;
             public T e2;
+            public T e3;
 
             public ref T this[int index]
             {

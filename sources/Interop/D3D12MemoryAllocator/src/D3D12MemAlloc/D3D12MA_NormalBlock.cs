@@ -28,9 +28,9 @@ namespace TerraFX.Interop
 
         private D3D12MA_BlockVector* m_BlockVector;
 
-        public static void _ctor(ref D3D12MA_NormalBlock pThis, D3D12MA_AllocatorPimpl* allocator, ref D3D12MA_BlockVector blockVector, D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
+        public static void _ctor(ref D3D12MA_NormalBlock pThis, D3D12MA_AllocatorPimpl* allocator, ref D3D12MA_BlockVector blockVector, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
         {
-            pThis.Base = new D3D12MA_MemoryBlock(allocator, heapType, heapFlags, size, id);
+            pThis.Base = new D3D12MA_MemoryBlock(allocator, heapProps, heapFlags, size, id);
             pThis.Base.lpVtbl = Vtbl;
 
             pThis.m_pMetadata = null;
@@ -60,7 +60,8 @@ namespace TerraFX.Interop
             return hr;
         }
 
-        public readonly D3D12_HEAP_TYPE GetHeapType() => Base.GetHeapType();
+        [return: NativeTypeName("const D3D12_HEAP_PROPERTIES&")]
+        public readonly D3D12_HEAP_PROPERTIES* GetHeapProperties() => Base.GetHeapProperties();
 
         public readonly D3D12_HEAP_FLAGS GetHeapFlags() => Base.GetHeapFlags();
 

@@ -16,6 +16,7 @@ namespace TerraFX.Interop
 {
     public static unsafe partial class D3D12MemAlloc
     {
+        internal const uint D3D12MA_STANDARD_HEAP_TYPE_COUNT = 3; // Only DEFAULT, UPLOAD, READBACK.
         internal const uint D3D12MA_DEFAULT_POOL_MAX_COUNT = 9;
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -379,6 +380,11 @@ namespace TerraFX.Interop
                     return 2;
                 }
 
+                case D3D12_HEAP_TYPE_CUSTOM:
+                {
+                    return 3;
+                }
+
                 default:
                 {
                     D3D12MA_ASSERT(false);
@@ -391,7 +397,8 @@ namespace TerraFX.Interop
         {
             "DEFAULT",
             "UPLOAD",
-            "READBACK"
+            "READBACK",
+            "CUSTOM"
         };
 
         // Stat helper functions
@@ -739,9 +746,11 @@ namespace TerraFX.Interop
             return result;
         }
 
-        internal static bool IsHeapTypeValid(D3D12_HEAP_TYPE type)
+        internal static bool IsHeapTypeStandard(D3D12_HEAP_TYPE type)
         {
-            return type == D3D12_HEAP_TYPE_DEFAULT || type == D3D12_HEAP_TYPE_UPLOAD || type == D3D12_HEAP_TYPE_READBACK;
+            return type == D3D12_HEAP_TYPE_DEFAULT ||
+                type == D3D12_HEAP_TYPE_UPLOAD ||
+                type == D3D12_HEAP_TYPE_READBACK;
         }
 
         internal static void AddStatInfoToJson(D3D12MA_JsonWriter* json, D3D12MA_StatInfo* statInfo)

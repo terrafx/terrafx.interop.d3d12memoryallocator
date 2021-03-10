@@ -3,10 +3,6 @@
 // Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using static TerraFX.Interop.D3D12MemAlloc;
 
@@ -14,9 +10,9 @@ namespace TerraFX.Interop
 {
     internal unsafe struct D3D12MA_CurrentBudgetData
     {
-        public _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer m_BlockBytes;
+        public fixed ulong m_BlockBytes[(int)D3D12MA_HEAP_TYPE_COUNT];
 
-        public _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer m_AllocationBytes;
+        public fixed ulong m_AllocationBytes[(int)D3D12MA_HEAP_TYPE_COUNT];
 
         public volatile uint m_OperationsSinceBudgetFetch;
 
@@ -29,7 +25,7 @@ namespace TerraFX.Interop
         public ulong m_D3D12BudgetLocal, m_D3D12BudgetNonLocal;
 
         [NativeTypeName("UINT64")]
-        public _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer m_BlockBytesAtBudgetFetch;
+        public fixed ulong m_BlockBytesAtBudgetFetch[(int)D3D12MA_HEAP_TYPE_COUNT];
 
         public static void _ctor(ref D3D12MA_CurrentBudgetData pThis)
         {
@@ -63,26 +59,6 @@ namespace TerraFX.Interop
             Volatile.Write(ref allocationBytes, Volatile.Read(ref allocationBytes) - allocationSize);
 
             ++m_OperationsSinceBudgetFetch;
-        }
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public struct _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer
-        {
-            public ulong e0;
-            public ulong e1;
-            public ulong e2;
-
-            public ref ulong this[int index]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    return ref AsSpan()[index];
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Span<ulong> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_HEAP_TYPE_COUNT);
         }
     }
 }

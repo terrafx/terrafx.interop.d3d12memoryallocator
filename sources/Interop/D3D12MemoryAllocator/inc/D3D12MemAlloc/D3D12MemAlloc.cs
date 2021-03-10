@@ -12,7 +12,7 @@ namespace TerraFX.Interop
 
         /// <summary>Number of D3D12 memory heap types supported.</summary>
         [NativeTypeName("UINT")]
-        public const uint D3D12MA_HEAP_TYPE_COUNT = 3;
+        public const uint D3D12MA_HEAP_TYPE_COUNT = 4;
 
         /// <summary>
         /// Creates new main <see cref="D3D12MA_Allocator"/> object and returns it through <paramref name="ppAllocator"/>.
