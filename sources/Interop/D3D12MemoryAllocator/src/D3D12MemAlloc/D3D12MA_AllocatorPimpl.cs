@@ -294,6 +294,10 @@ namespace TerraFX.Interop
                 *ppvResource = null;
             }
 
+            if (pAllocDesc->CustomPool == null && !IsHeapTypeStandard(pAllocDesc->HeapType))
+            {
+                return E_INVALIDARG;
+            }
             D3D12MA_ALLOCATION_DESC finalAllocDesc = *pAllocDesc;
 
             D3D12_RESOURCE_DESC finalResourceDesc = *pResourceDesc;
@@ -468,6 +472,11 @@ namespace TerraFX.Interop
                 return E_NOINTERFACE;
             }
 
+            if (pAllocDesc->CustomPool == null && !IsHeapTypeStandard(pAllocDesc->HeapType))
+            {
+                return E_INVALIDARG;
+            }
+
             D3D12MA_ALLOCATION_DESC finalAllocDesc = *pAllocDesc;
 
             D3D12_RESOURCE_DESC1 finalResourceDesc = *pResourceDesc;
@@ -606,6 +615,10 @@ namespace TerraFX.Interop
             }
             else
             {
+                if (!IsHeapTypeStandard(pAllocDesc->HeapType))
+                {
+                    return E_INVALIDARG;
+                }
                 D3D12MA_ALLOCATION_DESC finalAllocDesc = *pAllocDesc;
 
                 uint defaultPoolIndex = CalcDefaultPoolIndex(pAllocDesc);
@@ -676,6 +689,10 @@ namespace TerraFX.Interop
                 return E_INVALIDARG;
             }
 
+            if (!IsHeapTypeStandard(pAllocDesc->HeapType))
+            {
+                return E_INVALIDARG;
+            }
             return AllocateHeap1(pAllocDesc, pAllocInfo, pProtectedSession, ppAllocation);
         }
 
@@ -716,7 +733,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         public int SetDefaultHeapMinBytes(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong minBytes)
         {
-            if (heapType != D3D12_HEAP_TYPE_DEFAULT && heapType != D3D12_HEAP_TYPE_UPLOAD && heapType != D3D12_HEAP_TYPE_READBACK)
+            if (!IsHeapTypeStandard(heapType))
             {
                 D3D12MA_ASSERT(false); // "Allocator::SetDefaultHeapMinBytes: Invalid heapType passed."
                 return E_INVALIDARG;
@@ -875,7 +892,7 @@ namespace TerraFX.Interop
 
             if (SupportsResourceHeapTier2())
             {
-                for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_DEFAULT_POOL_HEAP_TYPE_COUNT; ++heapTypeIndex)
+                for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapTypeIndex)
                 {
                     D3D12MA_BlockVector* pBlockVector = m_BlockVectors[(int)heapTypeIndex];
                     D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pBlockVector != null));
@@ -884,7 +901,7 @@ namespace TerraFX.Interop
             }
             else
             {
-                for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_DEFAULT_POOL_HEAP_TYPE_COUNT; ++heapTypeIndex)
+                for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapTypeIndex)
                 {
                     for (nuint heapSubType = 0; heapSubType < 3; ++heapSubType)
                     {
@@ -960,6 +977,7 @@ namespace TerraFX.Interop
                 outCpuBudget->BlockBytes = Volatile.Read(ref m_Budget.m_BlockBytes[1]) + Volatile.Read(ref m_Budget.m_BlockBytes[2]);
                 outCpuBudget->AllocationBytes = Volatile.Read(ref m_Budget.m_AllocationBytes[1]) + Volatile.Read(ref m_Budget.m_AllocationBytes[2]);
             }
+            // TODO: What to do with CUSTOM?
 
             if (D3D12MA_DXGI_1_4 != 0)
             {
@@ -1091,7 +1109,7 @@ namespace TerraFX.Interop
 
                     if (SupportsResourceHeapTier2())
                     {
-                        for (nuint heapType = 0; heapType < D3D12MA_DEFAULT_POOL_HEAP_TYPE_COUNT; ++heapType)
+                        for (nuint heapType = 0; heapType < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapType)
                         {
                             json.WriteString(HeapTypeNames[heapType]);
                             json.BeginObject();
@@ -1107,7 +1125,7 @@ namespace TerraFX.Interop
                     }
                     else
                     {
-                        for (nuint heapType = 0; heapType < D3D12MA_DEFAULT_POOL_HEAP_TYPE_COUNT; ++heapType)
+                        for (nuint heapType = 0; heapType < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapType)
                         {
                             for (nuint heapSubType = 0; heapSubType < 3; ++heapSubType)
                             {

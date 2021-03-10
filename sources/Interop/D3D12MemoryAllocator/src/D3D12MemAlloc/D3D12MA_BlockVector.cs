@@ -144,7 +144,7 @@ namespace TerraFX.Interop
             D3D12MA_NormalBlock* pBlockToDelete = null;
 
             bool budgetExceeded = false;
-            if (m_HeapProps.Type != D3D12_HEAP_TYPE_CUSTOM)
+            if (IsHeapTypeStandard(m_HeapProps.Type))
             {
                 D3D12MA_Budget budget = default;
                 m_hAllocator->GetBudgetForHeapType(&budget, m_HeapProps.Type);
@@ -519,7 +519,7 @@ namespace TerraFX.Interop
             }
 
             ulong freeMemory = UINT64_MAX;
-            if (m_HeapProps.Type != D3D12_HEAP_TYPE_CUSTOM)
+            if (IsHeapTypeStandard(m_HeapProps.Type))
             {
                 D3D12MA_Budget budget = default;
                 m_hAllocator->GetBudgetForHeapType(&budget, m_HeapProps.Type);
@@ -649,16 +649,10 @@ namespace TerraFX.Interop
                 }
 
                 *pAllocation = m_hAllocator->GetAllocationObjectAllocator()->Allocate(m_hAllocator, size, currRequest.zeroInitialized);
-
                 pBlock->m_pMetadata->Alloc(&currRequest, size, *pAllocation);
                 (*pAllocation)->InitPlaced(currRequest.offset, alignment, pBlock);
-
                 D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && pBlock->Validate());
-                if (m_HeapProps.Type != D3D12_HEAP_TYPE_CUSTOM)
-                {
-                    m_hAllocator->m_Budget.AddAllocation(HeapTypeToIndex(m_HeapProps.Type), size);
-                }
-
+                m_hAllocator->m_Budget.AddAllocation(HeapTypeToIndex(m_HeapProps.Type), size);
                 return S_OK;
             }
 
