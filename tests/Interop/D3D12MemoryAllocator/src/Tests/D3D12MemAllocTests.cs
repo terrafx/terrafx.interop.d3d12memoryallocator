@@ -22,6 +22,8 @@ using static TerraFX.Interop.D3D12MA_ALLOCATOR_FLAGS;
 using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.DXGI_FORMAT;
 using static TerraFX.Interop.Windows;
+using static TerraFX.Interop.D3D12_CPU_PAGE_PROPERTY;
+using static TerraFX.Interop.D3D12_MEMORY_POOL;
 
 namespace TerraFX.Interop.UnitTests
 {
@@ -853,6 +855,107 @@ namespace TerraFX.Interop.UnitTests
             {
                 pool.Dispose();
             }
+        }
+
+        private static HRESULT TestCustomHeap([NativeTypeName("const TestContext&")] in TestContext ctx, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] in D3D12_HEAP_PROPERTIES heapProps)
+        {
+            D3D12MA_Stats globalStatsBeg = default;
+            ctx.allocator->CalculateStats(&globalStatsBeg);
+
+            D3D12MA_POOL_DESC poolDesc = default;
+            poolDesc.HeapProperties = heapProps;
+            poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+            poolDesc.BlockSize = 10 * MEGABYTE;
+            poolDesc.MinBlockCount = 1;
+            poolDesc.MaxBlockCount = 1;
+
+            ulong BUFFER_SIZE = 1 * MEGABYTE;
+
+            D3D12MA_Pool* poolPtr;
+            HRESULT hr = ctx.allocator->CreatePool(&poolDesc, &poolPtr);
+
+            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+
+            try
+            {
+                if (SUCCEEDED(hr))
+                {
+                    D3D12MA_ALLOCATION_DESC allocDesc = default;
+                    allocDesc.CustomPool = pool.Get();
+
+                    D3D12_RESOURCE_DESC resDesc;
+                    FillResourceDescForBuffer(out resDesc, BUFFER_SIZE);
+
+                    // Pool already allocated a block. We don't expect CreatePlacedResource to fail.
+                    D3D12MA_Allocation* allocPtr;
+                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc,
+                        D3D12_RESOURCE_STATE_COPY_DEST,
+                        null, // pOptimizedClearValue
+                        &allocPtr,
+                        __uuidof<ID3D12Resource>(), null)); // riidResource, ppvResource
+
+                    unique_ptr<D3D12MA_Allocation> alloc = allocPtr;
+
+                    try
+                    {
+                        D3D12MA_Stats globalStatsCurr = default;
+                        ctx.allocator->CalculateStats(&globalStatsCurr);
+
+                        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
+                        static extern int memcmp([NativeTypeName("void const*")] void* _Buf1, [NativeTypeName("void const*")] void* _Buf2, [NativeTypeName("size_t")] nuint num);
+
+                        // Make sure it is accounted only in CUSTOM heap not any of the standard heaps.
+                        CHECK_BOOL(memcmp(Unsafe.AsPointer(ref globalStatsCurr.HeapType[0]), Unsafe.AsPointer(ref globalStatsBeg.HeapType[0]), (nuint)sizeof(D3D12MA_StatInfo)) == 0);
+                        CHECK_BOOL(memcmp(Unsafe.AsPointer(ref globalStatsCurr.HeapType[1]), Unsafe.AsPointer(ref globalStatsBeg.HeapType[1]), (nuint)sizeof(D3D12MA_StatInfo)) == 0);
+                        CHECK_BOOL(memcmp(Unsafe.AsPointer(ref globalStatsCurr.HeapType[2]), Unsafe.AsPointer(ref globalStatsBeg.HeapType[2]), (nuint)sizeof(D3D12MA_StatInfo)) == 0);
+                        CHECK_BOOL(globalStatsCurr.HeapType[3].AllocationCount == globalStatsBeg.HeapType[3].AllocationCount + 1);
+                        CHECK_BOOL(globalStatsCurr.HeapType[3].BlockCount == globalStatsBeg.HeapType[3].BlockCount + 1);
+                        CHECK_BOOL(globalStatsCurr.HeapType[3].UsedBytes == globalStatsBeg.HeapType[3].UsedBytes + BUFFER_SIZE);
+                        CHECK_BOOL(globalStatsCurr.Total.AllocationCount == globalStatsBeg.Total.AllocationCount + 1);
+                        CHECK_BOOL(globalStatsCurr.Total.BlockCount == globalStatsBeg.Total.BlockCount + 1);
+                        CHECK_BOOL(globalStatsCurr.Total.UsedBytes == globalStatsBeg.Total.UsedBytes + BUFFER_SIZE);
+
+                        // Map and write some data.
+                        if (heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE ||
+                            heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_BACK)
+                        {
+                            ID3D12Resource* res = alloc.Get()->GetResource();
+
+                            uint* mappedPtr = null;
+                            D3D12_RANGE readRange = default;
+                            CHECK_HR(res->Map(0, &readRange, (void**)&mappedPtr));
+
+                            *mappedPtr = 0xDEADC0DE;
+
+                            res->Unmap(0, null);
+                        }
+                    }
+                    finally
+                    {
+                        alloc.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                pool.Dispose();
+            }
+
+            return hr;
+        }
+
+        private static void TestCustomHeaps([NativeTypeName("const TestContext&")] in TestContext ctx)
+        {
+            Console.WriteLine("Test custom heap");
+
+            D3D12_HEAP_PROPERTIES heapProps = default;
+
+            // Use custom pool but the same as READBACK, which should be always available.
+            heapProps.Type = D3D12_HEAP_TYPE_CUSTOM;
+            heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
+            heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_L0; // System memory
+            HRESULT hr = TestCustomHeap(ctx, heapProps);
+            CHECK_HR(hr);
         }
 
         private static void TestDefaultPoolMinBytes([NativeTypeName("const TestContext&")] in TestContext ctx)
@@ -1783,6 +1886,7 @@ namespace TerraFX.Interop.UnitTests
             TestPlacedResources(in ctx);
             TestOtherComInterface(in ctx);
             TestCustomPools(in ctx);
+            TestCustomHeaps(in ctx);
             TestDefaultPoolMinBytes(in ctx);
             TestAliasingMemory(in ctx);
             TestMapping(in ctx);
