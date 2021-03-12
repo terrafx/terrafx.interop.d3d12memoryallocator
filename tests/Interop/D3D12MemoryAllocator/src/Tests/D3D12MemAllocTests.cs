@@ -265,8 +265,8 @@ namespace TerraFX.Interop.UnitTests
                     D3D12_RESOURCE_STATE_GENERIC_READ,
                     null,
                     &alloc,
-                    __uuidof<ID3D12Resource>(), null
-                ));
+                    null,
+                    null));
 
                 ushort* pStatsString;
                 ctx.allocator->BuildStatsString(&pStatsString, TRUE);
