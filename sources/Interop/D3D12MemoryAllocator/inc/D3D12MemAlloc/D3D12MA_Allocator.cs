@@ -53,6 +53,38 @@ namespace TerraFX.Interop
         }
 
         /// <summary>
+        /// Returns true if <see cref="D3D12_FEATURE_DATA_ARCHITECTURE1.UMA"/> was found to be true.
+        /// <para>
+        /// For more information about how to use it, see articles in Microsoft Docs:
+        /// <see href="https://docs.microsoft.com/en-us/windows/win32/direct3d12/default-texture-mapping"/>
+        /// <see href="https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_feature_data_architecture"/>
+        /// <see href="https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-getcustomheapproperties"/>
+        /// </para>
+        /// </summary>
+        /// <returns>Whether <see cref="D3D12_FEATURE_DATA_ARCHITECTURE1.UMA"/> was found to be true.</returns>
+        [return: NativeTypeName("BOOL")]
+        public readonly int IsUMA()
+        {
+            return m_Pimpl->IsUMA();
+        }
+
+        /// <summary>
+        /// Returns true if <see cref="D3D12_FEATURE_DATA_ARCHITECTURE1.CacheCoherentUMA"/> was found to be true.
+        /// <para>
+        /// For more information about how to use it, see articles in Microsoft Docs:
+        /// <see href="https://docs.microsoft.com/en-us/windows/win32/direct3d12/default-texture-mapping"/>
+        /// <see href="https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_feature_data_architecture"/>
+        /// <see href="https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-getcustomheapproperties"/>
+        /// </para>
+        /// </summary>
+        /// <returns>Whether <see cref="D3D12_FEATURE_DATA_ARCHITECTURE1.CacheCoherentUMA"/> was found to be true.</returns>
+        [return: NativeTypeName("BOOL")]
+        public readonly int IsCacheCoherentUMA()
+        {
+            return m_Pimpl->IsCacheCoherentUMA();
+        }
+
+        /// <summary>
         /// Allocates memory and creates a D3D12 resource (buffer or texture). This is the main allocation function.
         /// <para>
         /// The function is similar to <see cref="ID3D12Device.CreateCommittedResource"/>, but it may

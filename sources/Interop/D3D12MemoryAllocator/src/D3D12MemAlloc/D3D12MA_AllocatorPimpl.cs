@@ -54,6 +54,8 @@ namespace TerraFX.Interop
 
         private D3D12_FEATURE_DATA_D3D12_OPTIONS m_D3D12Options;
 
+        private D3D12_FEATURE_DATA_ARCHITECTURE m_D3D12Architecture;
+
         private D3D12MA_AllocationObjectAllocator m_AllocationObjectAllocator;
 
         [NativeTypeName("Vector<Pointer<D3D12MA_Allocation>>* m_pCommittedAllocations[HEAP_TYPE_COUNT]")]
@@ -116,6 +118,7 @@ namespace TerraFX.Interop
 
             // desc.pAllocationCallbacks intentionally ignored here, preprocessed by CreateAllocator.
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_D3D12Options), (nuint)sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS));
+            ZeroMemory(Unsafe.AsPointer(ref pThis.m_D3D12Architecture), (nuint)sizeof(D3D12_FEATURE_DATA_ARCHITECTURE));
 
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_pCommittedAllocations), (nuint)sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<Pointer<D3D12MA_Vector<Pointer<D3D12MA_Allocation>>>>));
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_pPools), (nuint)sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<Pointer<D3D12MA_Vector<Pointer<D3D12MA_Pool>>>>));
@@ -174,6 +177,13 @@ namespace TerraFX.Interop
             if (D3D12MA_FORCE_RESOURCE_HEAP_TIER != 0)
             {
                 m_D3D12Options.ResourceHeapTier = (D3D12_RESOURCE_HEAP_TIER)D3D12MA_FORCE_RESOURCE_HEAP_TIER;
+            }
+
+            hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &pThis->m_D3D12Architecture, (uint)sizeof(D3D12_FEATURE_DATA_ARCHITECTURE));
+            if (FAILED(hr))
+            {
+                m_D3D12Architecture.UMA = FALSE;
+                m_D3D12Architecture.CacheCoherentUMA = FALSE;
             }
 
             D3D12_HEAP_PROPERTIES heapProps = default;
@@ -261,6 +271,12 @@ namespace TerraFX.Interop
 
         [return: NativeTypeName("const D3D12_FEATURE_DATA_D3D12_OPTIONS&")]
         public readonly D3D12_FEATURE_DATA_D3D12_OPTIONS* GetD3D12Options() => (D3D12_FEATURE_DATA_D3D12_OPTIONS*)Unsafe.AsPointer(ref Unsafe.AsRef(in m_D3D12Options));
+
+        [return: NativeTypeName("BOOL")]
+        public readonly int IsUMA() => m_D3D12Architecture.UMA;
+
+        [return: NativeTypeName("BOOL")]
+        public readonly int IsCacheCoherentUMA() => m_D3D12Architecture.CacheCoherentUMA;
 
         public readonly bool SupportsResourceHeapTier2() => m_D3D12Options.ResourceHeapTier >= D3D12_RESOURCE_HEAP_TIER_2;
 
