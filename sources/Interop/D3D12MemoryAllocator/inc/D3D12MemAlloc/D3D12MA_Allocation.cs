@@ -22,7 +22,7 @@ namespace TerraFX.Interop
     /// <para>The object remembers size and some other information. To retrieve this information, use methods of this class.</para>
     /// <para>The object also remembers <see cref="ID3D12Resource"/> and "owns" a reference to it, so it calls <see cref="IUnknown.Release"/> on the resource when destroyed.</para>
     /// </summary>
-    public unsafe struct D3D12MA_Allocation : IDisposable
+    public unsafe struct D3D12MA_Allocation : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_Allocation>
     {
         internal D3D12MA_AllocatorPimpl* m_Allocator;
 
@@ -423,6 +423,32 @@ namespace TerraFX.Interop
                 D3D12MA_DELETE_ARRAY(m_Allocator->GetAllocs(), m_Name, nameCharCount);
                 m_Name = null;
             }
+        }
+
+        readonly D3D12MA_Allocation* D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.GetPrev()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_PackedData.GetType() == TYPE_COMMITTED) || (m_PackedData.GetType() == TYPE_HEAP)));
+            return m_Committed.prev;
+        }
+
+        readonly D3D12MA_Allocation* D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.GetNext()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_PackedData.GetType() == TYPE_COMMITTED) || (m_PackedData.GetType() == TYPE_HEAP)));
+            return m_Committed.next;
+        }
+
+        readonly D3D12MA_Allocation** D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.AccessPrev()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_PackedData.GetType() == TYPE_COMMITTED) || (m_PackedData.GetType() == TYPE_HEAP)));
+
+            return &((D3D12MA_Allocation*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)))->m_Union.m_Committed.prev;
+        }
+
+        readonly D3D12MA_Allocation** D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.AccessNext()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_PackedData.GetType() == TYPE_COMMITTED) || (m_PackedData.GetType() == TYPE_HEAP)));
+
+            return &((D3D12MA_Allocation*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)))->m_Union.m_Committed.next;
         }
     }
 }

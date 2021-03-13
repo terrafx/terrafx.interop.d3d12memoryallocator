@@ -6,16 +6,16 @@
 namespace TerraFX.Interop
 {
     internal unsafe interface D3D12MA_IItemTypeTraits<TItemType>
-        where TItemType : unmanaged
+        where TItemType : unmanaged, D3D12MA_IItemTypeTraits<TItemType>
     {
-        public TItemType* GetPrev([NativeTypeName("const ItemType*")] TItemType* item);
+        public TItemType* GetPrev();
 
-        public TItemType* GetNext([NativeTypeName("const ItemType*")] TItemType* item);
-
-        [return: NativeTypeName("ItemType*&")]
-        public TItemType** AccessPrev(TItemType* item);
+        public TItemType* GetNext();
 
         [return: NativeTypeName("ItemType*&")]
-        public TItemType** AccessNext(TItemType* item);
+        public TItemType** AccessPrev();
+
+        [return: NativeTypeName("ItemType*&")]
+        public TItemType** AccessNext();
     }
 }

@@ -23,32 +23,25 @@ namespace TerraFX.Interop
         static ItemType*& AccessNext(ItemType* item) { return item->myNextPtr; }
     };
     */
-    internal unsafe struct D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits> : IDisposable
-        where TItemType : unmanaged
-        where TItemTypeTraits : unmanaged, D3D12MA_IItemTypeTraits<TItemType>
+    internal unsafe struct D3D12MA_IntrusiveLinkedList<TItemType> : IDisposable
+        where TItemType : unmanaged, D3D12MA_IItemTypeTraits<TItemType>
     {
         private TItemType* m_Front;
         private TItemType* m_Back;
         private nuint m_Count;
 
-        public static TItemType* GetPrev([NativeTypeName("const ItemType*")] TItemType* item)
-        {
-            return default(TItemTypeTraits).GetPrev(item);
-        }
+        public static TItemType* GetPrev([NativeTypeName("const ItemType*")] TItemType* item) => item->GetPrev();
 
-        public static TItemType* GetNext([NativeTypeName("const ItemType*")] TItemType* item)
-        {
-            return default(TItemTypeTraits).GetNext(item);
-        }
+        public static TItemType* GetNext([NativeTypeName("const ItemType*")] TItemType* item) => item->GetNext();
 
-        public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits> pThis)
+        public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType> pThis)
         {
             pThis.m_Front = null;
             pThis.m_Back = null;
             pThis.m_Count = 0;
         }
 
-        public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits> pThis, [NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits>** src)
+        public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType> pThis, [NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType>** src)
         {
             pThis.m_Front = (*src)->m_Front;
             pThis.m_Back = (*src)->m_Back;
@@ -64,7 +57,7 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&")]
-        public D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits>* op_Assignment([NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits>** src)
+        public D3D12MA_IntrusiveLinkedList<TItemType>* Assign([NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType>** src)
         {
             if (*src != Unsafe.AsPointer(ref this))
             {
@@ -76,7 +69,7 @@ namespace TerraFX.Interop
                 (*src)->m_Count = 0;
             }
 
-            return (D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits>*)Unsafe.AsPointer(ref this);
+            return (D3D12MA_IntrusiveLinkedList<TItemType>*)Unsafe.AsPointer(ref this);
         }
 
         public void RemoveAll()
@@ -86,9 +79,9 @@ namespace TerraFX.Interop
                 TItemType* item = m_Back;
                 while (item != null)
                 {
-                    TItemType* prevItem = *default(TItemTypeTraits).AccessPrev(item);
-                    *default(TItemTypeTraits).AccessPrev(item) = null;
-                    *default(TItemTypeTraits).AccessNext(item) = null;
+                    TItemType* prevItem = item->GetPrev();
+                    *item->AccessPrev() = null;
+                    *item->AccessNext() = null;
                     item = prevItem;
                 }
                 m_Front = null;
@@ -108,7 +101,7 @@ namespace TerraFX.Interop
 
         public void PushBack(TItemType* item)
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (default(TItemTypeTraits).GetPrev(item) == null) && (default(TItemTypeTraits).GetNext(item) == null));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (item->GetPrev() == null) && (item->GetNext() == null));
             if (IsEmpty())
             {
                 m_Front = item;
@@ -117,8 +110,8 @@ namespace TerraFX.Interop
             }
             else
             {
-                *default(TItemTypeTraits).AccessPrev(item) = m_Back;
-                *default(TItemTypeTraits).AccessNext(m_Back) = item;
+                *item->AccessPrev() = m_Back;
+                *m_Back->AccessNext() = item;
                 m_Back = item;
                 ++m_Count;
             }
@@ -126,7 +119,7 @@ namespace TerraFX.Interop
 
         public void PushFront(TItemType* item)
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (default(TItemTypeTraits).GetPrev(item) == null) && (default(TItemTypeTraits).GetNext(item) == null));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (item->GetPrev() == null) && (item->GetNext() == null));
             if (IsEmpty())
             {
                 m_Front = item;
@@ -135,8 +128,8 @@ namespace TerraFX.Interop
             }
             else
             {
-                *default(TItemTypeTraits).AccessNext(item) = m_Front;
-                *default(TItemTypeTraits).AccessPrev(m_Front) = item;
+                *item->AccessNext() = m_Front;
+                *m_Front->AccessPrev() = item;
                 m_Front = item;
                 ++m_Count;
             }
@@ -146,15 +139,15 @@ namespace TerraFX.Interop
         {
             D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
             TItemType* backItem = m_Back;
-            TItemType* prevItem = default(TItemTypeTraits).GetPrev(backItem);
+            TItemType* prevItem = backItem->GetPrev();
             if (prevItem != null)
             {
-                *default(TItemTypeTraits).AccessNext(prevItem) = null;
+                *prevItem->AccessNext() = null;
             }
             m_Back = prevItem;
             --m_Count;
-            *default(TItemTypeTraits).AccessPrev(backItem) = null;
-            *default(TItemTypeTraits).AccessNext(backItem) = null;
+            *backItem->AccessPrev() = null;
+            *backItem->AccessNext() = null;
             return backItem;
         }
 
@@ -162,31 +155,31 @@ namespace TerraFX.Interop
         {
             D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
             TItemType* frontItem = m_Front;
-            TItemType* nextItem = default(TItemTypeTraits).GetNext(frontItem);
+            TItemType* nextItem = frontItem->GetNext();
             if (nextItem != null)
             {
-                *default(TItemTypeTraits).AccessPrev(nextItem) = null;
+                *nextItem->AccessPrev() = null;
             }
             m_Front = nextItem;
             --m_Count;
-            *default(TItemTypeTraits).AccessPrev(frontItem) = null;
-            *default(TItemTypeTraits).AccessNext(frontItem) = null;
+            *frontItem->AccessPrev() = null;
+            *frontItem->AccessNext() = null;
             return frontItem;
         }
 
         // MyItem can be null - it means PushBack.
         public void InsertBefore(TItemType* existingItem, TItemType* newItem)
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (newItem != null) && (default(TItemTypeTraits).GetPrev(newItem) == null) && (default(TItemTypeTraits).GetNext(newItem) == null));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (newItem != null) && (newItem->GetPrev() == null) && (newItem->GetNext() == null));
             if (existingItem != null)
             {
-                TItemType* prevItem = default(TItemTypeTraits).GetPrev(existingItem);
-                *default(TItemTypeTraits).AccessPrev(newItem) = prevItem;
-                *default(TItemTypeTraits).AccessNext(newItem) = existingItem;
-                *default(TItemTypeTraits).AccessPrev(existingItem) = newItem;
+                TItemType* prevItem = existingItem->GetPrev();
+                *newItem->AccessPrev() = prevItem;
+                *newItem->AccessNext() = existingItem;
+                *existingItem->AccessPrev() = newItem;
                 if (prevItem != null)
                 {
-                    *default(TItemTypeTraits).AccessNext(prevItem) = newItem;
+                    *prevItem->AccessNext() = newItem;
                 }
                 else
                 {
@@ -204,16 +197,16 @@ namespace TerraFX.Interop
         // MyItem can be null - it means PushFront.
         public void InsertAfter(TItemType* existingItem, TItemType* newItem)
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (newItem != null) && (default(TItemTypeTraits).GetPrev(newItem) == null) && (default(TItemTypeTraits).GetNext(newItem) == null));
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (newItem != null) && (newItem->GetPrev() == null) && (newItem->GetNext() == null));
             if (existingItem != null)
             {
-                TItemType* nextItem = default(TItemTypeTraits).GetNext(existingItem);
-                *default(TItemTypeTraits).AccessNext(newItem) = nextItem;
-                *default(TItemTypeTraits).AccessPrev(newItem) = existingItem;
-                *default(TItemTypeTraits).AccessNext(existingItem) = newItem;
+                TItemType* nextItem = existingItem->GetNext();
+                *newItem->AccessNext() = nextItem;
+                *newItem->AccessPrev() = existingItem;
+                *existingItem->AccessNext() = newItem;
                 if (nextItem != null)
                 {
-                    *default(TItemTypeTraits).AccessPrev(nextItem) = newItem;
+                    *nextItem->AccessPrev() = newItem;
                 }
                 else
                 {
@@ -231,27 +224,27 @@ namespace TerraFX.Interop
         public void Remove(TItemType* item)
         {
             D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (item != null) && (m_Count > 0));
-            if (default(TItemTypeTraits).GetPrev(item) != null)
+            if (item->GetPrev() != null)
             {
-                *default(TItemTypeTraits).AccessNext(*default(TItemTypeTraits).AccessPrev(item)) = default(TItemTypeTraits).GetNext(item);
+                *item->GetPrev()->AccessNext() = item->GetNext();
             }
             else
             {
                 D3D12MA_HEAVY_ASSERT(m_Front == item);
-                m_Front = default(TItemTypeTraits).GetNext(item);
+                m_Front = item->GetNext();
             }
 
-            if (default(TItemTypeTraits).GetNext(item) != null)
+            if (item->GetNext() != null)
             {
-                *default(TItemTypeTraits).AccessPrev(*default(TItemTypeTraits).AccessNext(item)) = default(TItemTypeTraits).GetPrev(item);
+                *item->GetNext()->AccessPrev() = item->GetPrev();
             }
             else
             {
                 D3D12MA_HEAVY_ASSERT(m_Back == item);
-                m_Back = default(TItemTypeTraits).GetPrev(item);
+                m_Back = item->GetPrev();
             }
-            *default(TItemTypeTraits).AccessPrev(item) = null;
-            *default(TItemTypeTraits).AccessNext(item) = null;
+            *item->AccessPrev() = null;
+            *item->AccessNext() = null;
             --m_Count;
         }
     }

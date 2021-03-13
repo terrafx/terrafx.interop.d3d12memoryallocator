@@ -9,7 +9,7 @@ using static TerraFX.Interop.D3D12MemAlloc;
 
 namespace TerraFX.Interop
 {
-    internal unsafe struct D3D12MA_PoolPimpl : IDisposable
+    internal unsafe struct D3D12MA_PoolPimpl : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_PoolPimpl>
     {
         public D3D12MA_AllocatorPimpl* m_Allocator; // Externally owned object
 
@@ -105,6 +105,20 @@ namespace TerraFX.Interop
                 D3D12MA_DELETE_ARRAY(m_Allocator->GetAllocs(), m_Name, nameCharCount);
                 m_Name = null;
             }
+        }
+
+        public readonly D3D12MA_PoolPimpl* GetPrev() => m_PrevPool;
+
+        public readonly D3D12MA_PoolPimpl* GetNext() => m_NextPool;
+
+        public readonly D3D12MA_PoolPimpl** AccessPrev()
+        {
+            return &((D3D12MA_PoolPimpl*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)))->m_PrevPool;
+        }
+
+        public readonly D3D12MA_PoolPimpl** AccessNext()
+        {
+            return &((D3D12MA_PoolPimpl*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)))->m_NextPool;
         }
     }
 }
