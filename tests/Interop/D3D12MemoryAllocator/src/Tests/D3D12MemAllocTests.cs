@@ -9,8 +9,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using NUnit.Framework;
+using static TerraFX.Interop.D3D12_CPU_PAGE_PROPERTY;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.D3D12_HEAP_TYPE;
+using static TerraFX.Interop.D3D12_MEMORY_POOL;
 using static TerraFX.Interop.D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS;
 using static TerraFX.Interop.D3D12_RESOURCE_BARRIER_TYPE;
 using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
@@ -22,8 +24,6 @@ using static TerraFX.Interop.D3D12MA_ALLOCATOR_FLAGS;
 using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.DXGI_FORMAT;
 using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12_CPU_PAGE_PROPERTY;
-using static TerraFX.Interop.D3D12_MEMORY_POOL;
 
 namespace TerraFX.Interop.UnitTests
 {
@@ -869,7 +869,7 @@ namespace TerraFX.Interop.UnitTests
             poolDesc.MinBlockCount = 1;
             poolDesc.MaxBlockCount = 1;
 
-            ulong BUFFER_SIZE = 1 * MEGABYTE;
+            const ulong BUFFER_SIZE = 1 * MEGABYTE;
 
             D3D12MA_Pool* poolPtr;
             HRESULT hr = ctx.allocator->CreatePool(&poolDesc, &poolPtr);
@@ -900,9 +900,6 @@ namespace TerraFX.Interop.UnitTests
                     {
                         D3D12MA_Stats globalStatsCurr = default;
                         ctx.allocator->CalculateStats(&globalStatsCurr);
-
-                        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-                        static extern int memcmp([NativeTypeName("void const*")] void* _Buf1, [NativeTypeName("void const*")] void* _Buf2, [NativeTypeName("size_t")] nuint num);
 
                         // Make sure it is accounted only in CUSTOM heap not any of the standard heaps.
                         CHECK_BOOL(memcmp(Unsafe.AsPointer(ref globalStatsCurr.HeapType[0]), Unsafe.AsPointer(ref globalStatsBeg.HeapType[0]), (nuint)sizeof(D3D12MA_StatInfo)) == 0);

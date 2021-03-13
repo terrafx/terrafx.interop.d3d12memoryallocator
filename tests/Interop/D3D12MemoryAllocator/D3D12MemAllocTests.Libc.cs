@@ -11,5 +11,8 @@ namespace TerraFX.Interop.UnitTests
 
         [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern void _aligned_free(void* _Block);
+
+        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int memcmp([NativeTypeName("void const*")] void* _Buf1, [NativeTypeName("void const*")] void* _Buf2, [NativeTypeName("size_t")] nuint num);
     }
 }
