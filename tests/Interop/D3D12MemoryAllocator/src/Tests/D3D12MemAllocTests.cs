@@ -1650,18 +1650,6 @@ namespace TerraFX.Interop.UnitTests
                 Assert.Inconclusive("QueryInterface for ID3D12Device4 FAILED.");
             }
 
-            D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT support;
-            CHECK_HR(ctx.device->CheckFeatureSupport(
-                D3D12_FEATURE.D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_SUPPORT,
-                &support,
-                (uint)sizeof(D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT))
-            );
-
-            if (support.Support == D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAG_NONE)
-            {
-                Assert.Inconclusive();
-            }
-
             D3D12_PROTECTED_RESOURCE_SESSION_DESC sessionDesc = default;
             using ComPtr<ID3D12ProtectedResourceSession> session = default;
 
