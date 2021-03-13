@@ -1644,26 +1644,21 @@ namespace TerraFX.Interop.UnitTests
 
             using ComPtr<ID3D12Device4> dev4 = default;
 
-            if (FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device>(), (void**)&dev4)))
+            HRESULT hr = ctx.device->QueryInterface(__uuidof<ID3D12Device>(), (void**)&dev4);
+            if (FAILED(hr))
             {
-                Assert.Inconclusive();
-            }
-
-            D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT support;
-            CHECK_HR(ctx.device->CheckFeatureSupport(
-                D3D12_FEATURE.D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_SUPPORT,
-                &support,
-                (uint)sizeof(D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT))
-            );
-
-            if (support.Support == D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAG_NONE)
-            {
-                Assert.Inconclusive();
+                Assert.Inconclusive("QueryInterface for ID3D12Device4 FAILED.");
             }
 
             D3D12_PROTECTED_RESOURCE_SESSION_DESC sessionDesc = default;
             using ComPtr<ID3D12ProtectedResourceSession> session = default;
-            CHECK_HR(dev4.Get()->CreateProtectedResourceSession(&sessionDesc, __uuidof<ID3D12ProtectedResourceSession>(), (void**)&session));
+
+            // This fails on the SOFTWARE adapter.
+            hr = dev4.Get()->CreateProtectedResourceSession(&sessionDesc, __uuidof<ID3D12ProtectedResourceSession>(), (void**)&session);
+            if (FAILED(hr))
+            {
+                Assert.Inconclusive("ID3D12Device4::CreateProtectedResourceSession FAILED.");
+            }
 
             // Create a buffer
 
