@@ -9,7 +9,7 @@ using static TerraFX.Interop.D3D12MemAlloc;
 
 namespace TerraFX.Interop
 {
-    internal unsafe struct D3D12MA_PoolPimpl : IDisposable
+    internal unsafe struct D3D12MA_PoolPimpl : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_PoolPimpl>
     {
         public D3D12MA_AllocatorPimpl* m_Allocator; // Externally owned object
 
@@ -20,12 +20,18 @@ namespace TerraFX.Interop
         [NativeTypeName("wchar_t*")]
         public ushort* m_Name;
 
+        public D3D12MA_PoolPimpl* m_PrevPool;
+
+        public D3D12MA_PoolPimpl* m_NextPool;
+
         internal static void _ctor(ref D3D12MA_PoolPimpl pThis, D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("const D3D12MA_POOL_DESC&")] D3D12MA_POOL_DESC* desc)
         {
             pThis.m_Allocator = allocator;
             pThis.m_Desc = *desc;
             pThis.m_BlockVector = null;
             pThis.m_Name = null;
+            pThis.m_PrevPool = null;
+            pThis.m_NextPool = null;
 
             bool explicitBlockSize = desc->BlockSize != 0;
             ulong preferredBlockSize = explicitBlockSize ? desc->BlockSize : D3D12MA_DEFAULT_BLOCK_SIZE;
@@ -51,6 +57,7 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_PrevPool == null) && (m_NextPool == null));
             FreeName();
             D3D12MA_DELETE(m_Allocator->GetAllocs(), m_BlockVector);
         }
@@ -98,6 +105,20 @@ namespace TerraFX.Interop
                 D3D12MA_DELETE_ARRAY(m_Allocator->GetAllocs(), m_Name, nameCharCount);
                 m_Name = null;
             }
+        }
+
+        public readonly D3D12MA_PoolPimpl* GetPrev() => m_PrevPool;
+
+        public readonly D3D12MA_PoolPimpl* GetNext() => m_NextPool;
+
+        public readonly D3D12MA_PoolPimpl** AccessPrev()
+        {
+            return &((D3D12MA_PoolPimpl*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)))->m_PrevPool;
+        }
+
+        public readonly D3D12MA_PoolPimpl** AccessNext()
+        {
+            return &((D3D12MA_PoolPimpl*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)))->m_NextPool;
         }
     }
 }

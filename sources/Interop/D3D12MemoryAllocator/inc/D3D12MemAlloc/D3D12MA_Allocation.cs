@@ -22,7 +22,7 @@ namespace TerraFX.Interop
     /// <para>The object remembers size and some other information. To retrieve this information, use methods of this class.</para>
     /// <para>The object also remembers <see cref="ID3D12Resource"/> and "owns" a reference to it, so it calls <see cref="IUnknown.Release"/> on the resource when destroyed.</para>
     /// </summary>
-    public unsafe struct D3D12MA_Allocation : IDisposable
+    public unsafe struct D3D12MA_Allocation : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_Allocation>
     {
         internal D3D12MA_AllocatorPimpl* m_Allocator;
 
@@ -252,6 +252,8 @@ namespace TerraFX.Interop
             public struct _m_Committed_e__Struct
             {
                 public D3D12_HEAP_TYPE heapType;
+                public D3D12MA_Allocation* prev;
+                public D3D12MA_Allocation* next;
             }
 
             public struct _m_Placed_e__Struct
@@ -265,6 +267,8 @@ namespace TerraFX.Interop
             public struct _m_Heap_e__Struct
             {
                 public D3D12_HEAP_TYPE heapType;
+                public D3D12MA_Allocation* prev;
+                public D3D12MA_Allocation* next;
                 public ID3D12Heap* heap;
             }
         }
@@ -377,6 +381,8 @@ namespace TerraFX.Interop
         {
             m_PackedData.SetType(TYPE_COMMITTED);
             m_Committed.heapType = heapType;
+            m_Committed.prev = null;
+            m_Committed.next = null;
         }
 
         internal void InitPlaced([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong alignment, D3D12MA_NormalBlock* block)
@@ -391,6 +397,8 @@ namespace TerraFX.Interop
             m_PackedData.SetType(TYPE_HEAP);
             m_Heap.heapType = heapType;
             m_Heap.heap = heap;
+            m_Committed.prev = null;
+            m_Committed.next = null;
         }
 
         internal void SetResource(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] D3D12_RESOURCE_DESC* pResourceDesc)
@@ -415,6 +423,32 @@ namespace TerraFX.Interop
                 D3D12MA_DELETE_ARRAY(m_Allocator->GetAllocs(), m_Name, nameCharCount);
                 m_Name = null;
             }
+        }
+
+        readonly D3D12MA_Allocation* D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.GetPrev()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_PackedData.GetType() == TYPE_COMMITTED) || (m_PackedData.GetType() == TYPE_HEAP)));
+            return m_Committed.prev;
+        }
+
+        readonly D3D12MA_Allocation* D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.GetNext()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_PackedData.GetType() == TYPE_COMMITTED) || (m_PackedData.GetType() == TYPE_HEAP)));
+            return m_Committed.next;
+        }
+
+        readonly D3D12MA_Allocation** D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.AccessPrev()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_PackedData.GetType() == TYPE_COMMITTED) || (m_PackedData.GetType() == TYPE_HEAP)));
+
+            return &((D3D12MA_Allocation*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)))->m_Union.m_Committed.prev;
+        }
+
+        readonly D3D12MA_Allocation** D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.AccessNext()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_PackedData.GetType() == TYPE_COMMITTED) || (m_PackedData.GetType() == TYPE_HEAP)));
+
+            return &((D3D12MA_Allocation*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)))->m_Union.m_Committed.next;
         }
     }
 }
