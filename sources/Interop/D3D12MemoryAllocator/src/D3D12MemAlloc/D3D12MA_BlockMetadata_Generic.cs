@@ -70,15 +70,15 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
-            Base.Dispose();
+            Dispose(ref this);
 
             m_FreeSuballocationsBySize.Dispose();
             m_Suballocations.Dispose();
         }
 
-        public void Init([NativeTypeName("UINT64")] ulong size) => Base.Init(size);
+        public void Init([NativeTypeName("UINT64")] ulong size) => Init(ref this, size);
 
-        public readonly bool Validate() => Base.Validate();
+        public readonly bool Validate() => Validate(in this);
 
         [return: NativeTypeName("UINT64")]
         public readonly ulong GetSize() => Base.GetSize();
@@ -86,39 +86,34 @@ namespace TerraFX.Interop
         public readonly bool IsVirtual() => Base.IsVirtual();
 
         [return: NativeTypeName("size_t")]
-        public readonly nuint GetAllocationCount() => Base.GetAllocationCount();
+        public readonly nuint GetAllocationCount() => GetAllocationCount(in this);
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetSumFreeSize() => Base.GetSumFreeSize();
+        public readonly ulong GetSumFreeSize() => GetSumFreeSize(in this);
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetUnusedRangeSizeMax() => Base.GetUnusedRangeSizeMax();
+        public readonly ulong GetUnusedRangeSizeMax() => GetUnusedRangeSizeMax(in this);
 
-        public readonly bool IsEmpty() => Base.IsEmpty();
+        public readonly bool IsEmpty() => IsEmpty(in this);
 
         public readonly void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("D3D12MA_VIRTUAL_ALLOCATION_INFO&")] D3D12MA_VIRTUAL_ALLOCATION_INFO* outInfo)
-            => Base.GetAllocationInfo(offset, outInfo);
+            => GetAllocationInfo(in this, offset, outInfo);
 
         public bool CreateAllocationRequest([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, D3D12MA_AllocationRequest* pAllocationRequest)
-            => Base.CreateAllocationRequest(allocSize, allocAlignment, pAllocationRequest);
+            => CreateAllocationRequest(ref this, allocSize, allocAlignment, pAllocationRequest);
 
         public void Alloc([NativeTypeName("const D3D12MA_AllocationRequest&")] D3D12MA_AllocationRequest* request, [NativeTypeName("UINT64")] ulong allocSize, void* userData)
-            => Base.Alloc(request, allocSize, userData);
+            => Alloc(ref this, request, allocSize, userData);
 
-        public void FreeAtOffset([NativeTypeName("UINT64")] ulong offset)
-            => Base.FreeAtOffset(offset);
+        public void FreeAtOffset([NativeTypeName("UINT64")] ulong offset) => FreeAtOffset(ref this, offset);
 
-        public void Clear()
-            => Base.Clear();
+        public void Clear() => Clear(ref this);
 
-        public void SetAllocationUserData([NativeTypeName("UINT64")] ulong offset, void* userData)
-            => Base.SetAllocationUserData(offset, userData);
+        public void SetAllocationUserData([NativeTypeName("UINT64")] ulong offset, void* userData) => SetAllocationUserData(ref this, offset, userData);
 
-        public readonly void CalcAllocationStatInfo([NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outInfo)
-            => Base.CalcAllocationStatInfo(outInfo);
+        public readonly void CalcAllocationStatInfo([NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outInfo) => CalcAllocationStatInfo(in this, outInfo);
 
-        public readonly void WriteAllocationInfoToJson([NativeTypeName("JsonWriter&")] D3D12MA_JsonWriter* json)
-            => Base.WriteAllocationInfoToJson(json);
+        public readonly void WriteAllocationInfoToJson([NativeTypeName("JsonWriter&")] D3D12MA_JsonWriter* json) => WriteAllocationInfoToJson(in this, json);
 
         public readonly bool ValidateFreeSuballocationList()
         {
