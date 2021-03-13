@@ -117,8 +117,16 @@ namespace TerraFX.Interop
             // desc.pAllocationCallbacks intentionally ignored here, preprocessed by CreateAllocator.
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_D3D12Options), (nuint)sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS));
 
-            ZeroMemory(Unsafe.AsPointer(ref pThis.m_CommittedAllocations), (nuint)sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<Pointer<D3D12MA_Vector<Pointer<D3D12MA_Allocation>>>>));
-            ZeroMemory(Unsafe.AsPointer(ref pThis.m_Pools), (nuint)sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<Pointer<D3D12MA_Vector<Pointer<D3D12MA_Pool>>>>));
+            foreach (ref D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits> allocation in pThis.m_CommittedAllocations.AsSpan())
+            {
+                D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation, D3D12MA_CommittedAllocationListItemTraits>._ctor(ref allocation);
+            }
+
+            foreach (ref D3D12MA_IntrusiveLinkedList<D3D12MA_PoolPimpl, D3D12MA_PoolListItemTraits> pool in pThis.m_Pools.AsSpan())
+            {
+                D3D12MA_IntrusiveLinkedList<D3D12MA_PoolPimpl, D3D12MA_PoolListItemTraits>._ctor(ref pool);
+            }
+
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_BlockVectors), (nuint)sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<Pointer<D3D12MA_BlockVector>>));
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_DefaultPoolTier1MinBytes), (nuint)sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<ulong>));
 

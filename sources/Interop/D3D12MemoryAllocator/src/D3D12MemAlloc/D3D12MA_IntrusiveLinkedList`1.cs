@@ -41,6 +41,13 @@ namespace TerraFX.Interop
             return default(TItemTypeTraits).GetNext(item);
         }
 
+        public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits> pThis)
+        {
+            pThis.m_Front = null;
+            pThis.m_Back = null;
+            pThis.m_Count = 0;
+        }
+
         public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits> pThis, [NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType, TItemTypeTraits>** src)
         {
             pThis.m_Front = (*src)->m_Front;
