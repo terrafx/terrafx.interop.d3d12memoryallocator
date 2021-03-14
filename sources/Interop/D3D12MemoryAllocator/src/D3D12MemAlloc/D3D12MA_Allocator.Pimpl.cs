@@ -22,7 +22,7 @@ using System.Threading;
 
 namespace TerraFX.Interop
 {
-    public unsafe partial struct D3D12MA_Allocator : IDisposable
+    public unsafe partial struct D3D12MA_Allocator
     {
         internal D3D12MA_CurrentBudgetData m_Budget;
 
@@ -72,7 +72,7 @@ namespace TerraFX.Interop
 
         // Default pools.
         [NativeTypeName("BlockVector* m_BlockVectors[DEFAULT_POOL_MAX_COUNT]")]
-        internal _D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<Pointer<D3D12MA_BlockVector>> m_BlockVectors;
+        private _D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<Pointer<D3D12MA_BlockVector>> m_BlockVectors;
 
         // # Used only when ResourceHeapTier = 1
         [NativeTypeName("UINT64 m_DefaultPoolTier1MinBytes[DEFAULT_POOL_MAX_COUNT]")]
@@ -287,7 +287,7 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        private int CreateResource_Pimpl(D3D12MA_ALLOCATION_DESC* pAllocDesc, D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+        private int CreateResourcePimpl(D3D12MA_ALLOCATION_DESC* pAllocDesc, D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
             *ppAllocation = null;
 
@@ -1896,15 +1896,17 @@ namespace TerraFX.Interop
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal struct _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<T>
+        private struct _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<T>
             where T : unmanaged
         {
-            internal T e0;
-            internal T e1;
-            internal T e2;
-            internal T e3;
+#pragma warning disable CS0649
+            public T e0;
+            public T e1;
+            public T e2;
+            public T e3;
+#pragma warning restore CS0649
 
-            internal ref T this[int index]
+            public ref T this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
@@ -1914,24 +1916,26 @@ namespace TerraFX.Interop
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_HEAP_TYPE_COUNT);
+            public Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_HEAP_TYPE_COUNT);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        internal struct _D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<T>
+        private struct _D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<T>
             where T : unmanaged
         {
-            internal T e0;
-            internal T e1;
-            internal T e2;
-            internal T e3;
-            internal T e4;
-            internal T e5;
-            internal T e6;
-            internal T e7;
-            internal T e8;
+#pragma warning disable CS0649
+            public T e0;
+            public T e1;
+            public T e2;
+            public T e3;
+            public T e4;
+            public T e5;
+            public T e6;
+            public T e7;
+            public T e8;
+#pragma warning restore CS0649
 
-            internal ref T this[int index]
+            public ref T this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
@@ -1941,7 +1945,7 @@ namespace TerraFX.Interop
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_DEFAULT_POOL_MAX_COUNT);
+            public Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_DEFAULT_POOL_MAX_COUNT);
         }
     }
 }

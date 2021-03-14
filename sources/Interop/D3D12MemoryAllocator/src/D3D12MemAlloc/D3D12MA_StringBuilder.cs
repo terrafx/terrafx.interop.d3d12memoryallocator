@@ -20,6 +20,12 @@ namespace TerraFX.Interop
             D3D12MA_Vector<ushort>._ctor(ref m_Data, allocationCallbacks);
         }
 
+        public D3D12MA_StringBuilder(ref D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks)
+        {
+            Unsafe.SkipInit(out m_Data);
+            D3D12MA_Vector<ushort>._ctor(ref m_Data, (D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref allocationCallbacks));
+        }
+
         public void Dispose() => m_Data.Dispose();
 
         [return: NativeTypeName("size_t")]

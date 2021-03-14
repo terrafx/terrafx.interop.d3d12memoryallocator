@@ -3,6 +3,7 @@
 // Ported from D3D12MemAlloc.h in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
+using System;
 using static TerraFX.Interop.D3D12MemAlloc;
 
 namespace TerraFX.Interop
@@ -16,7 +17,7 @@ namespace TerraFX.Interop
     /// </para>
     /// <para>To create custom pool, fill <see cref="D3D12MA_POOL_DESC"/> and call <see cref="D3D12MA_Allocator.CreatePool"/>.</para>
     /// </summary>
-    public unsafe partial struct D3D12MA_Pool
+    public unsafe partial struct D3D12MA_Pool : IDisposable
     {
         /// <summary>
         /// Deletes pool object, frees D3D12 heaps (memory blocks) managed by it. Allocations and resources must already be released!

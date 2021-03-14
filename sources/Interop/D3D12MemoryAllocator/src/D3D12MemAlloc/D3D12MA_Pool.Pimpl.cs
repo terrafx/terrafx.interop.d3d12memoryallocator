@@ -9,7 +9,7 @@ using static TerraFX.Interop.D3D12MemAlloc;
 
 namespace TerraFX.Interop
 {
-    public unsafe partial struct D3D12MA_Pool : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_Pool>
+    public unsafe partial struct D3D12MA_Pool : D3D12MA_IItemTypeTraits<D3D12MA_Pool>
     {
         internal D3D12MA_Allocator* m_Allocator; // Externally owned object
 
@@ -24,9 +24,9 @@ namespace TerraFX.Interop
 
         internal D3D12MA_Pool* m_NextPool;
 
-        internal static void _ctor(ref D3D12MA_Pool pThis, D3D12MA_Allocator* allocator, [NativeTypeName("const D3D12MA_POOL_DESC&")] D3D12MA_POOL_DESC* desc)
+        internal static void _ctor(ref D3D12MA_Pool pThis, ref D3D12MA_Allocator allocator, [NativeTypeName("const D3D12MA_POOL_DESC&")] D3D12MA_POOL_DESC* desc)
         {
-            pThis.m_Allocator = allocator;
+            pThis.m_Allocator = (D3D12MA_Allocator*)Unsafe.AsPointer(ref allocator);
             pThis.m_Desc = *desc;
             pThis.m_BlockVector = null;
             pThis.m_Name = null;
@@ -39,10 +39,12 @@ namespace TerraFX.Interop
             D3D12_HEAP_FLAGS heapFlags = desc->HeapFlags;
             uint maxBlockCount = desc->MaxBlockCount != 0 ? desc->MaxBlockCount : uint.MaxValue;
 
-            pThis.m_BlockVector = D3D12MA_NEW<D3D12MA_BlockVector>(allocator->GetAllocs());
+            pThis.m_BlockVector = D3D12MA_NEW<D3D12MA_BlockVector>(allocator.GetAllocs());
             D3D12MA_BlockVector._ctor(
                 ref *pThis.m_BlockVector,
-                allocator, &desc->HeapProperties, heapFlags,
+                (D3D12MA_Allocator*)Unsafe.AsPointer(ref allocator),
+                &desc->HeapProperties,
+                heapFlags,
                 preferredBlockSize,
                 desc->MinBlockCount, maxBlockCount,
                 explicitBlockSize

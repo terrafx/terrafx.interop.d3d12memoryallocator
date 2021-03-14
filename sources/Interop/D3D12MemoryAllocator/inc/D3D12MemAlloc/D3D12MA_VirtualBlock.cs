@@ -129,16 +129,16 @@ namespace TerraFX.Interop
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
-            using var sb = new D3D12MA_StringBuilder((D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref m_AllocationCallbacks));
+            using var sb = new D3D12MA_StringBuilder(ref m_AllocationCallbacks);
 
-            using (var json = new D3D12MA_JsonWriter((D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref m_AllocationCallbacks), &sb))
+            using (var json = new D3D12MA_JsonWriter(ref m_AllocationCallbacks, &sb))
             {
                 D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Metadata.Validate());
                 m_Metadata.WriteAllocationInfoToJson(&json);
             }
 
             nuint length = sb.GetLength();
-            ushort* result = AllocateArray<ushort>((D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref m_AllocationCallbacks), length + 1);
+            ushort* result = AllocateArray<ushort>(ref m_AllocationCallbacks, length + 1);
             memcpy(result, sb.GetData(), length * sizeof(ushort));
             result[length] = '\0';
             *ppStatsString = result;
@@ -150,7 +150,7 @@ namespace TerraFX.Interop
             if (pStatsString != null)
             {
                 using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-                Free((D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref m_AllocationCallbacks), pStatsString);
+                Free(ref m_AllocationCallbacks, pStatsString);
             }
         }
 
