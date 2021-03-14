@@ -21,7 +21,7 @@ namespace TerraFX.Interop
             D3D12MA_PoolAllocator<D3D12MA_Allocation>._ctor(ref pThis.m_Allocator, (D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref allocationCallbacks), 1024);
         }
 
-        public D3D12MA_Allocation* Allocate(D3D12MA_AllocatorPimpl* allocator, ulong size, int wasZeroInitialized)
+        public D3D12MA_Allocation* Allocate(D3D12MA_Allocator* allocator, ulong size, int wasZeroInitialized)
         {
             using var mutexLock = new D3D12MA_MutexLock(ref m_Mutex);
 

@@ -88,8 +88,8 @@ namespace TerraFX.Interop
 
         internal static void _ctor(ref D3D12MA_Pool pThis, ref D3D12MA_Allocator allocator, [NativeTypeName("const POOL_DESC&")] D3D12MA_POOL_DESC* desc)
         {
-            pThis.m_Pimpl = D3D12MA_NEW<D3D12MA_PoolPimpl>(allocator.m_Pimpl->GetAllocs());
-            D3D12MA_PoolPimpl._ctor(ref *pThis.m_Pimpl, allocator.m_Pimpl, desc);
+            pThis.m_Pimpl = D3D12MA_NEW<D3D12MA_PoolPimpl>(allocator.GetAllocs());
+            D3D12MA_PoolPimpl._ctor(ref *pThis.m_Pimpl, (D3D12MA_Allocator*)Unsafe.AsPointer(ref allocator), desc);
         }
 
         void IDisposable.Dispose()

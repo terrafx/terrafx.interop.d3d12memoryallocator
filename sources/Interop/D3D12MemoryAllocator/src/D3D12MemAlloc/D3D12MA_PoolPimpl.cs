@@ -11,7 +11,7 @@ namespace TerraFX.Interop
 {
     internal unsafe struct D3D12MA_PoolPimpl : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_PoolPimpl>
     {
-        public D3D12MA_AllocatorPimpl* m_Allocator; // Externally owned object
+        public D3D12MA_Allocator* m_Allocator; // Externally owned object
 
         public D3D12MA_POOL_DESC m_Desc;
 
@@ -24,7 +24,7 @@ namespace TerraFX.Interop
 
         public D3D12MA_PoolPimpl* m_NextPool;
 
-        internal static void _ctor(ref D3D12MA_PoolPimpl pThis, D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("const D3D12MA_POOL_DESC&")] D3D12MA_POOL_DESC* desc)
+        internal static void _ctor(ref D3D12MA_PoolPimpl pThis, D3D12MA_Allocator* allocator, [NativeTypeName("const D3D12MA_POOL_DESC&")] D3D12MA_POOL_DESC* desc)
         {
             pThis.m_Allocator = allocator;
             pThis.m_Desc = *desc;
@@ -62,7 +62,7 @@ namespace TerraFX.Interop
             D3D12MA_DELETE(m_Allocator->GetAllocs(), m_BlockVector);
         }
 
-        public readonly D3D12MA_AllocatorPimpl* GetAllocator() => m_Allocator;
+        public readonly D3D12MA_Allocator* GetAllocator() => m_Allocator;
 
         public readonly D3D12MA_POOL_DESC* GetDesc() => (D3D12MA_POOL_DESC*)Unsafe.AsPointer(ref Unsafe.AsRef(m_Desc));
 

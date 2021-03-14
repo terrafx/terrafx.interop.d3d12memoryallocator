@@ -25,7 +25,7 @@ namespace TerraFX.Interop
 
         internal void** lpVtbl;
 
-        internal readonly D3D12MA_AllocatorPimpl* m_Allocator;
+        internal readonly D3D12MA_Allocator* m_Allocator;
 
         internal readonly D3D12_HEAP_PROPERTIES m_HeapProps;
 
@@ -38,7 +38,7 @@ namespace TerraFX.Interop
 
         internal ID3D12Heap* m_Heap;
 
-        public D3D12MA_MemoryBlock(D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
+        public D3D12MA_MemoryBlock(D3D12MA_Allocator* allocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
         {
             lpVtbl = Vtbl;
 

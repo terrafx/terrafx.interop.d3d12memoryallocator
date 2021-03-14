@@ -815,7 +815,7 @@ namespace TerraFX.Interop
             D3D12MA_Allocator._ctor(ref *allocator, &allocationCallbacks, pDesc);
             *ppAllocator = allocator;
 
-            HRESULT hr = (*ppAllocator)->m_Pimpl->Init(pDesc);
+            HRESULT hr = (*ppAllocator)->Init(pDesc);
 
             if (FAILED(hr))
             {

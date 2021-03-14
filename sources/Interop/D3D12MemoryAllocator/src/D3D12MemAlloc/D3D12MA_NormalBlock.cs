@@ -28,7 +28,7 @@ namespace TerraFX.Interop
 
         private D3D12MA_BlockVector* m_BlockVector;
 
-        public static void _ctor(ref D3D12MA_NormalBlock pThis, D3D12MA_AllocatorPimpl* allocator, ref D3D12MA_BlockVector blockVector, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
+        public static void _ctor(ref D3D12MA_NormalBlock pThis, D3D12MA_Allocator* allocator, ref D3D12MA_BlockVector blockVector, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)
         {
             pThis.Base = new D3D12MA_MemoryBlock(allocator, heapProps, heapFlags, size, id);
             pThis.Base.lpVtbl = Vtbl;

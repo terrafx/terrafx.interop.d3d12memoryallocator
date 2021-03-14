@@ -2,13 +2,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12_HEAP_TYPE;
-using static TerraFX.Interop.D3D12_HEAP_FLAGS;
-using static TerraFX.Interop.DXGI_FORMAT;
-using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
-using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
-using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12MemAlloc;
 
 namespace TerraFX.Interop
 {
@@ -56,7 +49,7 @@ namespace TerraFX.Interop
             }
 
             if ((typeof(T) == typeof(D3D12MA_Allocation)) ||
-                (typeof(T) == typeof(D3D12MA_AllocatorPimpl)) ||
+                (typeof(T) == typeof(D3D12MA_Allocator)) ||
                 (typeof(T) == typeof(D3D12MA_BlockVector)) ||
                 (typeof(T) == typeof(D3D12MA_NormalBlock)) ||
                 (typeof(T) == typeof(D3D12MA_BlockMetadata_Generic)) ||
