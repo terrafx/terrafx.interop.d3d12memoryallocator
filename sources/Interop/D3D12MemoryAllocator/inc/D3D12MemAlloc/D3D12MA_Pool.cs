@@ -3,8 +3,6 @@
 // Ported from D3D12MemAlloc.h in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-using System;
-using System.Runtime.CompilerServices;
 using static TerraFX.Interop.D3D12MemAlloc;
 
 namespace TerraFX.Interop
@@ -18,33 +16,21 @@ namespace TerraFX.Interop
     /// </para>
     /// <para>To create custom pool, fill <see cref="D3D12MA_POOL_DESC"/> and call <see cref="D3D12MA_Allocator.CreatePool"/>.</para>
     /// </summary>
-    public unsafe struct D3D12MA_Pool : IDisposable
+    public unsafe partial struct D3D12MA_Pool
     {
-        internal D3D12MA_PoolPimpl* m_Pimpl;
-
         /// <summary>
         /// Deletes pool object, frees D3D12 heaps (memory blocks) managed by it. Allocations and resources must already be released!
         /// <para>It doesn't delete allocations and resources created in this pool. They must be all released before calling this function!</para>
         /// </summary>
         public void Release()
         {
-            if (Unsafe.IsNullRef(ref this))
-            {
-                return;
-            }
-
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            D3D12MA_DELETE(m_Pimpl->GetAllocator()->GetAllocs(), ref this);
         }
 
         /// <summary>
         /// Returns copy of parameters of the pool.
         /// <para>These are the same parameters as passed to <see cref="D3D12MA_Allocator.CreatePool"/>.</para>
         /// </summary>
-        public readonly D3D12MA_POOL_DESC GetDesc()
-        {
-            return *m_Pimpl->GetDesc();
-        }
+        public readonly D3D12MA_POOL_DESC GetDesc() => m_Desc;
 
         /// <summary>
         /// Sets the minimum number of bytes that should always be allocated (reserved) in this pool.
@@ -53,7 +39,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         public int SetMinBytes([NativeTypeName("UINT64")] ulong minBytes)
         {
-            return m_Pimpl->SetMinBytes(minBytes);
+            return SetMinBytesPimpl(minBytes);
         }
 
         /// <summary>Retrieves statistics from the current state of this pool.</summary>
@@ -61,7 +47,7 @@ namespace TerraFX.Interop
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pStats != null));
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            m_Pimpl->CalculateStats(pStats);
+            CalculateStatsPimpl(pStats);
         }
 
         /// <summary>
@@ -72,7 +58,7 @@ namespace TerraFX.Interop
         public void SetName([NativeTypeName("LPCWSTR")] ushort* Name)
         {
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            m_Pimpl->SetName(Name);
+            SetNamePimpl(Name);
         }
 
         /// <summary>
@@ -81,21 +67,6 @@ namespace TerraFX.Interop
         /// <para>If no name was associated with the allocation, returns <see langword="null"/>.</para>
         /// </summary>
         [return: NativeTypeName("LPCWSTR")]
-        public ushort* GetName()
-        {
-            return m_Pimpl->GetName();
-        }
-
-        internal static void _ctor(ref D3D12MA_Pool pThis, ref D3D12MA_Allocator allocator, [NativeTypeName("const POOL_DESC&")] D3D12MA_POOL_DESC* desc)
-        {
-            pThis.m_Pimpl = D3D12MA_NEW<D3D12MA_PoolPimpl>(allocator.GetAllocs());
-            D3D12MA_PoolPimpl._ctor(ref *pThis.m_Pimpl, (D3D12MA_Allocator*)Unsafe.AsPointer(ref allocator), desc);
-        }
-
-        void IDisposable.Dispose()
-        {
-            m_Pimpl->GetAllocator()->UnregisterPool(ref this, m_Pimpl->GetDesc()->HeapProperties.Type);
-            D3D12MA_DELETE(m_Pimpl->GetAllocator()->GetAllocs(), m_Pimpl);
-        }
+        public ushort* GetName() => m_Name;
     }
 }

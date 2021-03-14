@@ -24,7 +24,7 @@ namespace TerraFX.Interop
     /// right after Direct3D 12 is initialized and keep it alive until before Direct3D device is destroyed.
     /// </para>
     /// </summary>
-    public unsafe partial struct D3D12MA_Allocator : IDisposable
+    public unsafe partial struct D3D12MA_Allocator
     {
         /// <summary>
         /// Deletes this object.
@@ -274,9 +274,9 @@ namespace TerraFX.Interop
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
             *ppPool = D3D12MA_NEW<D3D12MA_Pool>(GetAllocs());
-            D3D12MA_Pool._ctor(ref **ppPool, ref this, pPoolDesc);
+            D3D12MA_Pool._ctor(ref **ppPool, (D3D12MA_Allocator*)Unsafe.AsPointer(ref this), pPoolDesc);
 
-            HRESULT hr = (*ppPool)->m_Pimpl->Init();
+            HRESULT hr = (*ppPool)->Init();
 
             if (SUCCEEDED(hr))
             {

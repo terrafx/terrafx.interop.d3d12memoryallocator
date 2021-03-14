@@ -65,7 +65,7 @@ namespace TerraFX.Interop
         private _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<D3D12MA_RW_MUTEX> m_CommittedAllocationsMutex;
 
         [NativeTypeName("IntrusiveLinkedList<PoolListItemTraits> m_pPools[HEAP_TYPE_COUNT]")]
-        private _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<D3D12MA_IntrusiveLinkedList<D3D12MA_PoolPimpl>> m_Pools;
+        private _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<D3D12MA_IntrusiveLinkedList<D3D12MA_Pool>> m_Pools;
 
         [NativeTypeName("D3D12MA_RW_MUTEX m_PoolsMutex[HEAP_TYPE_COUNT]")]
         private _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<D3D12MA_RW_MUTEX> m_PoolsMutex;
@@ -125,9 +125,9 @@ namespace TerraFX.Interop
                 D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation>._ctor(ref allocation);
             }
 
-            foreach (ref D3D12MA_IntrusiveLinkedList<D3D12MA_PoolPimpl> pool in pThis.m_Pools.AsSpan())
+            foreach (ref D3D12MA_IntrusiveLinkedList<D3D12MA_Pool> pool in pThis.m_Pools.AsSpan())
             {
-                D3D12MA_IntrusiveLinkedList<D3D12MA_PoolPimpl>._ctor(ref pool);
+                D3D12MA_IntrusiveLinkedList<D3D12MA_Pool>._ctor(ref pool);
             }
 
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_BlockVectors), (nuint)sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<Pointer<D3D12MA_BlockVector>>));
@@ -215,7 +215,7 @@ namespace TerraFX.Interop
             return S_OK;
         }
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             SAFE_RELEASE(ref m_Device8);
             SAFE_RELEASE(ref m_Device4);
@@ -317,7 +317,7 @@ namespace TerraFX.Interop
                     return E_INVALIDARG;
                 }
 
-                D3D12MA_BlockVector* blockVector = pAllocDesc->CustomPool->m_Pimpl->GetBlockVector();
+                D3D12MA_BlockVector* blockVector = pAllocDesc->CustomPool->GetBlockVector();
                 D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
 
                 return blockVector->CreateResource(
@@ -498,7 +498,7 @@ namespace TerraFX.Interop
                     return E_INVALIDARG;
                 }
 
-                D3D12MA_BlockVector* blockVector = pAllocDesc->CustomPool->m_Pimpl->GetBlockVector();
+                D3D12MA_BlockVector* blockVector = pAllocDesc->CustomPool->GetBlockVector();
                 D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
 
                 return blockVector->CreateResource2(
@@ -604,7 +604,7 @@ namespace TerraFX.Interop
 
             if (pAllocDesc->CustomPool != null)
             {
-                D3D12MA_BlockVector* blockVector = pAllocDesc->CustomPool->m_Pimpl->GetBlockVector();
+                D3D12MA_BlockVector* blockVector = pAllocDesc->CustomPool->GetBlockVector();
                 D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
 
                 return blockVector->Allocate(
@@ -919,9 +919,9 @@ namespace TerraFX.Interop
             {
                 using var @lock = new D3D12MA_MutexLockRead(ref m_PoolsMutex[(int)heapTypeIndex], m_UseMutex);
 
-                D3D12MA_IntrusiveLinkedList<D3D12MA_PoolPimpl>* poolList =
-                    (D3D12MA_IntrusiveLinkedList<D3D12MA_PoolPimpl>*)Unsafe.AsPointer(ref m_Pools[(int)heapTypeIndex]);
-                for (D3D12MA_PoolPimpl* pool = poolList->Front(); pool != null; pool = D3D12MA_IntrusiveLinkedList<D3D12MA_PoolPimpl>.GetNext(pool))
+                D3D12MA_IntrusiveLinkedList<D3D12MA_Pool>* poolList =
+                    (D3D12MA_IntrusiveLinkedList<D3D12MA_Pool>*)Unsafe.AsPointer(ref m_Pools[(int)heapTypeIndex]);
+                for (D3D12MA_Pool* pool = poolList->Front(); pool != null; pool = D3D12MA_IntrusiveLinkedList<D3D12MA_Pool>.GetNext(pool))
                 {
                     pool->GetBlockVector()->AddStats(outStats);
                 }
@@ -1741,7 +1741,7 @@ namespace TerraFX.Interop
 
             using var @lock = new D3D12MA_MutexLockWrite(ref m_PoolsMutex[(int)heapTypeIndex], m_UseMutex);
 
-            m_Pools[(int)heapTypeIndex].PushBack(pool->m_Pimpl);
+            m_Pools[(int)heapTypeIndex].PushBack(pool);
         }
 
         /// <summary>Unregisters Pool object from m_pPools.</summary>
@@ -1756,7 +1756,7 @@ namespace TerraFX.Interop
 
             using var @lock = new D3D12MA_MutexLockWrite(ref m_PoolsMutex[(int)heapTypeIndex], m_UseMutex);
 
-            m_Pools[(int)heapTypeIndex].Remove(pool->m_Pimpl);
+            m_Pools[(int)heapTypeIndex].Remove(pool);
         }
 
         [return: NativeTypeName("HRESULT")]

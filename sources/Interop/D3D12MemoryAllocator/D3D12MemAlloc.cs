@@ -56,7 +56,7 @@ namespace TerraFX.Interop
                 (typeof(T) == typeof(D3D12MA_PoolAllocator<D3D12MA_Allocation>.Item)) ||
                 (typeof(T) == typeof(D3D12MA_PoolAllocator<D3D12MA_List<D3D12MA_Suballocation>.Item>.Item)) ||
                 (typeof(T) == typeof(D3D12MA_VirtualBlockPimpl)) ||
-                (typeof(T) == typeof(D3D12MA_PoolPimpl)))
+                (typeof(T) == typeof(D3D12MA_Pool)))
             {
                 return 8;
             }
