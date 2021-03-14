@@ -4,6 +4,7 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Runtime.CompilerServices;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12MemAlloc;
 
@@ -17,10 +18,8 @@ namespace TerraFX.Interop
     /// To destroy it, call its method <see cref="D3D12MA_VirtualBlock.Release"/>.
     /// </para>
     /// </summary>
-    public unsafe struct D3D12MA_VirtualBlock : IDisposable
+    public unsafe partial struct D3D12MA_VirtualBlock : IDisposable
     {
-        D3D12MA_VirtualBlockPimpl* m_Pimpl;
-
         /// <summary>
         /// Destroys this object and frees it from memory.
         /// <para>You need to free all the allocations within this block or call <see cref="Clear"/> before destroying it.</para>
@@ -30,7 +29,7 @@ namespace TerraFX.Interop
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
             // Copy is needed because otherwise we would call destructor and invalidate the structure with callbacks before using it to free memory.
-            D3D12MA_ALLOCATION_CALLBACKS allocationCallbacksCopy = m_Pimpl->m_AllocationCallbacks;
+            D3D12MA_ALLOCATION_CALLBACKS allocationCallbacksCopy = m_AllocationCallbacks;
             D3D12MA_DELETE(&allocationCallbacksCopy, ref this);
         }
 
@@ -39,7 +38,7 @@ namespace TerraFX.Interop
         public readonly int IsEmpty()
         {
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return m_Pimpl->m_Metadata.IsEmpty() ? TRUE : FALSE;
+            return m_Metadata.IsEmpty() ? TRUE : FALSE;
         }
 
         /// <summary>Returns information about an allocation at given offset - its size and custom pointer.</summary>
@@ -48,7 +47,7 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (offset != UINT64_MAX) && (pInfo != null));
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            m_Pimpl->m_Metadata.GetAllocationInfo(offset, pInfo);
+            m_Metadata.GetAllocationInfo(offset, pInfo);
         }
 
         /// <summary>Creates new allocation.</summary>
@@ -71,10 +70,10 @@ namespace TerraFX.Interop
             ulong alignment = pDesc->Alignment != 0 ? pDesc->Alignment : 1;
             D3D12MA_AllocationRequest allocRequest = default;
 
-            if (m_Pimpl->m_Metadata.CreateAllocationRequest(pDesc->Size, alignment, &allocRequest))
+            if (m_Metadata.CreateAllocationRequest(pDesc->Size, alignment, &allocRequest))
             {
-                m_Pimpl->m_Metadata.Alloc(&allocRequest, pDesc->Size, pDesc->pUserData);
-                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Pimpl->m_Metadata.Validate());
+                m_Metadata.Alloc(&allocRequest, pDesc->Size, pDesc->pUserData);
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Metadata.Validate());
                 *pOffset = allocRequest.offset;
                 return S_OK;
             }
@@ -90,8 +89,8 @@ namespace TerraFX.Interop
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (offset != UINT64_MAX));
 
-            m_Pimpl->m_Metadata.FreeAtOffset(offset);
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Pimpl->m_Metadata.Validate());
+            m_Metadata.FreeAtOffset(offset);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Metadata.Validate());
         }
 
         /// <summary>Frees all the allocations.</summary>
@@ -99,8 +98,8 @@ namespace TerraFX.Interop
         {
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
-            m_Pimpl->m_Metadata.Clear();
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Pimpl->m_Metadata.Validate());
+            m_Metadata.Clear();
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Metadata.Validate());
         }
 
         /// <summary>Changes custom pointer for an allocation at given offset to a new value.</summary>
@@ -109,7 +108,7 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (offset != UINT64_MAX));
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            m_Pimpl->m_Metadata.SetAllocationUserData(offset, pUserData);
+            m_Metadata.SetAllocationUserData(offset, pUserData);
         }
 
         /// <summary>Retrieves statistics from the current state of the block.</summary>
@@ -118,8 +117,8 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pInfo != null));
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Pimpl->m_Metadata.Validate());
-            m_Pimpl->m_Metadata.CalcAllocationStatInfo(pInfo);
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Metadata.Validate());
+            m_Metadata.CalcAllocationStatInfo(pInfo);
         }
 
         /// <summary>Builds and returns statistics as a string in JSON format, including the list of allocations with their parameters.</summary>
@@ -130,16 +129,16 @@ namespace TerraFX.Interop
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
-            using var sb = new D3D12MA_StringBuilder(&m_Pimpl->m_AllocationCallbacks);
+            using var sb = new D3D12MA_StringBuilder((D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref m_AllocationCallbacks));
 
-            using (var json = new D3D12MA_JsonWriter(&m_Pimpl->m_AllocationCallbacks, &sb))
+            using (var json = new D3D12MA_JsonWriter((D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref m_AllocationCallbacks), &sb))
             {
-                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Pimpl->m_Metadata.Validate());
-                m_Pimpl->m_Metadata.WriteAllocationInfoToJson(&json);
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && m_Metadata.Validate());
+                m_Metadata.WriteAllocationInfoToJson(&json);
             }
 
             nuint length = sb.GetLength();
-            ushort* result = AllocateArray<ushort>(&m_Pimpl->m_AllocationCallbacks, length + 1);
+            ushort* result = AllocateArray<ushort>((D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref m_AllocationCallbacks), length + 1);
             memcpy(result, sb.GetData(), length * sizeof(ushort));
             result[length] = '\0';
             *ppStatsString = result;
@@ -151,14 +150,13 @@ namespace TerraFX.Interop
             if (pStatsString != null)
             {
                 using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-                Free(&m_Pimpl->m_AllocationCallbacks, pStatsString);
+                Free((D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref m_AllocationCallbacks), pStatsString);
             }
         }
 
         internal static void _ctor(ref D3D12MA_VirtualBlock pThis, [NativeTypeName("const ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("const VIRTUAL_BLOCK_DESC&")] D3D12MA_VIRTUAL_BLOCK_DESC* desc)
         {
-            pThis.m_Pimpl = D3D12MA_NEW<D3D12MA_VirtualBlockPimpl>(allocationCallbacks);
-            D3D12MA_VirtualBlockPimpl._ctor(ref *pThis.m_Pimpl, allocationCallbacks, desc->Size);
+            _ctor(ref pThis, allocationCallbacks, desc->Size);
         }
 
         void IDisposable.Dispose()
@@ -166,8 +164,9 @@ namespace TerraFX.Interop
             // THIS IS AN IMPORTANT ASSERT!
             // Hitting it means you have some memory leak - unreleased allocations in this virtual block.
 
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && m_Pimpl->m_Metadata.IsEmpty()); // "Some allocations were not freed before destruction of this virtual block!"
-            D3D12MA_DELETE(&m_Pimpl->m_AllocationCallbacks, m_Pimpl);
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && m_Metadata.IsEmpty()); // "Some allocations were not freed before destruction of this virtual block!"
+
+            m_Metadata.Dispose();
         }
     }
 }

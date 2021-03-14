@@ -55,22 +55,19 @@ namespace TerraFX.Interop
                 (typeof(T) == typeof(D3D12MA_BlockMetadata_Generic)) ||
                 (typeof(T) == typeof(D3D12MA_PoolAllocator<D3D12MA_Allocation>.Item)) ||
                 (typeof(T) == typeof(D3D12MA_PoolAllocator<D3D12MA_List<D3D12MA_Suballocation>.Item>.Item)) ||
-                (typeof(T) == typeof(D3D12MA_VirtualBlockPimpl)) ||
+                (typeof(T) == typeof(D3D12MA_VirtualBlock)) ||
                 (typeof(T) == typeof(D3D12MA_Pool)))
             {
                 return 8;
             }
 
-            if ((typeof(T) == typeof(D3D12MA_Allocator)) ||
-                (typeof(T) == typeof(D3D12MA_Vector<Pointer<D3D12MA_Allocation>>)) ||
+            if ((typeof(T) == typeof(D3D12MA_Vector<Pointer<D3D12MA_Allocation>>)) ||
                 (typeof(T) == typeof(D3D12MA_Vector<Pointer<D3D12MA_Pool>>)) ||
                 (typeof(T) == typeof(D3D12MA_PoolAllocator<D3D12MA_Allocation>.ItemBlock)) ||
                 (typeof(T) == typeof(D3D12MA_PoolAllocator<D3D12MA_List<D3D12MA_Suballocation>.Item>.ItemBlock)) ||
                 (typeof(T) == typeof(D3D12MA_List<D3D12MA_Suballocation>.iterator)) ||
                 (typeof(T) == typeof(Pointer<D3D12MA_NormalBlock>)) ||
                 (typeof(T) == typeof(Pointer<D3D12MA_Allocation>)) ||
-                (typeof(T) == typeof(D3D12MA_VirtualBlock)) ||
-                (typeof(T) == typeof(D3D12MA_Pool)) ||
                 (typeof(T) == typeof(Pointer<D3D12MA_Pool>)))
             {
                 return (nuint)sizeof(void*);
