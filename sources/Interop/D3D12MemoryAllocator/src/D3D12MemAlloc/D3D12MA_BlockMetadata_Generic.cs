@@ -70,15 +70,27 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[0] == (delegate*<ref D3D12MA_BlockMetadata_Generic, void>)&Dispose));
+
             Dispose(ref this);
 
             m_FreeSuballocationsBySize.Dispose();
             m_Suballocations.Dispose();
         }
 
-        public void Init([NativeTypeName("UINT64")] ulong size) => Init(ref this, size);
+        public void Init([NativeTypeName("UINT64")] ulong size)
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[1] == (delegate*<ref D3D12MA_BlockMetadata_Generic, ulong, void>)&Init));
 
-        public readonly bool Validate() => Validate(in this);
+            Init(ref this, size);
+        }
+
+        public readonly bool Validate()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[2] == (delegate*<in D3D12MA_BlockMetadata_Generic, bool>)&Validate));
+
+            return Validate(in this);
+        }
 
         [return: NativeTypeName("UINT64")]
         public readonly ulong GetSize() => Base.GetSize();
@@ -86,34 +98,91 @@ namespace TerraFX.Interop
         public readonly bool IsVirtual() => Base.IsVirtual();
 
         [return: NativeTypeName("size_t")]
-        public readonly nuint GetAllocationCount() => GetAllocationCount(in this);
+        public readonly nuint GetAllocationCount()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[3] == (delegate*<in D3D12MA_BlockMetadata_Generic, nuint>)&GetAllocationCount));
+
+            return GetAllocationCount(in this);
+        }
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetSumFreeSize() => GetSumFreeSize(in this);
+        public readonly ulong GetSumFreeSize()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[4] == (delegate*<in D3D12MA_BlockMetadata_Generic, ulong>)&GetSumFreeSize));
+
+            return GetSumFreeSize(in this);
+        }
 
         [return: NativeTypeName("UINT64")]
-        public readonly ulong GetUnusedRangeSizeMax() => GetUnusedRangeSizeMax(in this);
+        public readonly ulong GetUnusedRangeSizeMax()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[5] == (delegate*<in D3D12MA_BlockMetadata_Generic, ulong>)&GetUnusedRangeSizeMax));
 
-        public readonly bool IsEmpty() => IsEmpty(in this);
+            return GetUnusedRangeSizeMax(in this);
+        }
+
+        public readonly bool IsEmpty()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[6] == (delegate*<in D3D12MA_BlockMetadata_Generic, bool>)&IsEmpty));
+
+            return IsEmpty(in this);
+        }
 
         public readonly void GetAllocationInfo([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("D3D12MA_VIRTUAL_ALLOCATION_INFO&")] D3D12MA_VIRTUAL_ALLOCATION_INFO* outInfo)
-            => GetAllocationInfo(in this, offset, outInfo);
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[7] == (delegate*<in D3D12MA_BlockMetadata_Generic, ulong, D3D12MA_VIRTUAL_ALLOCATION_INFO*, void>)&GetAllocationInfo));
+
+            GetAllocationInfo(in this, offset, outInfo);
+        }
 
         public bool CreateAllocationRequest([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, D3D12MA_AllocationRequest* pAllocationRequest)
-            => CreateAllocationRequest(ref this, allocSize, allocAlignment, pAllocationRequest);
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[8] == (delegate*<ref D3D12MA_BlockMetadata_Generic, ulong, ulong, D3D12MA_AllocationRequest*, bool>)&CreateAllocationRequest));
+
+            return CreateAllocationRequest(ref this, allocSize, allocAlignment, pAllocationRequest);
+        }
 
         public void Alloc([NativeTypeName("const D3D12MA_AllocationRequest&")] D3D12MA_AllocationRequest* request, [NativeTypeName("UINT64")] ulong allocSize, void* userData)
-            => Alloc(ref this, request, allocSize, userData);
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[9] == (delegate*<ref D3D12MA_BlockMetadata_Generic, D3D12MA_AllocationRequest*, ulong, void*, void>)&Alloc));
 
-        public void FreeAtOffset([NativeTypeName("UINT64")] ulong offset) => FreeAtOffset(ref this, offset);
+            Alloc(ref this, request, allocSize, userData);
+        }
 
-        public void Clear() => Clear(ref this);
+        public void FreeAtOffset([NativeTypeName("UINT64")] ulong offset)
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[10] == (delegate*<ref D3D12MA_BlockMetadata_Generic, ulong, void>)&FreeAtOffset));
 
-        public void SetAllocationUserData([NativeTypeName("UINT64")] ulong offset, void* userData) => SetAllocationUserData(ref this, offset, userData);
+            FreeAtOffset(ref this, offset);
+        }
 
-        public readonly void CalcAllocationStatInfo([NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outInfo) => CalcAllocationStatInfo(in this, outInfo);
+        public void Clear()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[11] == (delegate*<ref D3D12MA_BlockMetadata_Generic, void>)&Clear));
 
-        public readonly void WriteAllocationInfoToJson([NativeTypeName("JsonWriter&")] D3D12MA_JsonWriter* json) => WriteAllocationInfoToJson(in this, json);
+            Clear(ref this);
+        }
+
+        public void SetAllocationUserData([NativeTypeName("UINT64")] ulong offset, void* userData)
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[12] == (delegate*<ref D3D12MA_BlockMetadata_Generic, ulong, void*, void>)&SetAllocationUserData));
+
+            SetAllocationUserData(ref this, offset, userData);
+        }
+
+        public readonly void CalcAllocationStatInfo([NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outInfo)
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[13] == (delegate*<in D3D12MA_BlockMetadata_Generic, D3D12MA_StatInfo*, void>)&CalcAllocationStatInfo));
+
+            CalcAllocationStatInfo(in this, outInfo);
+        }
+
+        public readonly void WriteAllocationInfoToJson([NativeTypeName("JsonWriter&")] D3D12MA_JsonWriter* json)
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[14] == (delegate*<in D3D12MA_BlockMetadata_Generic, D3D12MA_JsonWriter*, void>)&WriteAllocationInfoToJson));
+
+            WriteAllocationInfoToJson(in this, json);
+        }
 
         public readonly bool ValidateFreeSuballocationList()
         {
