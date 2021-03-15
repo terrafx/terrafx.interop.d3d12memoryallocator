@@ -1916,7 +1916,12 @@ namespace TerraFX.Interop
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_HEAP_TYPE_COUNT);
+            public Span<T> AsSpan()
+            {
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<T>) / sizeof(T)) == (int)D3D12MA_HEAP_TYPE_COUNT) && ((sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<T>) % sizeof(T)) == 0));
+
+                return MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_HEAP_TYPE_COUNT);
+            }
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -1945,7 +1950,12 @@ namespace TerraFX.Interop
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_DEFAULT_POOL_MAX_COUNT);
+            public Span<T> AsSpan()
+            {
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<T>) / sizeof(T)) == (int)D3D12MA_DEFAULT_POOL_MAX_COUNT) && ((sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<T>) % sizeof(T)) == 0));
+
+                return MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_DEFAULT_POOL_MAX_COUNT);
+            }
         }
     }
 }
