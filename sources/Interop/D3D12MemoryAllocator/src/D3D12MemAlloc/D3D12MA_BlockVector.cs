@@ -18,7 +18,7 @@ namespace TerraFX.Interop
     /// </summary>
     internal unsafe struct D3D12MA_BlockVector : IDisposable
     {
-        private D3D12MA_AllocatorPimpl* m_hAllocator;
+        private D3D12MA_Allocator* m_hAllocator;
 
         private D3D12_HEAP_PROPERTIES m_HeapProps;
 
@@ -51,7 +51,7 @@ namespace TerraFX.Interop
         [NativeTypeName("UINT")]
         private uint m_NextBlockId;
 
-        internal static void _ctor(ref D3D12MA_BlockVector pThis, D3D12MA_AllocatorPimpl* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize)
+        internal static void _ctor(ref D3D12MA_BlockVector pThis, D3D12MA_Allocator* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize)
         {
             pThis.m_hAllocator = hAllocator;
             pThis.m_HeapProps = *heapProps;

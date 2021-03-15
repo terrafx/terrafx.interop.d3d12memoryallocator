@@ -29,6 +29,16 @@ namespace TerraFX.Interop
             m_InsideString = false;
         }
 
+        public D3D12MA_JsonWriter([NativeTypeName("const D3D12MA_ALLOCATION_CALLBACKS&")] ref D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks, [NativeTypeName("StringBuilder&")] D3D12MA_StringBuilder* stringBuilder)
+        {
+            m_SB = stringBuilder;
+
+            Unsafe.SkipInit(out m_Stack);
+            D3D12MA_Vector<StackItem>._ctor(ref m_Stack, (D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref allocationCallbacks));
+
+            m_InsideString = false;
+        }
+
         public void Dispose()
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && !m_InsideString);

@@ -72,6 +72,11 @@ namespace TerraFX.Interop
             allocs->pFree(memory, allocs->pUserData);
         }
 
+        internal static void Free([NativeTypeName("const ALLOCATION_CALLBACKS&")] ref D3D12MA_ALLOCATION_CALLBACKS allocs, void* memory)
+        {
+            allocs.pFree(memory, allocs.pUserData);
+        }
+
         internal static T* Allocate<T>([NativeTypeName("const ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocs)
             where T : unmanaged
         {
@@ -82,6 +87,12 @@ namespace TerraFX.Interop
             where T : unmanaged
         {
             return (T*)Malloc(allocs, (nuint)sizeof(T) * count, __alignof<T>());
+        }
+
+        internal static T* AllocateArray<T>([NativeTypeName("const ALLOCATION_CALLBACKS&")] ref D3D12MA_ALLOCATION_CALLBACKS allocs, [NativeTypeName("size_t")] nuint count)
+            where T : unmanaged
+        {
+            return (T*)Malloc((D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref allocs), (nuint)sizeof(T) * count, __alignof<T>());
         }
 
         internal static T* D3D12MA_NEW<T>([NativeTypeName("const ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocs)
@@ -815,7 +826,7 @@ namespace TerraFX.Interop
             D3D12MA_Allocator._ctor(ref *allocator, &allocationCallbacks, pDesc);
             *ppAllocator = allocator;
 
-            HRESULT hr = (*ppAllocator)->m_Pimpl->Init(pDesc);
+            HRESULT hr = (*ppAllocator)->Init(pDesc);
 
             if (FAILED(hr))
             {

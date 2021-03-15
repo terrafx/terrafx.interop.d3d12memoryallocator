@@ -24,10 +24,8 @@ namespace TerraFX.Interop
     /// right after Direct3D 12 is initialized and keep it alive until before Direct3D device is destroyed.
     /// </para>
     /// </summary>
-    public unsafe struct D3D12MA_Allocator : IDisposable
+    public unsafe partial struct D3D12MA_Allocator : IDisposable
     {
-        internal D3D12MA_AllocatorPimpl* m_Pimpl;
-
         /// <summary>
         /// Deletes this object.
         /// <para>
@@ -40,7 +38,7 @@ namespace TerraFX.Interop
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
             // Copy is needed because otherwise we would call destructor and invalidate the structure with callbacks before using it to free memory.
-            D3D12MA_ALLOCATION_CALLBACKS allocationCallbacksCopy = *m_Pimpl->GetAllocs();
+            D3D12MA_ALLOCATION_CALLBACKS allocationCallbacksCopy = *GetAllocs();
             D3D12MA_DELETE(&allocationCallbacksCopy, ref this);
         }
 
@@ -49,7 +47,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("const D3D12_FEATURE_DATA_D3D12_OPTIONS&")]
         public readonly D3D12_FEATURE_DATA_D3D12_OPTIONS* GetD3D12Options()
         {
-            return m_Pimpl->GetD3D12Options();
+            return (D3D12_FEATURE_DATA_D3D12_OPTIONS*)Unsafe.AsPointer(ref Unsafe.AsRef(in m_D3D12Options));
         }
 
         /// <summary>
@@ -65,7 +63,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("BOOL")]
         public readonly int IsUMA()
         {
-            return m_Pimpl->IsUMA();
+            return m_D3D12Architecture.UMA;
         }
 
         /// <summary>
@@ -81,7 +79,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("BOOL")]
         public readonly int IsCacheCoherentUMA()
         {
-            return m_Pimpl->IsCacheCoherentUMA();
+            return m_D3D12Architecture.CacheCoherentUMA;
         }
 
         /// <summary>
@@ -123,7 +121,7 @@ namespace TerraFX.Interop
             }
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return m_Pimpl->CreateResource(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
+            return CreateResourcePimpl(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
         }
 
         /// <summary>
@@ -141,7 +139,7 @@ namespace TerraFX.Interop
             }
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return m_Pimpl->CreateResource1(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
+            return CreateResource1Pimpl(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
         }
 
         /// <summary>
@@ -167,7 +165,7 @@ namespace TerraFX.Interop
             }
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return m_Pimpl->CreateResource2(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
+            return CreateResource2Pimpl(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
         }
 
         /// <summary>
@@ -196,7 +194,7 @@ namespace TerraFX.Interop
             }
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return m_Pimpl->AllocateMemory(pAllocDesc, pAllocInfo, ppAllocation);
+            return AllocateMemoryPimpl(pAllocDesc, pAllocInfo, ppAllocation);
         }
 
         /// <summary>
@@ -214,7 +212,7 @@ namespace TerraFX.Interop
             }
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return m_Pimpl->AllocateMemory1(pAllocDesc, pAllocInfo, pProtectedSession, ppAllocation);
+            return AllocateMemory1Pimpl(pAllocDesc, pAllocInfo, pProtectedSession, ppAllocation);
         }
 
         /// <summary>Creates a new resource in place of an existing allocation. This is useful for memory aliasing.</summary>
@@ -254,7 +252,7 @@ namespace TerraFX.Interop
             }
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return m_Pimpl->CreateAliasingResource(pAllocation, AllocationLocalOffset, pResourceDesc, InitialResourceState, pOptimizedClearValue, riidResource, ppvResource);
+            return CreateAliasingResourcePimpl(pAllocation, AllocationLocalOffset, pResourceDesc, InitialResourceState, pOptimizedClearValue, riidResource, ppvResource);
         }
 
         /// <summary>Creates custom pool.</summary>
@@ -267,7 +265,7 @@ namespace TerraFX.Interop
                 return E_INVALIDARG;
             }
 
-            if (!m_Pimpl->HeapFlagsFulfillResourceHeapTier(pPoolDesc->HeapFlags))
+            if (!HeapFlagsFulfillResourceHeapTier(pPoolDesc->HeapFlags))
             {
                 D3D12MA_ASSERT(false); // "Invalid pPoolDesc->HeapFlags passed to Allocator::CreatePool. Did you forget to handle ResourceHeapTier=1?"
                 return E_INVALIDARG;
@@ -275,18 +273,18 @@ namespace TerraFX.Interop
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
-            *ppPool = D3D12MA_NEW<D3D12MA_Pool>(m_Pimpl->GetAllocs());
+            *ppPool = D3D12MA_NEW<D3D12MA_Pool>(GetAllocs());
             D3D12MA_Pool._ctor(ref **ppPool, ref this, pPoolDesc);
 
-            HRESULT hr = (*ppPool)->m_Pimpl->Init();
+            HRESULT hr = (*ppPool)->Init();
 
             if (SUCCEEDED(hr))
             {
-                m_Pimpl->RegisterPool(*ppPool, pPoolDesc->HeapProperties.Type);
+                RegisterPool(*ppPool, pPoolDesc->HeapProperties.Type);
             }
             else
             {
-                D3D12MA_DELETE(m_Pimpl->GetAllocs(), *ppPool);
+                D3D12MA_DELETE(GetAllocs(), *ppPool);
                 *ppPool = null;
             }
 
@@ -305,7 +303,7 @@ namespace TerraFX.Interop
         public int SetDefaultHeapMinBytes(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong minBytes)
         {
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return m_Pimpl->SetDefaultHeapMinBytes(heapType, heapFlags, minBytes);
+            return SetDefaultHeapMinBytesPimpl(heapType, heapFlags, minBytes);
         }
 
         /// <summary>
@@ -315,7 +313,7 @@ namespace TerraFX.Interop
         public void SetCurrentFrameIndex([NativeTypeName("UINT")] uint frameIndex)
         {
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            m_Pimpl->SetCurrentFrameIndex(frameIndex);
+            SetCurrentFrameIndexPimpl(frameIndex);
         }
 
         /// <summary>Retrieves statistics from the current state of the allocator.</summary>
@@ -323,7 +321,7 @@ namespace TerraFX.Interop
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pStats != null));
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            m_Pimpl->CalculateStats(pStats);
+            CalculateStatsPimpl(pStats);
         }
 
         /// <summary>Retrieves information about current memory budget.</summary>
@@ -342,7 +340,7 @@ namespace TerraFX.Interop
             }
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            m_Pimpl->GetBudget(pGpuBudget, pCpuBudget);
+            GetBudgetPimpl(pGpuBudget, pCpuBudget);
         }
 
         /// <summary>Builds and returns statistics as a string in JSON format.</summary>
@@ -352,7 +350,7 @@ namespace TerraFX.Interop
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (ppStatsString != null));
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            m_Pimpl->BuildStatsString(ppStatsString, DetailedMap);
+            BuildStatsStringPimpl(ppStatsString, DetailedMap);
         }
 
         /// <summary>Frees memory of a string returned from <see cref="BuildStatsString"/>.</summary>
@@ -361,19 +359,8 @@ namespace TerraFX.Interop
             if (pStatsString != null)
             {
                 using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-                m_Pimpl->FreeStatsString(pStatsString);
+                FreeStatsStringPimpl(pStatsString);
             }
-        }
-
-        internal static void _ctor(ref D3D12MA_Allocator pThis, [NativeTypeName("const ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("const ALLOCATOR_DESC&")] D3D12MA_ALLOCATOR_DESC* desc)
-        {
-            pThis.m_Pimpl = D3D12MA_NEW<D3D12MA_AllocatorPimpl>(allocationCallbacks);
-            D3D12MA_AllocatorPimpl._ctor(ref *pThis.m_Pimpl, allocationCallbacks, desc);
-        }
-
-        void IDisposable.Dispose()
-        {
-            D3D12MA_DELETE(m_Pimpl->GetAllocs(), m_Pimpl);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

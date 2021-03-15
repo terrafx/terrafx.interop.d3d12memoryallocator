@@ -24,7 +24,7 @@ namespace TerraFX.Interop
     /// </summary>
     public unsafe struct D3D12MA_Allocation : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_Allocation>
     {
-        internal D3D12MA_AllocatorPimpl* m_Allocator;
+        internal D3D12MA_Allocator* m_Allocator;
 
         [NativeTypeName("UINT64")]
         internal ulong m_Size;
@@ -355,7 +355,7 @@ namespace TerraFX.Interop
             }
         }
 
-        internal static void _ctor(ref D3D12MA_Allocation pThis, D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
+        internal static void _ctor(ref D3D12MA_Allocation pThis, D3D12MA_Allocator* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
         {
             pThis.m_Allocator = allocator;
             pThis.m_Size = size;
