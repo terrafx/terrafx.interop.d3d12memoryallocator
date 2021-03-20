@@ -71,15 +71,6 @@ namespace TerraFX.Interop
         [NativeTypeName("CommittedAllocationList m_CommittedAllocations[STANDARD_HEAP_TYPE_COUNT]")]
         private _D3D12MA_STANDARD_HEAP_TYPE_COUNT_e__FixedBuffer<D3D12MA_CommittedAllocationList> m_CommittedAllocations;
 
-        // # Used only when ResourceHeapTier = 1
-        [NativeTypeName("UINT64 m_DefaultPoolTier1MinBytes[DEFAULT_POOL_MAX_COUNT]")]
-        private _D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<ulong> m_DefaultPoolTier1MinBytes; // Default 0
-
-        [NativeTypeName("UINT64 m_DefaultPoolHeapTypeMinBytes[HEAP_TYPE_COUNT]")]
-        private _D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<ulong> m_DefaultPoolHeapTypeMinBytes; // Default UINT64_MAX, meaning not set
-
-        private D3D12MA_RW_MUTEX m_DefaultPoolMinBytesMutex;
-
         // Explicit constructor as a normal instance method: this is needed to ensure the code is executed in-place over the
         // AllocatorPimpl instance being initialized, and not on a local variable which is then copied over to the
         // target memory location, which would break the references to self fields being used in the code below.
@@ -91,8 +82,6 @@ namespace TerraFX.Interop
             {
                 D3D12MA_RW_MUTEX._ctor(ref pThis.m_PoolsMutex[(int)i]);
             }
-
-            D3D12MA_RW_MUTEX._ctor(ref pThis.m_DefaultPoolMinBytesMutex);
 
             pThis.m_UseMutex = ((int)desc->Flags & (int)D3D12MA_ALLOCATOR_FLAG_SINGLETHREADED) == 0;
             pThis.m_AlwaysCommitted = ((int)desc->Flags & (int)D3D12MA_ALLOCATOR_FLAG_ALWAYS_COMMITTED) != 0;
@@ -118,14 +107,6 @@ namespace TerraFX.Interop
             }
 
             ZeroMemory(Unsafe.AsPointer(ref pThis.m_BlockVectors), (nuint)sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<Pointer<D3D12MA_BlockVector>>));
-            ZeroMemory(Unsafe.AsPointer(ref pThis.m_DefaultPoolTier1MinBytes), (nuint)sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<ulong>));
-
-            Unsafe.SkipInit(out pThis.m_DefaultPoolHeapTypeMinBytes);
-
-            for (uint i = 0; i < D3D12MA_HEAP_TYPE_COUNT; ++i)
-            {
-                pThis.m_DefaultPoolHeapTypeMinBytes[(int)i] = UINT64_MAX;
-            }
 
             for (uint i = 0; i < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++i)
             {
@@ -325,7 +306,8 @@ namespace TerraFX.Interop
             }
             else
             {
-                uint defaultPoolIndex = CalcDefaultPoolIndex(pAllocDesc, &finalResourceDesc);
+                D3D12MA_ResourceClass resourceClass = ResourceDescToResourceClass(&finalResourceDesc);
+                uint defaultPoolIndex = CalcDefaultPoolIndex(pAllocDesc, resourceClass);
                 bool requireCommittedMemory = defaultPoolIndex == uint.MaxValue;
 
                 if (requireCommittedMemory)
@@ -507,7 +489,8 @@ namespace TerraFX.Interop
             }
             else
             {
-                uint defaultPoolIndex = CalcDefaultPoolIndex(pAllocDesc, &finalResourceDesc);
+                D3D12MA_ResourceClass resourceClass = ResourceDescToResourceClass(&finalResourceDesc);
+                uint defaultPoolIndex = CalcDefaultPoolIndex(pAllocDesc, resourceClass);
                 requireCommittedMemory = requireCommittedMemory || defaultPoolIndex == uint.MaxValue;
 
                 if (requireCommittedMemory)
@@ -698,68 +681,6 @@ namespace TerraFX.Interop
                 riidResource,
                 ppvResource
             );
-        }
-
-        [return: NativeTypeName("HRESULT")]
-        private int SetDefaultHeapMinBytesPimpl(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong minBytes)
-        {
-            if (!IsHeapTypeStandard(heapType))
-            {
-                D3D12MA_ASSERT(false); // "Allocator::SetDefaultHeapMinBytes: Invalid heapType passed."
-                return E_INVALIDARG;
-            }
-
-            if (SupportsResourceHeapTier2())
-            {
-                if ((heapFlags != D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES) &&
-                    (heapFlags != D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS) &&
-                    (heapFlags != D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES) &&
-                    (heapFlags != D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES))
-                {
-                    D3D12MA_ASSERT(false); // "Allocator::SetDefaultHeapMinBytes: Invalid heapFlags passed."
-                    return E_INVALIDARG;
-                }
-
-                ulong newMinBytes = UINT64_MAX;
-
-                using (var @lock = new D3D12MA_MutexLockWrite(ref m_DefaultPoolMinBytesMutex, m_UseMutex))
-                {
-                    if (heapFlags == D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES)
-                    {
-                        m_DefaultPoolHeapTypeMinBytes[(int)HeapTypeToIndex(heapType)] = minBytes;
-                        newMinBytes = minBytes;
-                    }
-                    else
-                    {
-                        uint defaultPoolTier1Index = CalcDefaultPoolIndex(heapType, heapFlags, false);
-                        m_DefaultPoolTier1MinBytes[(int)defaultPoolTier1Index] = minBytes;
-                        newMinBytes = m_DefaultPoolHeapTypeMinBytes[(int)HeapTypeToIndex(heapType)];
-
-                        if (newMinBytes == UINT64_MAX)
-                        {
-                            newMinBytes = m_DefaultPoolTier1MinBytes[(int)CalcDefaultPoolIndex(heapType, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, false)] +
-                                          m_DefaultPoolTier1MinBytes[(int)CalcDefaultPoolIndex(heapType, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES, false)] +
-                                          m_DefaultPoolTier1MinBytes[(int)CalcDefaultPoolIndex(heapType, D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES, false)];
-                        }
-                    }
-                }
-
-                uint defaultPoolIndex = CalcDefaultPoolIndex(heapType, D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES);
-                return m_BlockVectors[(int)defaultPoolIndex].Value->SetMinBytes(newMinBytes);
-            }
-            else
-            {
-                if ((heapFlags != D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS) &&
-                    (heapFlags != D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES) &&
-                    (heapFlags != D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES))
-                {
-                    D3D12MA_ASSERT(false); // "Allocator::SetDefaultHeapMinBytes: Invalid heapFlags passed."
-                    return E_INVALIDARG;
-                }
-
-                uint defaultPoolIndex = CalcDefaultPoolIndex(heapType, heapFlags);
-                return m_BlockVectors[(int)defaultPoolIndex].Value->SetMinBytes(minBytes);
-            }
         }
 
         /// <summary>
@@ -1445,10 +1366,9 @@ namespace TerraFX.Interop
 
             if (allocDesc->CustomPool != null)
             {
-                if ((allocDesc->Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) == 0)
-                {
-                    outBlockVector = allocDesc->CustomPool->GetBlockVector();
-                }
+                D3D12MA_Pool* pool = allocDesc->CustomPool;
+                outBlockVector = pool->GetBlockVector();
+                outCommittedAllocationList = &pool->m_CommittedAllocations;
             }
             else
             {
@@ -1456,31 +1376,46 @@ namespace TerraFX.Interop
                 {
                     return E_INVALIDARG;
                 }
-                if ((allocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) == 0)
+
+                outCommittedAllocationList = (D3D12MA_CommittedAllocationList*)Unsafe.AsPointer(ref m_CommittedAllocations[(int)HeapTypeToIndex(allocDesc->HeapType)]);
+
+                D3D12MA_ResourceClass resourceClass = (resDesc != null) ?
+                    ResourceDescToResourceClass(resDesc) : HeapFlagsToResourceClass(allocDesc->ExtraHeapFlags);
+                uint defaultPoolIndex = CalcDefaultPoolIndex(allocDesc, resourceClass);
+                if (defaultPoolIndex != Windows.UINT32_MAX)
                 {
-                    outCommittedAllocationList = (D3D12MA_CommittedAllocationList*)Unsafe.AsPointer(ref m_CommittedAllocations[(int)HeapTypeToIndex(allocDesc->HeapType)]);
-                }
-                if (!m_AlwaysCommitted &&
-                    ((allocDesc->Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) == 0))
-                {
-                    uint defaultPoolIndex = CalcDefaultPoolIndex(allocDesc);
-                    if (defaultPoolIndex != Windows.UINT32_MAX)
+                    outBlockVector = (D3D12MA_BlockVector*)Unsafe.AsPointer(ref m_BlockVectors[(int)defaultPoolIndex]);
+                    ulong preferredBlockSize = outBlockVector->GetPreferredBlockSize();
+                    if (allocSize > preferredBlockSize)
                     {
-                        outBlockVector = (D3D12MA_BlockVector*)Unsafe.AsPointer(ref m_BlockVectors[(int)defaultPoolIndex]);
-                        ulong preferredBlockSize = outBlockVector->GetPreferredBlockSize();
-                        if (allocSize > preferredBlockSize)
-                        {
-                            outBlockVector = null;
-                        }
-                        else if (allocSize > preferredBlockSize / 2)
-                        {
-                            // Heuristics: Allocate committed memory if requested size if greater than half of preferred block size.
-                            outPreferCommitted = true;
-                        }
+                        outBlockVector = null;
+                    }
+                    else if (allocSize > preferredBlockSize / 2)
+                    {
+                        // Heuristics: Allocate committed memory if requested size if greater than half of preferred block size.
+                        outPreferCommitted = true;
                     }
                 }
+
+                D3D12_HEAP_FLAGS extraHeapFlags = allocDesc->ExtraHeapFlags & ~RESOURCE_CLASS_HEAP_FLAGS;
+                if ((outBlockVector != null) && (extraHeapFlags != 0))
+                {
+                    outBlockVector = null;
+                }
             }
-            if (resDesc != null && PrefersCommittedAllocation(resDesc))
+
+            if (((allocDesc->Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) != 0) ||
+                m_AlwaysCommitted)
+            {
+                outBlockVector = null;
+            }
+
+            if ((allocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
+            {
+                outCommittedAllocationList = null;
+            }
+
+            if ((resDesc != null) && (!outPreferCommitted) && PrefersCommittedAllocation(resDesc))
             {
                 outPreferCommitted = true;
             }
@@ -1519,18 +1454,17 @@ namespace TerraFX.Interop
             }
         }
 
+        // Returns UINT32_MAX if index cannot be calculcated.
         [return: NativeTypeName("UINT")]
-        private readonly uint CalcDefaultPoolIndex([NativeTypeName("const ALLOCATION_DESC&")] D3D12MA_ALLOCATION_DESC* allocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC_T&")] D3D12_RESOURCE_DESC* resourceDesc)
+        private readonly uint CalcDefaultPoolIndex([NativeTypeName("const ALLOCATION_DESC&")] D3D12MA_ALLOCATION_DESC* allocDesc, D3D12MA_ResourceClass resourceClass)
         {
-            D3D12_HEAP_FLAGS extraHeapFlags = allocDesc->ExtraHeapFlags & ~GetExtraHeapFlagsToIgnore();
-
+            D3D12_HEAP_FLAGS extraHeapFlags = allocDesc->ExtraHeapFlags & ~RESOURCE_CLASS_HEAP_FLAGS;
             if (extraHeapFlags != 0)
             {
-                return uint.MaxValue;
+                return Windows.UINT32_MAX;
             }
 
             uint poolIndex = UINT_MAX;
-
             switch (allocDesc->HeapType)
             {
                 case D3D12_HEAP_TYPE_DEFAULT:
@@ -1558,109 +1492,35 @@ namespace TerraFX.Interop
                 }
             }
 
-            if (!SupportsResourceHeapTier2())
+            if (SupportsResourceHeapTier2())
             {
-                poolIndex *= 3;
-
-                if (resourceDesc->Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
+                return poolIndex;
+            }
+            else
+            {
+                switch (resourceClass)
                 {
-                    ++poolIndex;
-                    bool isRenderTargetOrDepthStencil = (resourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
-
-                    if (isRenderTargetOrDepthStencil)
+                    case D3D12MA_ResourceClass.Buffer:
                     {
-                        ++poolIndex;
+                        return poolIndex * 3;
+                    }
+
+                    case D3D12MA_ResourceClass.Non_RT_DS_Texture:
+                    {
+                        return poolIndex * 3 + 1;
+                    }
+
+                    case D3D12MA_ResourceClass.RT_DS_Texture:
+                    {
+                        return poolIndex * 3 + 2;
+                    }
+
+                    default:
+                    {
+                        return Windows.UINT32_MAX;
                     }
                 }
             }
-
-            return poolIndex;
-        }
-
-        [return: NativeTypeName("UINT")]
-        private readonly uint CalcDefaultPoolIndex([NativeTypeName("const ALLOCATION_DESC&")] D3D12MA_ALLOCATION_DESC* allocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC_T&")] D3D12_RESOURCE_DESC1* resourceDesc)
-        {
-            return CalcDefaultPoolIndex(allocDesc, (D3D12_RESOURCE_DESC*)resourceDesc);
-        }
-
-        /// <summary>This one returns UINT32_MAX if nonstandard heap flags are used and index cannot be calculcated.</summary>
-        [return: NativeTypeName("UINT")]
-        private static uint CalcDefaultPoolIndex(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, bool supportsResourceHeapTier2)
-        {
-            D3D12_HEAP_FLAGS extraHeapFlags = heapFlags & ~GetExtraHeapFlagsToIgnore();
-
-            if (extraHeapFlags != 0)
-            {
-                return uint.MaxValue;
-            }
-
-            uint poolIndex = UINT_MAX;
-
-            switch (heapType)
-            {
-                case D3D12_HEAP_TYPE_DEFAULT:
-                {
-                    poolIndex = 0;
-                    break;
-                }
-
-                case D3D12_HEAP_TYPE_UPLOAD:
-                {
-                    poolIndex = 1;
-                    break;
-                }
-
-                case D3D12_HEAP_TYPE_READBACK:
-                {
-                    poolIndex = 2;
-                    break;
-                }
-
-                default:
-                {
-                    D3D12MA_ASSERT(false);
-                    break;
-                }
-            }
-
-            if (!supportsResourceHeapTier2)
-            {
-                poolIndex *= 3;
-
-                bool allowBuffers = (heapFlags & D3D12_HEAP_FLAG_DENY_BUFFERS) == 0;
-                bool allowRtDsTextures = (heapFlags & D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES) == 0;
-                bool allowNonRtDsTextures = (heapFlags & D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES) == 0;
-
-                int allowedGroupCount = (allowBuffers ? 1 : 0) + (allowRtDsTextures ? 1 : 0) + (allowNonRtDsTextures ? 1 : 0);
-
-                if (allowedGroupCount != 1)
-                {
-                    return uint.MaxValue;
-                }
-
-                if (!allowBuffers)
-                {
-                    ++poolIndex;
-                    if (allowRtDsTextures)
-                    {
-                        ++poolIndex;
-                    }
-                }
-            }
-
-            return poolIndex;
-        }
-
-        [return: NativeTypeName("UINT")]
-        private readonly uint CalcDefaultPoolIndex(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags)
-        {
-            return CalcDefaultPoolIndex(heapType, heapFlags, SupportsResourceHeapTier2());
-        }
-
-        [return: NativeTypeName("UINT")]
-        private readonly uint CalcDefaultPoolIndex(D3D12MA_ALLOCATION_DESC* allocDesc)
-        {
-            return CalcDefaultPoolIndex(allocDesc->HeapType, allocDesc->ExtraHeapFlags);
         }
 
         private readonly void CalcDefaultPoolParams(D3D12_HEAP_TYPE* outHeapType, D3D12_HEAP_FLAGS* outHeapFlags, [NativeTypeName("UINT")] uint index)

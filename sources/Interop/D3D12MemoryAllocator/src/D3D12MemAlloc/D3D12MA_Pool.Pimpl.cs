@@ -73,12 +73,6 @@ namespace TerraFX.Interop
 
         internal D3D12MA_BlockVector* GetBlockVector() => m_BlockVector;
 
-        [return: NativeTypeName("HRESULT")]
-        private int SetMinBytesPimpl([NativeTypeName("UINT64")] ulong minBytes)
-        {
-            return m_BlockVector->SetMinBytes(minBytes);
-        }
-
         private void CalculateStatsPimpl([NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outStats)
         {
             ZeroMemory(outStats, (nuint)sizeof(D3D12MA_StatInfo));

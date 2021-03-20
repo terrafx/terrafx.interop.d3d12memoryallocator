@@ -709,26 +709,6 @@ namespace TerraFX.Interop.UnitTests
 
                 CHECK_BOOL(string.Compare(poolName, NAME) == 0);
 
-                // # SetMinBytes
-
-                CHECK_HR(pool.Get()->SetMinBytes(15 * MEGABYTE));
-
-                pool.Get()->CalculateStats(&poolStats);
-
-                CHECK_BOOL(poolStats.BlockCount == 2);
-                CHECK_BOOL(poolStats.AllocationCount == 0);
-                CHECK_BOOL(poolStats.UsedBytes == 0);
-                CHECK_BOOL(poolStats.UnusedBytes == poolStats.BlockCount * poolDesc.BlockSize);
-
-                CHECK_HR(pool.Get()->SetMinBytes(0));
-
-                pool.Get()->CalculateStats(&poolStats);
-
-                CHECK_BOOL(poolStats.BlockCount == 1);
-                CHECK_BOOL(poolStats.AllocationCount == 0);
-                CHECK_BOOL(poolStats.UsedBytes == 0);
-                CHECK_BOOL(poolStats.UnusedBytes == poolStats.BlockCount * poolDesc.BlockSize);
-
                 // # Create buffers 2x 5 MB
 
                 D3D12MA_ALLOCATION_DESC allocDesc = default;
@@ -953,28 +933,6 @@ namespace TerraFX.Interop.UnitTests
             heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_L0; // System memory
             HRESULT hr = TestCustomHeap(ctx, heapProps);
             CHECK_HR(hr);
-        }
-
-        private static void TestDefaultPoolMinBytes([NativeTypeName("const TestContext&")] in TestContext ctx)
-        {
-            D3D12MA_Stats stats;
-            ctx.allocator->CalculateStats(&stats);
-            ulong gpuAllocatedBefore = stats.HeapType[0].UsedBytes + stats.HeapType[0].UnusedBytes;
-
-            ulong gpuAllocatedMin = gpuAllocatedBefore * 105 / 100;
-
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, CeilDiv(gpuAllocatedMin, 3ul)));
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES, CeilDiv(gpuAllocatedMin, 3ul)));
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES, CeilDiv(gpuAllocatedMin, 3ul)));
-
-            ctx.allocator->CalculateStats(&stats);
-            ulong gpuAllocatedAfter = stats.HeapType[0].UsedBytes + stats.HeapType[0].UnusedBytes;
-
-            CHECK_BOOL(gpuAllocatedAfter >= gpuAllocatedMin);
-
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, 0));
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES, 0));
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES, 0));
         }
 
         private static void TestAliasingMemory([NativeTypeName("const TestContext&")] in TestContext ctx)
@@ -1879,7 +1837,6 @@ namespace TerraFX.Interop.UnitTests
             TestOtherComInterface(in ctx);
             TestCustomPools(in ctx);
             TestCustomHeaps(in ctx);
-            TestDefaultPoolMinBytes(in ctx);
             TestAliasingMemory(in ctx);
             TestMapping(in ctx);
             TestStats(in ctx);

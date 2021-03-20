@@ -9,7 +9,6 @@ using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.D3D12MA_ALLOCATION_FLAGS;
-using static TerraFX.Interop.D3D12_HEAP_TYPE;
 
 namespace TerraFX.Interop
 {
@@ -289,21 +288,6 @@ namespace TerraFX.Interop
             }
 
             return hr;
-        }
-
-        /// <summary>Sets the minimum number of bytes that should always be allocated (reserved) in a specific default pool.</summary>
-        /// <param name="heapType">Must be one of: <see cref="D3D12_HEAP_TYPE_DEFAULT"/>, <see cref="D3D12_HEAP_TYPE_UPLOAD"/>, <see cref="D3D12_HEAP_TYPE_READBACK"/>.</param>
-        /// <param name="heapFlags">
-        /// Must be one of: <see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS"/>, <see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES"/>,
-        /// <see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES"/>. If <c>ResourceHeapTier = 2</c>, it can also be <see cref="D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES"/>.
-        /// </param>
-        /// <param name="minBytes">Minimum number of bytes to keep allocated.</param>
-        /// <remarks>See also: reserving_memory.</remarks>
-        [return: NativeTypeName("HRESULT")]
-        public int SetDefaultHeapMinBytes(D3D12_HEAP_TYPE heapType, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong minBytes)
-        {
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return SetDefaultHeapMinBytesPimpl(heapType, heapFlags, minBytes);
         }
 
         /// <summary>
