@@ -593,71 +593,48 @@ namespace TerraFX.Interop
         {
             *ppAllocation = null;
 
-            if (pAllocDesc->CustomPool != null)
-            {
-                D3D12MA_BlockVector* blockVector = pAllocDesc->CustomPool->GetBlockVector();
-                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
+            D3D12MA_BlockVector* blockVector = null;
+            D3D12MA_CommittedAllocationList* committedAllocationList = null;
+            bool preferCommitted = false;
+            int hr = CalcAllocationParams(
+                pAllocDesc,
+                pAllocInfo->SizeInBytes,
+                null, // pResDesc
+                out blockVector,
+                out committedAllocationList,
+                out preferCommitted);
 
-                return blockVector->Allocate(
-                    pAllocInfo->SizeInBytes,
-                    pAllocInfo->Alignment,
-                    pAllocDesc,
-                    1,
-                    (D3D12MA_Allocation**)ppAllocation
-                );
+            if (FAILED(hr))
+            {
+                return hr;
             }
-            else
+
+            hr = E_INVALIDARG;
+            if (committedAllocationList != null && preferCommitted)
             {
-                if (!IsHeapTypeStandard(pAllocDesc->HeapType))
+                hr = AllocateHeap(pAllocDesc, pAllocInfo, ppAllocation);
+                if (SUCCEEDED(hr))
                 {
-                    return E_INVALIDARG;
-                }
-                D3D12MA_ALLOCATION_DESC finalAllocDesc = *pAllocDesc;
-
-                uint defaultPoolIndex = CalcDefaultPoolIndex(pAllocDesc);
-                bool requireCommittedMemory = defaultPoolIndex == uint.MaxValue;
-
-                if (requireCommittedMemory)
-                {
-                    return AllocateHeap(&finalAllocDesc, pAllocInfo, ppAllocation);
-                }
-
-                D3D12MA_BlockVector* blockVector = m_BlockVectors[(int)defaultPoolIndex];
-                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
-
-                ulong preferredBlockSize = blockVector->GetPreferredBlockSize();
-                bool preferCommittedMemory = m_AlwaysCommitted;
-
-                // Heuristics: Allocate committed memory if requested size if greater than half of preferred block size.
-                preferCommittedMemory |= pAllocInfo->SizeInBytes > preferredBlockSize / 2;
-
-                if (preferCommittedMemory && (finalAllocDesc.Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) == 0)
-                {
-                    finalAllocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_COMMITTED;
-                }
-
-                if ((finalAllocDesc.Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) != 0)
-                {
-                    return AllocateHeap(&finalAllocDesc, pAllocInfo, ppAllocation);
-                }
-                else
-                {
-                    HRESULT hr = blockVector->Allocate(
-                        pAllocInfo->SizeInBytes,
-                        pAllocInfo->Alignment,
-                        &finalAllocDesc,
-                        1,
-                        (D3D12MA_Allocation**)ppAllocation
-                    );
-
-                    if (SUCCEEDED(hr))
-                    {
-                        return hr;
-                    }
-
-                    return AllocateHeap(&finalAllocDesc, pAllocInfo, ppAllocation);
+                    return hr;
                 }
             }
+            if (blockVector != null)
+            {
+                hr = blockVector->Allocate(pAllocInfo->SizeInBytes, pAllocInfo->Alignment, pAllocDesc, 1, ppAllocation);
+                if (SUCCEEDED(hr))
+                {
+                    return hr;
+                }
+            }
+            if (committedAllocationList != null && !preferCommitted)
+            {
+                hr = AllocateHeap(pAllocDesc, pAllocInfo, ppAllocation);
+                if (SUCCEEDED(hr))
+                {
+                    return hr;
+                }
+            }
+            return hr;
         }
 
         [return: NativeTypeName("HRESULT")]
@@ -1425,31 +1402,90 @@ namespace TerraFX.Interop
                 return E_OUTOFMEMORY;
             }
 
+            uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
+            ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)heapTypeIndex];
+            D3D12_HEAP_PROPERTIES heapProps = default;
+            heapProps.Type = pAllocDesc->HeapType;
+            return AllocateHeap1_Impl(ref allocList, &heapProps, pAllocDesc->ExtraHeapFlags, allocInfo, pProtectedSession, ppAllocation);
+        }
+
+        [return: NativeTypeName("HRESULT")]
+        private int AllocateHeap1_Impl([NativeTypeName("CommittedAllocationList&")] ref D3D12MA_CommittedAllocationList allocList, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProperties, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO&")] D3D12_RESOURCE_ALLOCATION_INFO* allocInfo, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation)
+        {
             D3D12_HEAP_DESC heapDesc = default;
             heapDesc.SizeInBytes = allocInfo->SizeInBytes;
-            heapDesc.Properties.Type = pAllocDesc->HeapType;
+            heapDesc.Properties = *heapProperties;
             heapDesc.Alignment = allocInfo->Alignment;
-            heapDesc.Flags = pAllocDesc->ExtraHeapFlags;
+            heapDesc.Flags = heapFlags;
 
             ID3D12Heap* heap = null;
             HRESULT hr = m_Device4->CreateHeap1(&heapDesc, pProtectedSession, __uuidof<ID3D12Heap>(), (void**)&heap);
             if (SUCCEEDED(hr))
             {
-                uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
-                ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)heapTypeIndex];
-
                 const int wasZeroInitialized = 1;
                 *ppAllocation = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), allocInfo->SizeInBytes, wasZeroInitialized);
                 (*ppAllocation)->InitHeap(ref allocList, heap);
                 allocList.Register(*ppAllocation);
 
+                uint heapTypeIndex = HeapTypeToIndex(heapProperties->Type);
                 m_Budget.AddAllocation(heapTypeIndex, allocInfo->SizeInBytes);
-;
                 ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
                 Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + allocInfo->SizeInBytes);
             }
 
             return hr;
+        }
+
+        [return: NativeTypeName("HRESULT")]
+        private int CalcAllocationParams([NativeTypeName("const ALLOCATION_DESC&")] D3D12MA_ALLOCATION_DESC* allocDesc, ulong allocSize, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] D3D12_RESOURCE_DESC* resDesc, [NativeTypeName("BlockVector*&")] out D3D12MA_BlockVector* outBlockVector, [NativeTypeName("CommittedAllocationList*&")] out D3D12MA_CommittedAllocationList* outCommittedAllocationList, [NativeTypeName("bool&")] out bool outPreferCommitted)
+        {
+            outBlockVector = null;
+            outCommittedAllocationList = null;
+            outPreferCommitted = false;
+
+            if (allocDesc->CustomPool != null)
+            {
+                if ((allocDesc->Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) == 0)
+                {
+                    outBlockVector = allocDesc->CustomPool->GetBlockVector();
+                }
+            }
+            else
+            {
+                if (!IsHeapTypeStandard(allocDesc->HeapType))
+                {
+                    return E_INVALIDARG;
+                }
+                if ((allocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) == 0)
+                {
+                    outCommittedAllocationList = (D3D12MA_CommittedAllocationList*)Unsafe.AsPointer(ref m_CommittedAllocations[(int)HeapTypeToIndex(allocDesc->HeapType)]);
+                }
+                if (!m_AlwaysCommitted &&
+                    ((allocDesc->Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) == 0))
+                {
+                    uint defaultPoolIndex = CalcDefaultPoolIndex(allocDesc);
+                    if (defaultPoolIndex != Windows.UINT32_MAX)
+                    {
+                        outBlockVector = (D3D12MA_BlockVector*)Unsafe.AsPointer(ref m_BlockVectors[(int)defaultPoolIndex]);
+                        ulong preferredBlockSize = outBlockVector->GetPreferredBlockSize();
+                        if (allocSize > preferredBlockSize)
+                        {
+                            outBlockVector = null;
+                        }
+                        else if (allocSize > preferredBlockSize / 2)
+                        {
+                            // Heuristics: Allocate committed memory if requested size if greater than half of preferred block size.
+                            outPreferCommitted = true;
+                        }
+                    }
+                }
+            }
+            if (resDesc != null && PrefersCommittedAllocation(resDesc))
+            {
+                outPreferCommitted = true;
+            }
+
+            return S_OK;
         }
 
         /// <summary>
