@@ -261,18 +261,14 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         private int CreateResourcePimpl(D3D12MA_ALLOCATION_DESC* pAllocDesc, D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pAllocDesc != null) && (pResourceDesc != null) && (ppAllocation != null));
+
             *ppAllocation = null;
 
             if (ppvResource != null)
             {
                 *ppvResource = null;
             }
-
-            if (pAllocDesc->CustomPool == null && !IsHeapTypeStandard(pAllocDesc->HeapType))
-            {
-                return E_INVALIDARG;
-            }
-            D3D12MA_ALLOCATION_DESC finalAllocDesc = *pAllocDesc;
 
             D3D12_RESOURCE_DESC finalResourceDesc = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&finalResourceDesc);
@@ -282,106 +278,77 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && IsPow2(resAllocInfo.Alignment));
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
 
-            if (pAllocDesc->CustomPool != null)
+            D3D12MA_BlockVector* blockVector = null;
+            D3D12MA_CommittedAllocationList* committedAllocationList = null;
+            bool preferCommitted = false;
+            int hr = CalcAllocationParams(
+                pAllocDesc,
+                resAllocInfo.SizeInBytes,
+                null, // pResDesc
+                out blockVector,
+                out committedAllocationList,
+                out preferCommitted);
+
+            if (FAILED(hr))
             {
-                if ((finalAllocDesc.Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) != 0)
+                return hr;
+            }
+
+            hr = E_INVALIDARG;
+            if ((committedAllocationList != null) && preferCommitted)
+            {
+                hr = AllocateCommittedResource(
+                    pAllocDesc,
+                    &finalResourceDesc,
+                    &resAllocInfo,
+                    InitialResourceState,
+                    pOptimizedClearValue,
+                    ppAllocation,
+                    riidResource,
+                    ppvResource);
+
+                if (SUCCEEDED(hr))
                 {
-                    return E_INVALIDARG;
+                    return hr;
                 }
-
-                D3D12MA_BlockVector* blockVector = pAllocDesc->CustomPool->GetBlockVector();
-                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
-
-                return blockVector->CreateResource(
+            }
+            if (blockVector != null)
+            {
+                hr = blockVector->CreateResource(
                     resAllocInfo.SizeInBytes,
                     resAllocInfo.Alignment,
-                    &finalAllocDesc,
+                    pAllocDesc,
                     &finalResourceDesc,
                     InitialResourceState,
                     pOptimizedClearValue,
                     ppAllocation,
                     riidResource,
-                    ppvResource
-                );
+                    ppvResource);
+
+                if (SUCCEEDED(hr))
+                {
+                    return hr;
+                }
             }
-            else
+            if ((committedAllocationList != null) && !preferCommitted)
             {
-                D3D12MA_ResourceClass resourceClass = ResourceDescToResourceClass(&finalResourceDesc);
-                uint defaultPoolIndex = CalcDefaultPoolIndex(pAllocDesc, resourceClass);
-                bool requireCommittedMemory = defaultPoolIndex == uint.MaxValue;
+                hr = AllocateCommittedResource(
+                    pAllocDesc,
+                    &finalResourceDesc,
+                    &resAllocInfo,
+                    InitialResourceState,
+                    pOptimizedClearValue,
+                    ppAllocation,
+                    riidResource,
+                    ppvResource);
 
-                if (requireCommittedMemory)
+                if (SUCCEEDED(hr))
                 {
-                    return AllocateCommittedResource(
-                        &finalAllocDesc,
-                        &finalResourceDesc,
-                        &resAllocInfo,
-                        InitialResourceState,
-                        pOptimizedClearValue,
-                        ppAllocation,
-                        riidResource,
-                        ppvResource
-                    );
-                }
-
-                D3D12MA_BlockVector* blockVector = m_BlockVectors[(int)defaultPoolIndex];
-                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
-
-                ulong preferredBlockSize = blockVector->GetPreferredBlockSize();
-                bool preferCommittedMemory = m_AlwaysCommitted || PrefersCommittedAllocation(&finalResourceDesc);
-
-                // Heuristics: Allocate committed memory if requested size if greater than half of preferred block size.
-                preferCommittedMemory |= resAllocInfo.SizeInBytes > preferredBlockSize / 2;
-
-                if (preferCommittedMemory && (finalAllocDesc.Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) == 0)
-                {
-                    finalAllocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_COMMITTED;
-                }
-
-                if ((finalAllocDesc.Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) != 0)
-                {
-                    return AllocateCommittedResource(
-                        &finalAllocDesc,
-                        &finalResourceDesc,
-                        &resAllocInfo,
-                        InitialResourceState,
-                        pOptimizedClearValue,
-                        ppAllocation,
-                        riidResource,
-                        ppvResource
-                    );
-                }
-                else
-                {
-                    HRESULT hr = blockVector->CreateResource(
-                        resAllocInfo.SizeInBytes,
-                        resAllocInfo.Alignment,
-                        &finalAllocDesc,
-                        &finalResourceDesc,
-                        InitialResourceState,
-                        pOptimizedClearValue,
-                        ppAllocation,
-                        riidResource,
-                        ppvResource
-                    );
-
-                    if (SUCCEEDED(hr))
-                    {
-                        return hr;
-                    }
-
-                    return AllocateCommittedResource(
-                        &finalAllocDesc,
-                        &finalResourceDesc,
-                        &resAllocInfo,
-                        InitialResourceState,
-                        pOptimizedClearValue,
-                        ppAllocation,
-                        riidResource,
-                        ppvResource
-                    );
+                    return hr;
                 }
             }
+
+            return hr;
         }
 
         [return: NativeTypeName("HRESULT")]
@@ -435,6 +402,8 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         private int CreateResource2Pimpl(D3D12MA_ALLOCATION_DESC* pAllocDesc, D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession *pProtectedSession, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pAllocDesc != null) && (pResourceDesc != null) && (ppAllocation != null));
+
             *ppAllocation = null;
 
             if (ppvResource != null)
@@ -447,13 +416,6 @@ namespace TerraFX.Interop
                 return E_NOINTERFACE;
             }
 
-            if (pAllocDesc->CustomPool == null && !IsHeapTypeStandard(pAllocDesc->HeapType))
-            {
-                return E_INVALIDARG;
-            }
-
-            D3D12MA_ALLOCATION_DESC finalAllocDesc = *pAllocDesc;
-
             D3D12_RESOURCE_DESC1 finalResourceDesc = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&finalResourceDesc);
 
@@ -462,113 +424,85 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && IsPow2(resAllocInfo.Alignment));
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
 
-            bool requireCommittedMemory = pProtectedSession != null || (finalAllocDesc.Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) != 0;
+            D3D12MA_BlockVector* blockVector = null;
+            D3D12MA_CommittedAllocationList* committedAllocationList = null;
+            bool preferCommitted = false;
+            int hr = CalcAllocationParams(
+                pAllocDesc,
+                resAllocInfo.SizeInBytes,
+                null, // pResDesc
+                out blockVector,
+                out committedAllocationList,
+                out preferCommitted);
 
-            if (pAllocDesc->CustomPool != null)
+            if (FAILED(hr))
             {
-                if (requireCommittedMemory)
+                return hr;
+            }
+
+            if (pProtectedSession != null)
+            {
+                blockVector = null; // Must be committed allocation.
+            }
+
+            hr = E_INVALIDARG;
+            if ((committedAllocationList != null) && preferCommitted)
+            {
+                hr = AllocateCommittedResource2(
+                    pAllocDesc,
+                    &finalResourceDesc,
+                    &resAllocInfo,
+                    InitialResourceState,
+                    pOptimizedClearValue,
+                    pProtectedSession,
+                    ppAllocation,
+                    riidResource,
+                    ppvResource);
+
+                if (SUCCEEDED(hr))
                 {
-                    return E_INVALIDARG;
+                    return hr;
                 }
-
-                D3D12MA_BlockVector* blockVector = pAllocDesc->CustomPool->GetBlockVector();
-                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
-
-                return blockVector->CreateResource2(
+            }
+            if (blockVector != null)
+            {
+                hr = blockVector->CreateResource2(
                     resAllocInfo.SizeInBytes,
                     resAllocInfo.Alignment,
-                    &finalAllocDesc,
+                    pAllocDesc,
                     &finalResourceDesc,
                     InitialResourceState,
                     pOptimizedClearValue,
                     pProtectedSession,
                     ppAllocation,
                     riidResource,
-                    ppvResource
-                );
+                    ppvResource);
+
+                if (SUCCEEDED(hr))
+                {
+                    return hr;
+                }
             }
-            else
+            if ((committedAllocationList != null) && !preferCommitted)
             {
-                D3D12MA_ResourceClass resourceClass = ResourceDescToResourceClass(&finalResourceDesc);
-                uint defaultPoolIndex = CalcDefaultPoolIndex(pAllocDesc, resourceClass);
-                requireCommittedMemory = requireCommittedMemory || defaultPoolIndex == uint.MaxValue;
+                hr = AllocateCommittedResource2(
+                    pAllocDesc,
+                    &finalResourceDesc,
+                    &resAllocInfo,
+                    InitialResourceState,
+                    pOptimizedClearValue,
+                    pProtectedSession,
+                    ppAllocation,
+                    riidResource,
+                    ppvResource);
 
-                if (requireCommittedMemory)
+                if (SUCCEEDED(hr))
                 {
-                    return AllocateCommittedResource2(
-                        &finalAllocDesc,
-                        &finalResourceDesc,
-                        &resAllocInfo,
-                        InitialResourceState,
-                        pOptimizedClearValue,
-                        pProtectedSession,
-                        ppAllocation,
-                        riidResource,
-                        ppvResource
-                    );
-                }
-
-                D3D12MA_BlockVector* blockVector = m_BlockVectors[(int)defaultPoolIndex];
-                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (blockVector != null));
-
-                ulong preferredBlockSize = blockVector->GetPreferredBlockSize();
-                bool preferCommittedMemory = m_AlwaysCommitted || PrefersCommittedAllocation(&finalResourceDesc);
-
-                // Heuristics: Allocate committed memory if requested size if greater than half of preferred block size.
-                preferCommittedMemory |= resAllocInfo.SizeInBytes > preferredBlockSize / 2;
-
-                if (preferCommittedMemory && (finalAllocDesc.Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) == 0)
-                {
-                    finalAllocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_COMMITTED;
-                }
-
-                if ((finalAllocDesc.Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) != 0)
-                {
-                    return AllocateCommittedResource2(
-                        &finalAllocDesc,
-                        &finalResourceDesc,
-                        &resAllocInfo,
-                        InitialResourceState,
-                        pOptimizedClearValue,
-                        pProtectedSession,
-                        ppAllocation,
-                        riidResource,
-                        ppvResource
-                    );
-                }
-                else
-                {
-                    HRESULT hr = blockVector->CreateResource2(
-                        resAllocInfo.SizeInBytes,
-                        resAllocInfo.Alignment,
-                        &finalAllocDesc,
-                        &finalResourceDesc,
-                        InitialResourceState,
-                        pOptimizedClearValue,
-                        pProtectedSession,
-                        ppAllocation,
-                        riidResource,
-                        ppvResource
-                    );
-
-                    if (SUCCEEDED(hr))
-                    {
-                        return hr;
-                    }
-
-                    return AllocateCommittedResource2(
-                        &finalAllocDesc,
-                        &finalResourceDesc,
-                        &resAllocInfo,
-                        InitialResourceState,
-                        pOptimizedClearValue,
-                        pProtectedSession,
-                        ppAllocation,
-                        riidResource,
-                        ppvResource
-                    );
+                    return hr;
                 }
             }
+
+            return hr;
         }
 
         [return: NativeTypeName("HRESULT")]
@@ -1368,7 +1302,8 @@ namespace TerraFX.Interop
             {
                 D3D12MA_Pool* pool = allocDesc->CustomPool;
                 outBlockVector = pool->GetBlockVector();
-                outCommittedAllocationList = &pool->m_CommittedAllocations;
+                // TODO!
+                //outCommittedAllocationList = &pool->m_CommittedAllocations;
             }
             else
             {
