@@ -758,7 +758,6 @@ namespace TerraFX.Interop
             }
 
             // Process deafult pools.
-
             if (SupportsResourceHeapTier2())
             {
                 for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapTypeIndex)
@@ -790,7 +789,7 @@ namespace TerraFX.Interop
                     (D3D12MA_IntrusiveLinkedList<D3D12MA_Pool>*)Unsafe.AsPointer(ref m_Pools[(int)heapTypeIndex]);
                 for (D3D12MA_Pool* pool = poolList->Front(); pool != null; pool = D3D12MA_IntrusiveLinkedList<D3D12MA_Pool>.GetNext(pool))
                 {
-                    pool->GetBlockVector()->AddStats(outStats);
+                    pool->AddStats(outStats);
                 }
             }
 

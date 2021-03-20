@@ -103,6 +103,15 @@ namespace TerraFX.Interop
             PostProcessStatInfo(ref *outStats);
         }
 
+        internal void AddStats([NativeTypeName("Stats&")] D3D12MA_Stats* inoutStats)
+        {
+            D3D12MA_StatInfo poolStatInfo = default;
+            CalculateStats(&poolStatInfo);
+
+            AddStatInfo(ref inoutStats->Total, ref poolStatInfo);
+            AddStatInfo(ref inoutStats->HeapType[(int)HeapTypeToIndex(m_Desc.HeapProperties.Type)], ref poolStatInfo);
+        }
+
         private void SetNamePimpl([NativeTypeName("LPCWSTR")] ushort* Name)
         {
             FreeName();
