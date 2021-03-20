@@ -279,14 +279,15 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
 
             D3D12MA_BlockVector* blockVector = null;
-            D3D12MA_CommittedAllocationList* committedAllocationList = null;
+            D3D12MA_CommittedAllocationParameters committedAllocationParams;
+            D3D12MA_CommittedAllocationParameters._ctor(out committedAllocationParams);
             bool preferCommitted = false;
             int hr = CalcAllocationParams(
                 pAllocDesc,
                 resAllocInfo.SizeInBytes,
                 null, // pResDesc
                 out blockVector,
-                out committedAllocationList,
+                out committedAllocationParams,
                 out preferCommitted);
 
             if (FAILED(hr))
@@ -294,13 +295,15 @@ namespace TerraFX.Interop
                 return hr;
             }
 
+            bool withinBudget = (pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0;
             hr = E_INVALIDARG;
-            if ((committedAllocationList != null) && preferCommitted)
+            if ((committedAllocationParams.IsValid()) && preferCommitted)
             {
                 hr = AllocateCommittedResource(
-                    pAllocDesc,
+                    &committedAllocationParams,
+                    resAllocInfo.SizeInBytes,
+                    withinBudget,
                     &finalResourceDesc,
-                    &resAllocInfo,
                     InitialResourceState,
                     pOptimizedClearValue,
                     ppAllocation,
@@ -330,12 +333,13 @@ namespace TerraFX.Interop
                     return hr;
                 }
             }
-            if ((committedAllocationList != null) && !preferCommitted)
+            if ((committedAllocationParams.IsValid()) && !preferCommitted)
             {
                 hr = AllocateCommittedResource(
-                    pAllocDesc,
+                    &committedAllocationParams,
+                    resAllocInfo.SizeInBytes,
+                    withinBudget,
                     &finalResourceDesc,
-                    &resAllocInfo,
                     InitialResourceState,
                     pOptimizedClearValue,
                     ppAllocation,
@@ -372,12 +376,6 @@ namespace TerraFX.Interop
                 *ppvResource = null;
             }
 
-            // In current implementation it must always be allocated as committed.
-            if (pAllocDesc->CustomPool != null || (pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
-            {
-                return E_INVALIDARG;
-            }
-
             D3D12_RESOURCE_DESC finalResourceDesc = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&finalResourceDesc);
 
@@ -386,17 +384,43 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && IsPow2(resAllocInfo.Alignment));
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
 
-            return AllocateCommittedResource1(
+            D3D12MA_BlockVector* blockVector = null;
+            D3D12MA_CommittedAllocationParameters committedAllocationParams;
+            D3D12MA_CommittedAllocationParameters._ctor(out committedAllocationParams);
+            bool preferCommitted = false;
+            int hr = CalcAllocationParams(
                 pAllocDesc,
-                &finalResourceDesc,
-                &resAllocInfo,
-                InitialResourceState,
-                pOptimizedClearValue,
-                pProtectedSession,
-                ppAllocation,
-                riidResource,
-                ppvResource
-            );
+                resAllocInfo.SizeInBytes,
+                null, // pResDesc
+                out blockVector,
+                out committedAllocationParams,
+                out preferCommitted);
+
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+
+            bool withinBudget = (pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0;
+            // In current implementation it must always be allocated as committed.
+            if (committedAllocationParams.IsValid())
+            {
+                return AllocateCommittedResource1(
+                    &committedAllocationParams,
+                    resAllocInfo.SizeInBytes,
+                    withinBudget,
+                    &finalResourceDesc,
+                    InitialResourceState,
+                    pOptimizedClearValue,
+                    pProtectedSession,
+                    ppAllocation,
+                    riidResource,
+                    ppvResource);
+            }
+            else
+            {
+                return E_INVALIDARG;
+            }
         }
 
         [return: NativeTypeName("HRESULT")]
@@ -425,14 +449,15 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
 
             D3D12MA_BlockVector* blockVector = null;
-            D3D12MA_CommittedAllocationList* committedAllocationList = null;
+            D3D12MA_CommittedAllocationParameters committedAllocationParams;
+            D3D12MA_CommittedAllocationParameters._ctor(out committedAllocationParams);
             bool preferCommitted = false;
             int hr = CalcAllocationParams(
                 pAllocDesc,
                 resAllocInfo.SizeInBytes,
                 null, // pResDesc
                 out blockVector,
-                out committedAllocationList,
+                out committedAllocationParams,
                 out preferCommitted);
 
             if (FAILED(hr))
@@ -445,13 +470,15 @@ namespace TerraFX.Interop
                 blockVector = null; // Must be committed allocation.
             }
 
+            bool withinBudget = (pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0;
             hr = E_INVALIDARG;
-            if ((committedAllocationList != null) && preferCommitted)
+            if ((committedAllocationParams.IsValid()) && preferCommitted)
             {
                 hr = AllocateCommittedResource2(
-                    pAllocDesc,
+                    &committedAllocationParams,
+                    resAllocInfo.SizeInBytes,
+                    withinBudget,
                     &finalResourceDesc,
-                    &resAllocInfo,
                     InitialResourceState,
                     pOptimizedClearValue,
                     pProtectedSession,
@@ -483,12 +510,13 @@ namespace TerraFX.Interop
                     return hr;
                 }
             }
-            if ((committedAllocationList != null) && !preferCommitted)
+            if ((committedAllocationParams.IsValid()) && !preferCommitted)
             {
                 hr = AllocateCommittedResource2(
-                    pAllocDesc,
+                    &committedAllocationParams,
+                    resAllocInfo.SizeInBytes,
+                    withinBudget,
                     &finalResourceDesc,
-                    &resAllocInfo,
                     InitialResourceState,
                     pOptimizedClearValue,
                     pProtectedSession,
@@ -511,14 +539,15 @@ namespace TerraFX.Interop
             *ppAllocation = null;
 
             D3D12MA_BlockVector* blockVector = null;
-            D3D12MA_CommittedAllocationList* committedAllocationList = null;
+            D3D12MA_CommittedAllocationParameters committedAllocationParams;
+            D3D12MA_CommittedAllocationParameters._ctor(out committedAllocationParams);
             bool preferCommitted = false;
             int hr = CalcAllocationParams(
                 pAllocDesc,
                 pAllocInfo->SizeInBytes,
                 null, // pResDesc
                 out blockVector,
-                out committedAllocationList,
+                out committedAllocationParams,
                 out preferCommitted);
 
             if (FAILED(hr))
@@ -526,10 +555,11 @@ namespace TerraFX.Interop
                 return hr;
             }
 
+            bool withinBudget = (pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0;
             hr = E_INVALIDARG;
-            if (committedAllocationList != null && preferCommitted)
+            if (committedAllocationParams.IsValid() && preferCommitted)
             {
-                hr = AllocateHeap(pAllocDesc, pAllocInfo, ppAllocation);
+                hr = AllocateHeap(&committedAllocationParams, pAllocInfo, withinBudget, ppAllocation);
                 if (SUCCEEDED(hr))
                 {
                     return hr;
@@ -543,9 +573,9 @@ namespace TerraFX.Interop
                     return hr;
                 }
             }
-            if (committedAllocationList != null && !preferCommitted)
+            if (committedAllocationParams.IsValid() && !preferCommitted)
             {
-                hr = AllocateHeap(pAllocDesc, pAllocInfo, ppAllocation);
+                hr = AllocateHeap(&committedAllocationParams, pAllocInfo, withinBudget, ppAllocation);
                 if (SUCCEEDED(hr))
                 {
                     return hr;
@@ -570,17 +600,33 @@ namespace TerraFX.Interop
 
             *ppAllocation = null;
 
-            // In current implementation it must always be allocated as separate CreateHeap1.
-            if (pAllocDesc->CustomPool != null || (pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
+            D3D12MA_BlockVector* blockVector = null;
+            D3D12MA_CommittedAllocationParameters committedAllocationParams;
+            D3D12MA_CommittedAllocationParameters._ctor(out committedAllocationParams);
+            bool preferCommitted = false;
+            int hr = CalcAllocationParams(
+                pAllocDesc,
+                pAllocInfo->SizeInBytes,
+                null, // pResDesc
+                out blockVector,
+                out committedAllocationParams,
+                out preferCommitted);
+
+            if (FAILED(hr))
             {
-                return E_INVALIDARG;
+                return hr;
             }
 
-            if (!IsHeapTypeStandard(pAllocDesc->HeapType))
+            bool withinBudget = (pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0;
+            // In current implementation it must always be allocated as separate CreateHeap1.
+            if (committedAllocationParams.IsValid())
+            {
+                return AllocateHeap1(&committedAllocationParams, pAllocInfo, withinBudget, pProtectedSession, ppAllocation);
+            }
+            else
             {
                 return E_INVALIDARG;
             }
-            return AllocateHeap1(pAllocDesc, pAllocInfo, pProtectedSession, ppAllocation);
         }
 
         [return: NativeTypeName("HRESULT")]
@@ -1000,26 +1046,27 @@ namespace TerraFX.Interop
         }
 
         // Allocates and registers new committed resource with implicit heap, as dedicated allocation.
-        // Creates and returns Allocation object.
+        // Creates and returns Allocation object and optionally D3D12 resource.
         [return: NativeTypeName("HRESULT")]
-        private int AllocateCommittedResource(D3D12MA_ALLOCATION_DESC* pAllocDesc, D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_ALLOCATION_INFO* resAllocInfo, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+        private int AllocateCommittedResource([NativeTypeName("const CommittedAllocationParameters&")] D3D12MA_CommittedAllocationParameters* committedAllocParams, [NativeTypeName("UINT64")] ulong resourceSize, bool withinBudget, [NativeTypeName("const D3D12_RESOURCE_DESC*")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
-            if ((pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocParams->IsValid()));
+
+            if (withinBudget &&
+                !NewAllocationWithinBudget(committedAllocParams->m_HeapProperties.Type, resourceSize))
             {
                 return E_OUTOFMEMORY;
             }
-
-            if ((pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0 &&
-                !NewAllocationWithinBudget(pAllocDesc->HeapType, resAllocInfo->SizeInBytes))
-            {
-                return E_OUTOFMEMORY;
-            }
-
-            D3D12_HEAP_PROPERTIES heapProps = StandardHeapTypeToHeapProperties(pAllocDesc->HeapType);
-            D3D12_HEAP_FLAGS heapFlags = pAllocDesc->ExtraHeapFlags;
 
             ID3D12Resource* res = null;
-            HRESULT hr = m_Device->CreateCommittedResource(&heapProps, heapFlags, pResourceDesc, InitialResourceState, pOptimizedClearValue, __uuidof<ID3D12Resource>(), (void**)&res);
+            HRESULT hr = m_Device->CreateCommittedResource(
+                &committedAllocParams->m_HeapProperties,
+                committedAllocParams->m_HeapFlags,
+                pResourceDesc,
+                InitialResourceState,
+                pOptimizedClearValue,
+                __uuidof<ID3D12Resource>(),
+                (void**)&res);
 
             if (SUCCEEDED(hr))
             {
@@ -1030,22 +1077,20 @@ namespace TerraFX.Interop
 
                 if (SUCCEEDED(hr))
                 {
-                    ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)HeapTypeToIndex(pAllocDesc->HeapType)];
-
-                    const int wasZeroInitialized = 1;
-                    D3D12MA_Allocation* alloc = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), resAllocInfo->SizeInBytes, wasZeroInitialized);
-                    alloc->InitCommitted(ref allocList);
+                    const int wasZeroInitialized = 1;                    
+                    D3D12MA_Allocation* alloc = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), resourceSize, wasZeroInitialized);
+                    alloc->InitCommitted(ref *committedAllocParams->m_List);
                     alloc->SetResource(res, pResourceDesc);
 
                     *ppAllocation = alloc;
 
-                    allocList.Register(alloc);
+                    committedAllocParams->m_List->Register(alloc);
 
-                    uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
-                    m_Budget.AddAllocation(heapTypeIndex, resAllocInfo->SizeInBytes);
+                    uint heapTypeIndex = HeapTypeToIndex(committedAllocParams->m_HeapProperties.Type);
+                    m_Budget.AddAllocation(heapTypeIndex, resourceSize);
 
                     ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
-                    Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + resAllocInfo->SizeInBytes);
+                    Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + resourceSize);
                 }
                 else
                 {
@@ -1057,31 +1102,32 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        private int AllocateCommittedResource1(D3D12MA_ALLOCATION_DESC* pAllocDesc, D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_ALLOCATION_INFO* resAllocInfo, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession *pProtectedSession, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+        private int AllocateCommittedResource1([NativeTypeName("const CommittedAllocationParameters&")] D3D12MA_CommittedAllocationParameters* committedAllocParams, [NativeTypeName("UINT64")] ulong resourceSize, bool withinBudget, [NativeTypeName("const D3D12_RESOURCE_DESC*")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession *pProtectedSession, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocParams->IsValid()));
+
             if (m_Device4 == null)
             {
                 return E_NOINTERFACE;
             }
 
-            if ((pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
+            if (withinBudget &&
+                !NewAllocationWithinBudget(committedAllocParams->m_HeapProperties.Type, resourceSize))
             {
                 return E_OUTOFMEMORY;
             }
-
-            if ((pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0 &&
-                !NewAllocationWithinBudget(pAllocDesc->HeapType, resAllocInfo->SizeInBytes))
-            {
-                return E_OUTOFMEMORY;
-            }
-
-            D3D12_HEAP_PROPERTIES heapProps = StandardHeapTypeToHeapProperties(pAllocDesc->HeapType);
-            D3D12_HEAP_FLAGS heapFlags = pAllocDesc->ExtraHeapFlags;
 
             ID3D12Resource* res = null;
             HRESULT hr = m_Device4->CreateCommittedResource1(
-                &heapProps, heapFlags, pResourceDesc, InitialResourceState,
-                pOptimizedClearValue, pProtectedSession, __uuidof<ID3D12Resource>(), (void**)&res);
+                &committedAllocParams->m_HeapProperties,
+                committedAllocParams->m_HeapFlags,
+                pResourceDesc,
+                InitialResourceState,
+                pOptimizedClearValue,
+                pProtectedSession,
+                __uuidof<ID3D12Resource>(),
+                (void**)&res);
+
             if (SUCCEEDED(hr))
             {
                 if (ppvResource != null)
@@ -1091,22 +1137,20 @@ namespace TerraFX.Interop
 
                 if (SUCCEEDED(hr))
                 {
-                    ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)HeapTypeToIndex(pAllocDesc->HeapType)];
-
                     const int wasZeroInitialized = 1;
-                    D3D12MA_Allocation* alloc = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), resAllocInfo->SizeInBytes, wasZeroInitialized);
-                    alloc->InitCommitted(ref allocList);
+                    D3D12MA_Allocation* alloc = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), resourceSize, wasZeroInitialized);
+                    alloc->InitCommitted(ref *committedAllocParams->m_List);
                     alloc->SetResource(res, pResourceDesc);
 
                     *ppAllocation = alloc;
 
-                    allocList.Register(alloc);
+                    committedAllocParams->m_List->Register(alloc);
 
-                    uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
-                    m_Budget.AddAllocation(heapTypeIndex, resAllocInfo->SizeInBytes);
+                    uint heapTypeIndex = HeapTypeToIndex(committedAllocParams->m_HeapProperties.Type);
+                    m_Budget.AddAllocation(heapTypeIndex, resourceSize);
 
                     ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
-                    Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + resAllocInfo->SizeInBytes);
+                    Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + resourceSize);
                 }
                 else
                 {
@@ -1118,28 +1162,31 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        private int AllocateCommittedResource2(D3D12MA_ALLOCATION_DESC* pAllocDesc, D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_RESOURCE_ALLOCATION_INFO* resAllocInfo, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession *pProtectedSession, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+        private int AllocateCommittedResource2([NativeTypeName("const CommittedAllocationParameters&")] D3D12MA_CommittedAllocationParameters* committedAllocParams, [NativeTypeName("UINT64")] ulong resourceSize, bool withinBudget, [NativeTypeName("const D3D12_RESOURCE_DESC1*")] D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocParams->IsValid()));
+
             if (m_Device8 == null)
             {
                 return E_NOINTERFACE;
             }
 
-            if ((pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
+            if (withinBudget &&
+                !NewAllocationWithinBudget(committedAllocParams->m_HeapProperties.Type, resourceSize))
             {
                 return E_OUTOFMEMORY;
             }
-
-            if ((pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0 && !NewAllocationWithinBudget(pAllocDesc->HeapType, resAllocInfo->SizeInBytes))
-            {
-                return E_OUTOFMEMORY;
-            }
-
-            D3D12_HEAP_PROPERTIES heapProps = StandardHeapTypeToHeapProperties(pAllocDesc->HeapType);
-            D3D12_HEAP_FLAGS heapFlags = pAllocDesc->ExtraHeapFlags;
 
             ID3D12Resource* res = null;
-            HRESULT hr = m_Device8->CreateCommittedResource2(&heapProps, heapFlags, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, __uuidof<ID3D12Resource>(), (void**)&res);
+            HRESULT hr = m_Device8->CreateCommittedResource2(
+                &committedAllocParams->m_HeapProperties,
+                committedAllocParams->m_HeapFlags,
+                pResourceDesc,
+                InitialResourceState,
+                pOptimizedClearValue,
+                pProtectedSession,
+                __uuidof<ID3D12Resource>(),
+                (void**)&res);
 
             if (SUCCEEDED(hr))
             {
@@ -1150,23 +1197,21 @@ namespace TerraFX.Interop
 
                 if (SUCCEEDED(hr))
                 {
-                    ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)HeapTypeToIndex(pAllocDesc->HeapType)];
-
                     const int wasZeroInitialized = 1;
-                    D3D12MA_Allocation* alloc = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), resAllocInfo->SizeInBytes, wasZeroInitialized);
+                    D3D12MA_Allocation* alloc = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), resourceSize, wasZeroInitialized);
 
-                    alloc->InitCommitted(ref allocList);
+                    alloc->InitCommitted(ref *committedAllocParams->m_List);
                     alloc->SetResource(res, pResourceDesc);
 
                     *ppAllocation = alloc;
 
-                    allocList.Register(alloc);
+                    committedAllocParams->m_List->Register(alloc);
 
-                    uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
-                    m_Budget.AddAllocation(heapTypeIndex, resAllocInfo->SizeInBytes);
+                    uint heapTypeIndex = HeapTypeToIndex(committedAllocParams->m_HeapProperties.Type);
+                    m_Budget.AddAllocation(heapTypeIndex, resourceSize);
 
                     ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
-                    Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + resAllocInfo->SizeInBytes);
+                    Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + resourceSize);
                 }
                 else
                 {
@@ -1180,36 +1225,23 @@ namespace TerraFX.Interop
         // Allocates and registers new heap without any resources placed in it, as dedicated allocation.
         // Creates and returns Allocation object.
         [return: NativeTypeName("HRESULT")]
-        private int AllocateHeap(D3D12MA_ALLOCATION_DESC* pAllocDesc, D3D12_RESOURCE_ALLOCATION_INFO* allocInfo, D3D12MA_Allocation** ppAllocation)
+        private int AllocateHeap([NativeTypeName("const CommittedAllocationParameters&")] D3D12MA_CommittedAllocationParameters* committedAllocParams, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO&")] D3D12_RESOURCE_ALLOCATION_INFO* allocInfo, bool withinBudget, D3D12MA_Allocation** ppAllocation)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocParams->IsValid()));
+
             *ppAllocation = null;
 
-            if ((pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
+            if (withinBudget &&
+                !NewAllocationWithinBudget(committedAllocParams->m_HeapProperties.Type, allocInfo->SizeInBytes))
             {
                 return E_OUTOFMEMORY;
             }
 
-            if ((pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0 &&
-                !NewAllocationWithinBudget(pAllocDesc->HeapType, allocInfo->SizeInBytes))
-            {
-                return E_OUTOFMEMORY;
-            }
-
-            uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
-            ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)heapTypeIndex];
-
-            D3D12_HEAP_PROPERTIES heapProps = StandardHeapTypeToHeapProperties(pAllocDesc->HeapType);
-            return AllocateHeap_Impl(ref allocList, heapProps, pAllocDesc->ExtraHeapFlags, allocInfo, ppAllocation);
-        }
-
-        [return: NativeTypeName("HRESULT")]
-        private int AllocateHeap_Impl([NativeTypeName("CommittedAllocationList&")] ref D3D12MA_CommittedAllocationList allocList, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] in D3D12_HEAP_PROPERTIES heapProperties, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO&")] D3D12_RESOURCE_ALLOCATION_INFO* allocInfo, D3D12MA_Allocation** ppAllocation)
-        {
             D3D12_HEAP_DESC heapDesc = default;
             heapDesc.SizeInBytes = allocInfo->SizeInBytes;
-            heapDesc.Properties = heapProperties;
+            heapDesc.Properties = committedAllocParams->m_HeapProperties;
             heapDesc.Alignment = allocInfo->Alignment;
-            heapDesc.Flags = heapFlags;
+            heapDesc.Flags = committedAllocParams->m_HeapFlags;
 
             ID3D12Heap* heap = null;
             HRESULT hr = m_Device->CreateHeap(&heapDesc, __uuidof<ID3D12Heap>(), (void**)&heap);
@@ -1217,10 +1249,10 @@ namespace TerraFX.Interop
             {
                 const int wasZeroInitialized = 1;
                 *ppAllocation = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), allocInfo->SizeInBytes, wasZeroInitialized);
-                (*ppAllocation)->InitHeap(ref allocList, heap);
-                allocList.Register(*ppAllocation);
+                (*ppAllocation)->InitHeap(ref *committedAllocParams->m_List, heap);
+                committedAllocParams->m_List->Register(*ppAllocation);
 
-                uint heapTypeIndex = HeapTypeToIndex(heapProperties.Type);
+                uint heapTypeIndex = HeapTypeToIndex(committedAllocParams->m_HeapProperties.Type);
                 m_Budget.AddAllocation(heapTypeIndex, allocInfo->SizeInBytes);
 
                 ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
@@ -1231,8 +1263,10 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        private int AllocateHeap1(D3D12MA_ALLOCATION_DESC* pAllocDesc, D3D12_RESOURCE_ALLOCATION_INFO* allocInfo, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation)
+        private int AllocateHeap1([NativeTypeName("const CommittedAllocationParameters&")] D3D12MA_CommittedAllocationParameters* committedAllocParams, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO&")] D3D12_RESOURCE_ALLOCATION_INFO* allocInfo, bool withinBudget, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation)
         {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (committedAllocParams->IsValid()));
+
             *ppAllocation = null;
 
             if (m_Device4 == null)
@@ -1240,32 +1274,17 @@ namespace TerraFX.Interop
                 return E_NOINTERFACE;
             }
 
-            if ((pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
+            if (withinBudget &&
+                !NewAllocationWithinBudget(committedAllocParams->m_HeapProperties.Type, allocInfo->SizeInBytes))
             {
                 return E_OUTOFMEMORY;
             }
 
-            if ((pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0 &&
-                !NewAllocationWithinBudget(pAllocDesc->HeapType, allocInfo->SizeInBytes))
-            {
-                return E_OUTOFMEMORY;
-            }
-
-            uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
-            ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)heapTypeIndex];
-
-            D3D12_HEAP_PROPERTIES heapProps = StandardHeapTypeToHeapProperties(pAllocDesc->HeapType);
-            return AllocateHeap1_Impl(ref allocList, &heapProps, pAllocDesc->ExtraHeapFlags, allocInfo, pProtectedSession, ppAllocation);
-        }
-
-        [return: NativeTypeName("HRESULT")]
-        private int AllocateHeap1_Impl([NativeTypeName("CommittedAllocationList&")] ref D3D12MA_CommittedAllocationList allocList, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProperties, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO&")] D3D12_RESOURCE_ALLOCATION_INFO* allocInfo, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation)
-        {
             D3D12_HEAP_DESC heapDesc = default;
             heapDesc.SizeInBytes = allocInfo->SizeInBytes;
-            heapDesc.Properties = *heapProperties;
+            heapDesc.Properties = committedAllocParams->m_HeapProperties;
             heapDesc.Alignment = allocInfo->Alignment;
-            heapDesc.Flags = heapFlags;
+            heapDesc.Flags = committedAllocParams->m_HeapFlags;
 
             ID3D12Heap* heap = null;
             HRESULT hr = m_Device4->CreateHeap1(&heapDesc, pProtectedSession, __uuidof<ID3D12Heap>(), (void**)&heap);
@@ -1273,10 +1292,10 @@ namespace TerraFX.Interop
             {
                 const int wasZeroInitialized = 1;
                 *ppAllocation = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), allocInfo->SizeInBytes, wasZeroInitialized);
-                (*ppAllocation)->InitHeap(ref allocList, heap);
-                allocList.Register(*ppAllocation);
+                (*ppAllocation)->InitHeap(ref *committedAllocParams->m_List, heap);
+                committedAllocParams->m_List->Register(*ppAllocation);
 
-                uint heapTypeIndex = HeapTypeToIndex(heapProperties->Type);
+                uint heapTypeIndex = HeapTypeToIndex(committedAllocParams->m_HeapProperties.Type);
                 m_Budget.AddAllocation(heapTypeIndex, allocInfo->SizeInBytes);
                 ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
                 Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + allocInfo->SizeInBytes);
@@ -1286,17 +1305,21 @@ namespace TerraFX.Interop
         }
 
         [return: NativeTypeName("HRESULT")]
-        private int CalcAllocationParams([NativeTypeName("const ALLOCATION_DESC&")] D3D12MA_ALLOCATION_DESC* allocDesc, ulong allocSize, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] D3D12_RESOURCE_DESC* resDesc, [NativeTypeName("BlockVector*&")] out D3D12MA_BlockVector* outBlockVector, [NativeTypeName("CommittedAllocationList*&")] out D3D12MA_CommittedAllocationList* outCommittedAllocationList, [NativeTypeName("bool&")] out bool outPreferCommitted)
+        private int CalcAllocationParams([NativeTypeName("const ALLOCATION_DESC&")] D3D12MA_ALLOCATION_DESC* allocDesc, ulong allocSize, [NativeTypeName("const D3D12_RESOURCE_DESC_T*")] D3D12_RESOURCE_DESC* resDesc, [NativeTypeName("BlockVector*&")] out D3D12MA_BlockVector* outBlockVector, [NativeTypeName("CommittedAllocationParameters&")] out D3D12MA_CommittedAllocationParameters outCommittedAllocationParams, [NativeTypeName("bool&")] out bool outPreferCommitted)
         {
             outBlockVector = null;
-            outCommittedAllocationList = null;
+            D3D12MA_CommittedAllocationParameters._ctor(out outCommittedAllocationParams);
             outPreferCommitted = false;
 
             if (allocDesc->CustomPool != null)
             {
                 D3D12MA_Pool* pool = allocDesc->CustomPool;
+
                 outBlockVector = pool->GetBlockVector();
-                //outCommittedAllocationList = pool->GetCommittedAllocationList(); // TODO
+
+                outCommittedAllocationParams.m_HeapProperties = pool->GetDesc().HeapProperties;
+                outCommittedAllocationParams.m_HeapFlags = pool->GetDesc().HeapFlags;
+                //outCommittedAllocationParams.m_List = pool->GetCommittedAllocationList(); // TODO
             }
             else
             {
@@ -1305,7 +1328,9 @@ namespace TerraFX.Interop
                     return E_INVALIDARG;
                 }
 
-                outCommittedAllocationList = (D3D12MA_CommittedAllocationList*)Unsafe.AsPointer(ref m_CommittedAllocations[(int)HeapTypeToIndex(allocDesc->HeapType)]);
+                outCommittedAllocationParams.m_HeapProperties = StandardHeapTypeToHeapProperties(allocDesc->HeapType);
+                outCommittedAllocationParams.m_HeapFlags = allocDesc->ExtraHeapFlags;
+                outCommittedAllocationParams.m_List = (D3D12MA_CommittedAllocationList*)Unsafe.AsPointer(ref m_CommittedAllocations[(int)HeapTypeToIndex(allocDesc->HeapType)]);
 
                 D3D12MA_ResourceClass resourceClass = (resDesc != null) ?
                     ResourceDescToResourceClass(resDesc) : HeapFlagsToResourceClass(allocDesc->ExtraHeapFlags);
@@ -1340,7 +1365,7 @@ namespace TerraFX.Interop
 
             if ((allocDesc->Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
             {
-                outCommittedAllocationList = null;
+                outCommittedAllocationParams.m_List = null;
             }
 
             if ((resDesc != null) && (!outPreferCommitted) && PrefersCommittedAllocation(resDesc))
@@ -1348,7 +1373,7 @@ namespace TerraFX.Interop
                 outPreferCommitted = true;
             }
 
-            return ((outBlockVector != null) || (outCommittedAllocationList != null)) ? S_OK : E_INVALIDARG;
+            return ((outBlockVector != null) || (outCommittedAllocationParams.m_List != null)) ? S_OK : E_INVALIDARG;
         }
 
         /// <summary>
