@@ -1,0 +1,115 @@
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit 3a335d55c99e605775bbe9fe9c01ee6212804bed
+// Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
+
+using System;
+using static TerraFX.Interop.D3D12MemAlloc;
+using static TerraFX.Interop.Windows;
+
+namespace TerraFX.Interop
+{
+    /// <summary>
+    /// Stores linked list of Allocation objects that are of TYPE_COMMITTED or TYPE_HEAP. Thread-safe, synchronized internally.
+    /// </summary>
+    internal unsafe struct D3D12MA_CommittedAllocationList : IDisposable
+    {
+        private bool m_useMutex;
+        private D3D12_HEAP_TYPE m_HeapType;
+
+        private D3D12MA_RW_MUTEX m_Mutex;
+
+        [NativeTypeName("typedef IntrusiveLinkedList<CommittedAllocationListItemTraits> CommittedAllocationLinkedList")]
+        private D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation> m_AllocationList;
+
+        public static void _ctor(ref D3D12MA_CommittedAllocationList pThis)
+        {
+            pThis.m_useMutex = true;
+            pThis.m_HeapType = D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_CUSTOM;
+
+            D3D12MA_RW_MUTEX._ctor(ref pThis.m_Mutex);
+        }
+
+        public void Init(bool useMutex, D3D12_HEAP_TYPE heapType)
+        {
+            m_useMutex = useMutex;
+            m_HeapType = heapType;
+        }
+
+        public void Dispose()
+        {
+            if (!m_AllocationList.IsEmpty())
+            {
+                D3D12MA_ASSERT(false); // "Unfreed committed allocations found!"
+            }
+        }
+
+        public readonly D3D12_HEAP_TYPE GetHeapType() => m_HeapType;
+
+        public void CalculateStats([NativeTypeName("StatInfo&")] ref D3D12MA_StatInfo outStats)
+        {
+            outStats.BlockCount = 0;
+            outStats.AllocationCount = 0;
+            outStats.UnusedRangeCount = 0;
+            outStats.UsedBytes = 0;
+            outStats.UnusedBytes = 0;
+            outStats.AllocationSizeMin = UINT64_MAX;
+            outStats.AllocationSizeAvg = 0;
+            outStats.AllocationSizeMax = 0;
+            outStats.UnusedRangeSizeMin = UINT64_MAX;
+            outStats.UnusedRangeSizeAvg = 0;
+            outStats.UnusedRangeSizeMax = 0;
+
+            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex);
+
+            for (D3D12MA_Allocation* alloc = m_AllocationList.Front();
+                 alloc != null; alloc = D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation>.GetNext(alloc))
+            {
+                ulong size = alloc->GetSize();
+                ++outStats.BlockCount;
+                ++outStats.AllocationCount;
+                outStats.UsedBytes += size;
+
+                if (size > outStats.AllocationSizeMax)
+                {
+                    outStats.AllocationSizeMax = size;
+                }
+
+                if (size < outStats.AllocationSizeMin)
+                {
+                    outStats.AllocationSizeMin = size;
+                }
+            }
+        }
+
+        /// <summary>Writes JSON array with the list of allocations.</summary>
+        public void BuildStatsString([NativeTypeName("JsonWriter&")] ref D3D12MA_JsonWriter json)
+        {
+            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex);
+
+            json.BeginArray();
+            for (D3D12MA_Allocation* alloc = m_AllocationList.Front();
+                 alloc != null; alloc = D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation>.GetNext(alloc))
+            {
+                json.BeginObject(true);
+                json.AddAllocationToObject(alloc);
+                json.EndObject();
+            }
+            json.EndArray();
+        }
+
+        public void Register(D3D12MA_Allocation* alloc)
+        {
+            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex);
+
+            m_AllocationList.PushBack(alloc);
+        }
+
+        public void Unregister(D3D12MA_Allocation* alloc)
+        {
+            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex);
+
+            m_AllocationList.Remove(alloc);
+        }
+    }
+}
