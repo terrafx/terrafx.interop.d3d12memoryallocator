@@ -17,6 +17,8 @@ namespace TerraFX.Interop
 
         internal D3D12MA_BlockVector* m_BlockVector; // Owned object
 
+        internal D3D12MA_CommittedAllocationList m_CommittedAllocations;
+
         [NativeTypeName("wchar_t*")]
         internal ushort* m_Name;
 
@@ -54,6 +56,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         internal int Init()
         {
+            m_CommittedAllocations.Init(m_Allocator->UseMutex(), m_Desc.HeapProperties.Type, (D3D12MA_Pool*)Unsafe.AsPointer(ref this));
             return m_BlockVector->CreateMinBlocks();
         }
 
@@ -84,6 +87,13 @@ namespace TerraFX.Interop
             outStats->UnusedRangeSizeMin = ulong.MaxValue;
 
             m_BlockVector->AddStats(outStats);
+
+            {
+                Unsafe.SkipInit(out D3D12MA_StatInfo committedStatInfo); // Uninitialized.
+                m_CommittedAllocations.CalculateStats(ref committedStatInfo);
+                AddStatInfo(ref *outStats, ref committedStatInfo);
+            }
+
             PostProcessStatInfo(ref *outStats);
         }
 

@@ -4,6 +4,7 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Runtime.CompilerServices;
 using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.Windows;
 
@@ -16,6 +17,7 @@ namespace TerraFX.Interop
     {
         private bool m_useMutex;
         private D3D12_HEAP_TYPE m_HeapType;
+        private D3D12MA_Pool* m_Pool;
 
         private D3D12MA_RW_MUTEX m_Mutex;
 
@@ -26,14 +28,16 @@ namespace TerraFX.Interop
         {
             pThis.m_useMutex = true;
             pThis.m_HeapType = D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_CUSTOM;
+            pThis.m_Pool = null;
 
             D3D12MA_RW_MUTEX._ctor(ref pThis.m_Mutex);
         }
 
-        public void Init(bool useMutex, D3D12_HEAP_TYPE heapType)
+        public void Init(bool useMutex, D3D12_HEAP_TYPE heapType, D3D12MA_Pool* pool)
         {
             m_useMutex = useMutex;
             m_HeapType = heapType;
+            m_Pool = pool;
         }
 
         public void Dispose()
@@ -48,17 +52,9 @@ namespace TerraFX.Interop
 
         public void CalculateStats([NativeTypeName("StatInfo&")] ref D3D12MA_StatInfo outStats)
         {
-            outStats.BlockCount = 0;
-            outStats.AllocationCount = 0;
-            outStats.UnusedRangeCount = 0;
-            outStats.UsedBytes = 0;
-            outStats.UnusedBytes = 0;
+            ZeroMemory(Unsafe.AsPointer(ref outStats), (nuint)sizeof(D3D12MA_StatInfo));
             outStats.AllocationSizeMin = UINT64_MAX;
-            outStats.AllocationSizeAvg = 0;
-            outStats.AllocationSizeMax = 0;
             outStats.UnusedRangeSizeMin = UINT64_MAX;
-            outStats.UnusedRangeSizeAvg = 0;
-            outStats.UnusedRangeSizeMax = 0;
 
             using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex);
 

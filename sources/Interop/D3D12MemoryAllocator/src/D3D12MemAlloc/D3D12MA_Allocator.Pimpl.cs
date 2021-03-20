@@ -133,7 +133,10 @@ namespace TerraFX.Interop
 
                 D3D12MA_CommittedAllocationList._ctor(ref committedAllocations);
 
-                committedAllocations.Init(pThis.m_UseMutex, (D3D12_HEAP_TYPE)(D3D12_HEAP_TYPE_DEFAULT + (int)i));
+                committedAllocations.Init(
+                    pThis.m_UseMutex,
+                    (D3D12_HEAP_TYPE)(D3D12_HEAP_TYPE_DEFAULT + (int)i),
+                    null); // pool
             }
 
             pThis.m_Device->AddRef();
@@ -1366,11 +1369,19 @@ namespace TerraFX.Interop
                 return E_OUTOFMEMORY;
             }
 
-            D3D12_HEAP_FLAGS heapFlags = pAllocDesc->ExtraHeapFlags;
+            uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
+            ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)heapTypeIndex];
+            D3D12_HEAP_PROPERTIES heapProps = default;
+            heapProps.Type = pAllocDesc->HeapType;
+            return AllocateHeap_Impl(ref allocList, heapProps, pAllocDesc->ExtraHeapFlags, allocInfo, ppAllocation);
+        }
 
+        [return: NativeTypeName("HRESULT")]
+        private int AllocateHeap_Impl([NativeTypeName("CommittedAllocationList&")] ref D3D12MA_CommittedAllocationList allocList, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] in D3D12_HEAP_PROPERTIES heapProperties, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO&")] D3D12_RESOURCE_ALLOCATION_INFO* allocInfo, D3D12MA_Allocation** ppAllocation)
+        {
             D3D12_HEAP_DESC heapDesc = default;
             heapDesc.SizeInBytes = allocInfo->SizeInBytes;
-            heapDesc.Properties.Type = pAllocDesc->HeapType;
+            heapDesc.Properties = heapProperties;
             heapDesc.Alignment = allocInfo->Alignment;
             heapDesc.Flags = heapFlags;
 
@@ -1378,14 +1389,12 @@ namespace TerraFX.Interop
             HRESULT hr = m_Device->CreateHeap(&heapDesc, __uuidof<ID3D12Heap>(), (void**)&heap);
             if (SUCCEEDED(hr))
             {
-                ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)HeapTypeToIndex(pAllocDesc->HeapType)];
-
                 const int wasZeroInitialized = 1;
                 *ppAllocation = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), allocInfo->SizeInBytes, wasZeroInitialized);
                 (*ppAllocation)->InitHeap(ref allocList, heap);
                 allocList.Register(*ppAllocation);
 
-                uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
+                uint heapTypeIndex = HeapTypeToIndex(heapProperties.Type);
                 m_Budget.AddAllocation(heapTypeIndex, allocInfo->SizeInBytes);
 
                 ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
@@ -1416,26 +1425,24 @@ namespace TerraFX.Interop
                 return E_OUTOFMEMORY;
             }
 
-            D3D12_HEAP_FLAGS heapFlags = pAllocDesc->ExtraHeapFlags;
-
             D3D12_HEAP_DESC heapDesc = default;
             heapDesc.SizeInBytes = allocInfo->SizeInBytes;
             heapDesc.Properties.Type = pAllocDesc->HeapType;
             heapDesc.Alignment = allocInfo->Alignment;
-            heapDesc.Flags = heapFlags;
+            heapDesc.Flags = pAllocDesc->ExtraHeapFlags;
 
             ID3D12Heap* heap = null;
             HRESULT hr = m_Device4->CreateHeap1(&heapDesc, pProtectedSession, __uuidof<ID3D12Heap>(), (void**)&heap);
             if (SUCCEEDED(hr))
             {
-                ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)HeapTypeToIndex(pAllocDesc->HeapType)];
+                uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
+                ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)heapTypeIndex];
 
                 const int wasZeroInitialized = 1;
                 *ppAllocation = m_AllocationObjectAllocator.Allocate((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), allocInfo->SizeInBytes, wasZeroInitialized);
                 (*ppAllocation)->InitHeap(ref allocList, heap);
                 allocList.Register(*ppAllocation);
 
-                uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
                 m_Budget.AddAllocation(heapTypeIndex, allocInfo->SizeInBytes);
 ;
                 ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
