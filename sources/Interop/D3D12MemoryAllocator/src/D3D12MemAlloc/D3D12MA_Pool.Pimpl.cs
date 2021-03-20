@@ -71,7 +71,19 @@ namespace TerraFX.Interop
 
         internal readonly D3D12MA_Allocator* GetAllocator() => m_Allocator;
 
+        internal readonly bool SupportsCommittedAllocations() => m_Desc.BlockSize == 0;
+
         internal D3D12MA_BlockVector* GetBlockVector() => m_BlockVector;
+
+        internal readonly D3D12MA_CommittedAllocationList* GetCommittedAllocationList()
+        {
+            if (SupportsCommittedAllocations())
+            {
+                return (D3D12MA_CommittedAllocationList*)Unsafe.AsPointer(ref Unsafe.AsRef(in m_CommittedAllocations));
+            }
+
+            return null;
+        }
 
         private void CalculateStatsPimpl([NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outStats)
         {

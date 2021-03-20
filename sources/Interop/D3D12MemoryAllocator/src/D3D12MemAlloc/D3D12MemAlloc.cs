@@ -759,6 +759,14 @@ namespace TerraFX.Interop
                 type == D3D12_HEAP_TYPE_READBACK;
         }
 
+        internal static D3D12_HEAP_PROPERTIES StandardHeapTypeToHeapProperties(D3D12_HEAP_TYPE type)
+        {
+            D3D12MA_ASSERT(IsHeapTypeStandard(type));
+            D3D12_HEAP_PROPERTIES result = default;
+            result.Type = type;
+            return result;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static D3D12MA_ResourceClass ResourceDescToResourceClass([NativeTypeName("const D3D12_RESOURCE_DESC_T&")] D3D12_RESOURCE_DESC* resDesc)
         {

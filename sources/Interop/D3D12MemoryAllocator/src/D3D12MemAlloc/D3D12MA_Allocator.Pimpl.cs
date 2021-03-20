@@ -1015,9 +1015,7 @@ namespace TerraFX.Interop
                 return E_OUTOFMEMORY;
             }
 
-            D3D12_HEAP_PROPERTIES heapProps = default;
-            heapProps.Type = pAllocDesc->HeapType;
-
+            D3D12_HEAP_PROPERTIES heapProps = StandardHeapTypeToHeapProperties(pAllocDesc->HeapType);
             D3D12_HEAP_FLAGS heapFlags = pAllocDesc->ExtraHeapFlags;
 
             ID3D12Resource* res = null;
@@ -1077,9 +1075,7 @@ namespace TerraFX.Interop
                 return E_OUTOFMEMORY;
             }
 
-            D3D12_HEAP_PROPERTIES heapProps = default;
-            heapProps.Type = pAllocDesc->HeapType;
-
+            D3D12_HEAP_PROPERTIES heapProps = StandardHeapTypeToHeapProperties(pAllocDesc->HeapType);
             D3D12_HEAP_FLAGS heapFlags = pAllocDesc->ExtraHeapFlags;
 
             ID3D12Resource* res = null;
@@ -1139,9 +1135,7 @@ namespace TerraFX.Interop
                 return E_OUTOFMEMORY;
             }
 
-            D3D12_HEAP_PROPERTIES heapProps = default;
-            heapProps.Type = pAllocDesc->HeapType;
-
+            D3D12_HEAP_PROPERTIES heapProps = StandardHeapTypeToHeapProperties(pAllocDesc->HeapType);
             D3D12_HEAP_FLAGS heapFlags = pAllocDesc->ExtraHeapFlags;
 
             ID3D12Resource* res = null;
@@ -1203,8 +1197,8 @@ namespace TerraFX.Interop
 
             uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
             ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)heapTypeIndex];
-            D3D12_HEAP_PROPERTIES heapProps = default;
-            heapProps.Type = pAllocDesc->HeapType;
+
+            D3D12_HEAP_PROPERTIES heapProps = StandardHeapTypeToHeapProperties(pAllocDesc->HeapType);
             return AllocateHeap_Impl(ref allocList, heapProps, pAllocDesc->ExtraHeapFlags, allocInfo, ppAllocation);
         }
 
@@ -1259,8 +1253,8 @@ namespace TerraFX.Interop
 
             uint heapTypeIndex = HeapTypeToIndex(pAllocDesc->HeapType);
             ref D3D12MA_CommittedAllocationList allocList = ref m_CommittedAllocations[(int)heapTypeIndex];
-            D3D12_HEAP_PROPERTIES heapProps = default;
-            heapProps.Type = pAllocDesc->HeapType;
+
+            D3D12_HEAP_PROPERTIES heapProps = StandardHeapTypeToHeapProperties(pAllocDesc->HeapType);
             return AllocateHeap1_Impl(ref allocList, &heapProps, pAllocDesc->ExtraHeapFlags, allocInfo, pProtectedSession, ppAllocation);
         }
 
@@ -1302,8 +1296,7 @@ namespace TerraFX.Interop
             {
                 D3D12MA_Pool* pool = allocDesc->CustomPool;
                 outBlockVector = pool->GetBlockVector();
-                // TODO!
-                //outCommittedAllocationList = &pool->m_CommittedAllocations;
+                //outCommittedAllocationList = pool->GetCommittedAllocationList(); // TODO
             }
             else
             {
@@ -1355,7 +1348,7 @@ namespace TerraFX.Interop
                 outPreferCommitted = true;
             }
 
-            return S_OK;
+            return ((outBlockVector != null) || (outCommittedAllocationList != null)) ? S_OK : E_INVALIDARG;
         }
 
         /// <summary>
