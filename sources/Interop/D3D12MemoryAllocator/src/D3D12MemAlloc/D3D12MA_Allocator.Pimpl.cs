@@ -681,10 +681,7 @@ namespace TerraFX.Interop
 
             ulong allocationSize = allocation->GetSize();
             uint heapTypeIndex = HeapTypeToIndex(allocList->GetHeapType());
-            m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
-
-            ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
-            Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) - allocationSize);
+            m_Budget.RemoveCommittedAllocation(heapTypeIndex, allocationSize);
         }
 
         /// <summary>
@@ -730,11 +727,7 @@ namespace TerraFX.Interop
 
             uint heapTypeIndex = HeapTypeToIndex(allocList->GetHeapType());
             ulong allocationSize = allocation->GetSize();
-
-            ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
-            Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) - allocationSize);
-
-            m_Budget.RemoveAllocation(heapTypeIndex, allocationSize);
+            m_Budget.RemoveCommittedAllocation(heapTypeIndex, allocationSize);
         }
 
         private void SetCurrentFrameIndexPimpl([NativeTypeName("UINT")] uint frameIndex)
@@ -1087,10 +1080,7 @@ namespace TerraFX.Interop
                     committedAllocParams->m_List->Register(alloc);
 
                     uint heapTypeIndex = HeapTypeToIndex(committedAllocParams->m_HeapProperties.Type);
-                    m_Budget.AddAllocation(heapTypeIndex, resourceSize);
-
-                    ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
-                    Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + resourceSize);
+                    m_Budget.AddCommittedAllocation(heapTypeIndex, resourceSize);
                 }
                 else
                 {
@@ -1147,10 +1137,7 @@ namespace TerraFX.Interop
                     committedAllocParams->m_List->Register(alloc);
 
                     uint heapTypeIndex = HeapTypeToIndex(committedAllocParams->m_HeapProperties.Type);
-                    m_Budget.AddAllocation(heapTypeIndex, resourceSize);
-
-                    ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
-                    Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + resourceSize);
+                    m_Budget.AddCommittedAllocation(heapTypeIndex, resourceSize);
                 }
                 else
                 {
@@ -1208,10 +1195,7 @@ namespace TerraFX.Interop
                     committedAllocParams->m_List->Register(alloc);
 
                     uint heapTypeIndex = HeapTypeToIndex(committedAllocParams->m_HeapProperties.Type);
-                    m_Budget.AddAllocation(heapTypeIndex, resourceSize);
-
-                    ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
-                    Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + resourceSize);
+                    m_Budget.AddCommittedAllocation(heapTypeIndex, resourceSize);
                 }
                 else
                 {
@@ -1253,10 +1237,7 @@ namespace TerraFX.Interop
                 committedAllocParams->m_List->Register(*ppAllocation);
 
                 uint heapTypeIndex = HeapTypeToIndex(committedAllocParams->m_HeapProperties.Type);
-                m_Budget.AddAllocation(heapTypeIndex, allocInfo->SizeInBytes);
-
-                ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
-                Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + allocInfo->SizeInBytes);
+                m_Budget.AddCommittedAllocation(heapTypeIndex, allocInfo->SizeInBytes);
             }
 
             return hr;
@@ -1296,9 +1277,7 @@ namespace TerraFX.Interop
                 committedAllocParams->m_List->Register(*ppAllocation);
 
                 uint heapTypeIndex = HeapTypeToIndex(committedAllocParams->m_HeapProperties.Type);
-                m_Budget.AddAllocation(heapTypeIndex, allocInfo->SizeInBytes);
-                ref ulong blockBytes = ref m_Budget.m_BlockBytes[(int)heapTypeIndex];
-                Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + allocInfo->SizeInBytes);
+                m_Budget.AddCommittedAllocation(heapTypeIndex, allocInfo->SizeInBytes);
             }
 
             return hr;
