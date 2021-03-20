@@ -698,6 +698,7 @@ namespace TerraFX.Interop.UnitTests
                 CHECK_BOOL(poolStats.UnusedBytes == poolStats.BlockCount * poolDesc.BlockSize);
 
                 // # SetName and GetName
+
                 const string NAME = "Custom pool name 1";
 
                 fixed (char* name = NAME)
@@ -755,6 +756,7 @@ namespace TerraFX.Interop.UnitTests
                     CHECK_BOOL(globalStatsCurr.Total.UsedBytes == globalStatsBeg.Total.UsedBytes + poolStats.UsedBytes);
 
                     // # NEVER_ALLOCATE and COMMITTED should fail
+                    // (Committed allocations not allowed in this pool because BlockSize != 0.)
 
                     for (uint i = 0; i < 2; ++i)
                     {
@@ -933,6 +935,94 @@ namespace TerraFX.Interop.UnitTests
             heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_L0; // System memory
             HRESULT hr = TestCustomHeap(ctx, heapProps);
             CHECK_HR(hr);
+        }
+
+        private static void TestStandardCustomCommittedPlaced([NativeTypeName("const TestContext&")] in TestContext ctx)
+        {
+            Console.WriteLine("Test standard, custom, committed, placed\n");
+
+            const D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
+            const ulong bufferSize = 1024;
+
+            D3D12MA_POOL_DESC poolDesc = default;
+            poolDesc.HeapProperties.Type = heapType;
+            poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+
+            D3D12MA_Pool* poolPtr;
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, &poolPtr));
+
+            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+
+            try
+            {
+                var allocations = new List<unique_ptr<D3D12MA_Allocation>>();
+
+                try
+                {
+                    D3D12_RESOURCE_DESC resDesc;
+                    FillResourceDescForBuffer(out resDesc, bufferSize);
+
+                    for (uint standardCustomI = 0; standardCustomI < 2; ++standardCustomI)
+                    {
+                        bool useCustomPool = standardCustomI > 0;
+                        for (uint flagsI = 0; flagsI < 3; ++flagsI)
+                        {
+                            bool useCommitted = flagsI > 0;
+                            bool neverAllocate = flagsI > 1;
+
+                            D3D12MA_ALLOCATION_DESC allocDesc = default;
+                            if (useCustomPool)
+                            {
+                                allocDesc.CustomPool = pool.Get();
+                                allocDesc.HeapType = unchecked((D3D12_HEAP_TYPE)0xCDCDCDCD); // Should be ignored.
+                                allocDesc.ExtraHeapFlags = unchecked((D3D12_HEAP_FLAGS)0xCDCDCDCD); // Should be ignored.
+                            }
+                            else
+                            {
+                                allocDesc.HeapType = heapType;
+                            }
+
+                            if (useCommitted)
+                            {
+                                allocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_COMMITTED;
+                            }
+                            if (neverAllocate)
+                            {
+                                allocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE;
+                            }
+
+                            D3D12MA_Allocation* allocPtr = null;
+                            int hr = ctx.allocator->CreateResource(
+                                &allocDesc,
+                                &resDesc,
+                                D3D12_RESOURCE_STATE_COMMON,
+                                null, // pOptimizedClearValue
+                                &allocPtr,
+                                null,
+                                null);
+
+                            if (allocPtr != null)
+                            {
+                                allocations.Add(allocPtr);
+                            }
+
+                            bool expectSuccess = !neverAllocate; // NEVER_ALLOCATE should always fail with COMMITTED.
+                            CHECK_BOOL(expectSuccess == SUCCEEDED(hr));
+                        }
+                    }
+                }
+                finally
+                {
+                    foreach (ref unique_ptr<D3D12MA_Allocation> allocation in CollectionsMarshal.AsSpan(allocations))
+                    {
+                        allocation.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                pool.Dispose();
+            }
         }
 
         private static void TestAliasingMemory([NativeTypeName("const TestContext&")] in TestContext ctx)
@@ -1837,6 +1927,7 @@ namespace TerraFX.Interop.UnitTests
             TestOtherComInterface(in ctx);
             TestCustomPools(in ctx);
             TestCustomHeaps(in ctx);
+            TestStandardCustomCommittedPlaced(in ctx);
             TestAliasingMemory(in ctx);
             TestMapping(in ctx);
             TestStats(in ctx);
