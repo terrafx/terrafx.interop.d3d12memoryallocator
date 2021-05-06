@@ -10,9 +10,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using NUnit.Framework;
 using static TerraFX.Interop.D3D12_CPU_PAGE_PROPERTY;
+using static TerraFX.Interop.D3D12_FEATURE;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.D3D12_MEMORY_POOL;
+using static TerraFX.Interop.D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS;
 using static TerraFX.Interop.D3D12_RESOURCE_BARRIER_TYPE;
 using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
@@ -1789,9 +1791,21 @@ namespace TerraFX.Interop.UnitTests
             }
         }
 
+        private static bool IsProtectedResourceSessionSupported([NativeTypeName("const TestContext&")] in TestContext ctx)
+        {
+            D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT support = default;
+            CHECK_HR(ctx.device->CheckFeatureSupport(D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_SUPPORT, &support, (uint)sizeof(D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT)));
+            return support.Support > D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAG_NONE;
+        }
+
         private static void TestDevice4([NativeTypeName("const TestContext&")] in TestContext ctx)
         {
             Console.WriteLine("Test ID3D12Device4");
+
+            if (!IsProtectedResourceSessionSupported(in ctx))
+            {
+                Assert.Inconclusive("D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_SUPPORT returned no support for protected resource session.");
+            }
 
             using ComPtr<ID3D12Device4> dev4 = default;
 
