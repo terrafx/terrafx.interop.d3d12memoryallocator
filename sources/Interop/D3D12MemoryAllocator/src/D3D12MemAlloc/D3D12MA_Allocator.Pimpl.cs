@@ -285,7 +285,7 @@ namespace TerraFX.Interop
             int hr = CalcAllocationParams(
                 pAllocDesc,
                 resAllocInfo.SizeInBytes,
-                null, // pResDesc
+                pResourceDesc,
                 out blockVector,
                 out committedAllocationParams,
                 out preferCommitted);
@@ -391,7 +391,7 @@ namespace TerraFX.Interop
             int hr = CalcAllocationParams(
                 pAllocDesc,
                 resAllocInfo.SizeInBytes,
-                null, // pResDesc
+                pResourceDesc,
                 out blockVector,
                 out committedAllocationParams,
                 out preferCommitted);
@@ -455,7 +455,7 @@ namespace TerraFX.Interop
             int hr = CalcAllocationParams(
                 pAllocDesc,
                 resAllocInfo.SizeInBytes,
-                null, // pResDesc
+                (D3D12_RESOURCE_DESC*)pResourceDesc,
                 out blockVector,
                 out committedAllocationParams,
                 out preferCommitted);
