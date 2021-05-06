@@ -13,7 +13,6 @@ using static TerraFX.Interop.D3D12_CPU_PAGE_PROPERTY;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.D3D12_MEMORY_POOL;
-using static TerraFX.Interop.D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS;
 using static TerraFX.Interop.D3D12_RESOURCE_BARRIER_TYPE;
 using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
@@ -1008,6 +1007,10 @@ namespace TerraFX.Interop.UnitTests
 
                             bool expectSuccess = !neverAllocate; // NEVER_ALLOCATE should always fail with COMMITTED.
                             CHECK_BOOL(expectSuccess == SUCCEEDED(hr));
+                            if (SUCCEEDED(hr) && useCommitted)
+                            {
+                                CHECK_BOOL(allocPtr->GetHeap() == null); // Committed allocation has implicit heap.
+                            }
                         }
                     }
                 }
