@@ -1599,7 +1599,12 @@ namespace TerraFX.Interop.UnitTests
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)FRAME_BUFFER_COUNT);
+            public Span<T> AsSpan()
+            {
+                D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((sizeof(_e__FixedBuffer<T>) / sizeof(T)) == (int)FRAME_BUFFER_COUNT) && ((sizeof(_e__FixedBuffer<T>) % sizeof(T)) == 0));
+
+                return MemoryMarshal.CreateSpan(ref e0, (int)FRAME_BUFFER_COUNT);
+            }
         }
     }
 }

@@ -37,7 +37,12 @@ namespace TerraFX.Interop
             pThis.m_BlockVector = (D3D12MA_BlockVector*)Unsafe.AsPointer(ref blockVector);
         }
 
-        public void Dispose() => Base.Dispose();
+        public void Dispose()
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (Base.lpVtbl[0] == (delegate*<ref D3D12MA_NormalBlock, void>)&Dispose));
+
+            Dispose(ref this);
+        }
 
         [return: NativeTypeName("HRESULT")]
         public int Init()
