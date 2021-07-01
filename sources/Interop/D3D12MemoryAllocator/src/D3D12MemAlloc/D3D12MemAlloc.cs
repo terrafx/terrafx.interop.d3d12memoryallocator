@@ -18,6 +18,7 @@ namespace TerraFX.Interop
     {
         internal const uint D3D12MA_STANDARD_HEAP_TYPE_COUNT = 3; // Only DEFAULT, UPLOAD, READBACK.
         internal const uint D3D12MA_DEFAULT_POOL_MAX_COUNT = 9;
+        internal const D3D12_HEAP_FLAGS RESOURCE_CLASS_HEAP_FLAGS = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
 
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
@@ -751,17 +752,71 @@ namespace TerraFX.Interop
             return tileCount <= 16;
         }
 
-        internal static D3D12_HEAP_FLAGS GetExtraHeapFlagsToIgnore()
-        {
-            D3D12_HEAP_FLAGS result = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
-            return result;
-        }
-
         internal static bool IsHeapTypeStandard(D3D12_HEAP_TYPE type)
         {
             return type == D3D12_HEAP_TYPE_DEFAULT ||
                 type == D3D12_HEAP_TYPE_UPLOAD ||
                 type == D3D12_HEAP_TYPE_READBACK;
+        }
+
+        internal static D3D12_HEAP_PROPERTIES StandardHeapTypeToHeapProperties(D3D12_HEAP_TYPE type)
+        {
+            D3D12MA_ASSERT(IsHeapTypeStandard(type));
+            D3D12_HEAP_PROPERTIES result = default;
+            result.Type = type;
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static D3D12MA_ResourceClass ResourceDescToResourceClass([NativeTypeName("const D3D12_RESOURCE_DESC_T&")] D3D12_RESOURCE_DESC* resDesc)
+        {
+            if(resDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+            {
+                return D3D12MA_ResourceClass.Buffer;
+            }
+
+            // Else: it's surely a texture.
+            bool isRenderTargetOrDepthStencil =
+                (resDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
+            return isRenderTargetOrDepthStencil ? D3D12MA_ResourceClass.RT_DS_Texture : D3D12MA_ResourceClass.Non_RT_DS_Texture;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static D3D12MA_ResourceClass ResourceDescToResourceClass([NativeTypeName("const D3D12_RESOURCE_DESC_T&")] D3D12_RESOURCE_DESC1* resDesc)
+        {
+            if (resDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+            {
+                return D3D12MA_ResourceClass.Buffer;
+            }
+
+            // Else: it's surely a texture.
+            bool isRenderTargetOrDepthStencil =
+                (resDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
+            return isRenderTargetOrDepthStencil ? D3D12MA_ResourceClass.RT_DS_Texture : D3D12MA_ResourceClass.Non_RT_DS_Texture;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static D3D12MA_ResourceClass HeapFlagsToResourceClass(D3D12_HEAP_FLAGS heapFlags)
+        {
+            bool allowBuffers = (heapFlags & D3D12_HEAP_FLAG_DENY_BUFFERS) == 0;
+            bool allowRtDsTextures = (heapFlags & D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES) == 0;
+            bool allowNonRtDsTextures = (heapFlags & D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES) == 0;
+
+            int allowedGroupCount = (allowBuffers ? 1 : 0) + (allowRtDsTextures ? 1 : 0) + (allowNonRtDsTextures ? 1 : 0);
+            if (allowedGroupCount != 1)
+            {
+                return D3D12MA_ResourceClass.Unknown;
+            }
+            if (allowRtDsTextures)
+            {
+                return D3D12MA_ResourceClass.RT_DS_Texture;
+            }
+            if (allowNonRtDsTextures)
+            {
+                return D3D12MA_ResourceClass.Non_RT_DS_Texture;
+            }
+
+            return D3D12MA_ResourceClass.Buffer;
         }
 
         internal static void AddStatInfoToJson(D3D12MA_JsonWriter* json, D3D12MA_StatInfo* statInfo)

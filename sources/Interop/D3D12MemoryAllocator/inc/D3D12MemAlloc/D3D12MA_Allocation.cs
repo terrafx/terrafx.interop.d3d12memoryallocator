@@ -251,7 +251,7 @@ namespace TerraFX.Interop
 
             public struct _m_Committed_e__Struct
             {
-                public D3D12_HEAP_TYPE heapType;
+                public D3D12MA_CommittedAllocationList* list;
                 public D3D12MA_Allocation* prev;
                 public D3D12MA_Allocation* next;
             }
@@ -266,7 +266,7 @@ namespace TerraFX.Interop
 
             public struct _m_Heap_e__Struct
             {
-                public D3D12_HEAP_TYPE heapType;
+                public D3D12MA_CommittedAllocationList* list;
                 public D3D12MA_Allocation* prev;
                 public D3D12MA_Allocation* next;
                 public ID3D12Heap* heap;
@@ -377,10 +377,15 @@ namespace TerraFX.Interop
             // Nothing here, everything already done in Release.
         }
 
-        internal void InitCommitted(D3D12_HEAP_TYPE heapType)
+        internal void InitCommitted(ref D3D12MA_CommittedAllocationList list)
+        {
+            InitCommitted((D3D12MA_CommittedAllocationList*)Unsafe.AsPointer(ref list));
+        }
+
+        internal void InitCommitted(D3D12MA_CommittedAllocationList* list)
         {
             m_PackedData.SetType(TYPE_COMMITTED);
-            m_Committed.heapType = heapType;
+            m_Committed.list = list;
             m_Committed.prev = null;
             m_Committed.next = null;
         }
@@ -392,10 +397,15 @@ namespace TerraFX.Interop
             m_Placed.block = block;
         }
 
-        internal void InitHeap(D3D12_HEAP_TYPE heapType, ID3D12Heap* heap)
+        internal void InitHeap(ref D3D12MA_CommittedAllocationList list, ID3D12Heap* heap)
+        {
+            InitHeap((D3D12MA_CommittedAllocationList*)Unsafe.AsPointer(ref list), heap);
+        }
+
+        internal void InitHeap(D3D12MA_CommittedAllocationList* list, ID3D12Heap* heap)
         {
             m_PackedData.SetType(TYPE_HEAP);
-            m_Heap.heapType = heapType;
+            m_Heap.list = list;
             m_Heap.heap = heap;
             m_Committed.prev = null;
             m_Committed.next = null;

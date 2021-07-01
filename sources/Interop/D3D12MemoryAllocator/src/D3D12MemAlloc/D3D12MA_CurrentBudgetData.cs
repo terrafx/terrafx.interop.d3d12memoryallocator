@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit 47bedc01fff10d502622d2eb7b38ae887de83897
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System.Threading;
@@ -59,6 +59,22 @@ namespace TerraFX.Interop
             Volatile.Write(ref allocationBytes, Volatile.Read(ref allocationBytes) - allocationSize);
 
             ++m_OperationsSinceBudgetFetch;
+        }
+
+        public void AddCommittedAllocation([NativeTypeName("UINT")] uint heapTypeIndex, [NativeTypeName("UINT64")] ulong allocationSize)
+        {
+            AddAllocation(heapTypeIndex, allocationSize);
+
+            ref ulong blockBytes = ref m_BlockBytes[(int)heapTypeIndex];
+            Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) + allocationSize);
+        }
+
+        public void RemoveCommittedAllocation([NativeTypeName("UINT")] uint heapTypeIndex, [NativeTypeName("UINT64")] ulong allocationSize)
+        {
+            ref ulong blockBytes = ref m_BlockBytes[(int)heapTypeIndex];
+            Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) - allocationSize);
+
+            RemoveAllocation(heapTypeIndex, allocationSize);
         }
     }
 }

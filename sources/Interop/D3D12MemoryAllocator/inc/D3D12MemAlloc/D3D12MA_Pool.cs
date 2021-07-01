@@ -33,16 +33,6 @@ namespace TerraFX.Interop
         /// </summary>
         public readonly D3D12MA_POOL_DESC GetDesc() => m_Desc;
 
-        /// <summary>
-        /// Sets the minimum number of bytes that should always be allocated (reserved) in this pool.
-        /// <para>See also: reserving_memory.</para>
-        /// </summary>
-        [return: NativeTypeName("HRESULT")]
-        public int SetMinBytes([NativeTypeName("UINT64")] ulong minBytes)
-        {
-            return SetMinBytesPimpl(minBytes);
-        }
-
         /// <summary>Retrieves statistics from the current state of this pool.</summary>
         public void CalculateStats(D3D12MA_StatInfo* pStats)
         {

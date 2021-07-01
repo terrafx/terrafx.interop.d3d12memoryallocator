@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using NUnit.Framework;
 using static TerraFX.Interop.D3D12_CPU_PAGE_PROPERTY;
+using static TerraFX.Interop.D3D12_FEATURE;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.D3D12_MEMORY_POOL;
@@ -698,6 +699,7 @@ namespace TerraFX.Interop.UnitTests
                 CHECK_BOOL(poolStats.UnusedBytes == poolStats.BlockCount * poolDesc.BlockSize);
 
                 // # SetName and GetName
+
                 const string NAME = "Custom pool name 1";
 
                 fixed (char* name = NAME)
@@ -708,26 +710,6 @@ namespace TerraFX.Interop.UnitTests
                 var poolName = Marshal.PtrToStringUni((IntPtr)pool.Get()->GetName());
 
                 CHECK_BOOL(string.Compare(poolName, NAME) == 0);
-
-                // # SetMinBytes
-
-                CHECK_HR(pool.Get()->SetMinBytes(15 * MEGABYTE));
-
-                pool.Get()->CalculateStats(&poolStats);
-
-                CHECK_BOOL(poolStats.BlockCount == 2);
-                CHECK_BOOL(poolStats.AllocationCount == 0);
-                CHECK_BOOL(poolStats.UsedBytes == 0);
-                CHECK_BOOL(poolStats.UnusedBytes == poolStats.BlockCount * poolDesc.BlockSize);
-
-                CHECK_HR(pool.Get()->SetMinBytes(0));
-
-                pool.Get()->CalculateStats(&poolStats);
-
-                CHECK_BOOL(poolStats.BlockCount == 1);
-                CHECK_BOOL(poolStats.AllocationCount == 0);
-                CHECK_BOOL(poolStats.UsedBytes == 0);
-                CHECK_BOOL(poolStats.UnusedBytes == poolStats.BlockCount * poolDesc.BlockSize);
 
                 // # Create buffers 2x 5 MB
 
@@ -775,6 +757,7 @@ namespace TerraFX.Interop.UnitTests
                     CHECK_BOOL(globalStatsCurr.Total.UsedBytes == globalStatsBeg.Total.UsedBytes + poolStats.UsedBytes);
 
                     // # NEVER_ALLOCATE and COMMITTED should fail
+                    // (Committed allocations not allowed in this pool because BlockSize != 0.)
 
                     for (uint i = 0; i < 2; ++i)
                     {
@@ -955,26 +938,96 @@ namespace TerraFX.Interop.UnitTests
             CHECK_HR(hr);
         }
 
-        private static void TestDefaultPoolMinBytes([NativeTypeName("const TestContext&")] in TestContext ctx)
+        private static void TestStandardCustomCommittedPlaced([NativeTypeName("const TestContext&")] in TestContext ctx)
         {
-            D3D12MA_Stats stats;
-            ctx.allocator->CalculateStats(&stats);
-            ulong gpuAllocatedBefore = stats.HeapType[0].UsedBytes + stats.HeapType[0].UnusedBytes;
+            Console.WriteLine("Test standard, custom, committed, placed\n");
 
-            ulong gpuAllocatedMin = gpuAllocatedBefore * 105 / 100;
+            const D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
+            const ulong bufferSize = 1024;
 
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, CeilDiv(gpuAllocatedMin, 3ul)));
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES, CeilDiv(gpuAllocatedMin, 3ul)));
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES, CeilDiv(gpuAllocatedMin, 3ul)));
+            D3D12MA_POOL_DESC poolDesc = default;
+            poolDesc.HeapProperties.Type = heapType;
+            poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
 
-            ctx.allocator->CalculateStats(&stats);
-            ulong gpuAllocatedAfter = stats.HeapType[0].UsedBytes + stats.HeapType[0].UnusedBytes;
+            D3D12MA_Pool* poolPtr;
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, &poolPtr));
 
-            CHECK_BOOL(gpuAllocatedAfter >= gpuAllocatedMin);
+            unique_ptr<D3D12MA_Pool> pool = poolPtr;
 
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS, 0));
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES, 0));
-            CHECK_HR(ctx.allocator->SetDefaultHeapMinBytes(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES, 0));
+            try
+            {
+                var allocations = new List<unique_ptr<D3D12MA_Allocation>>();
+
+                try
+                {
+                    D3D12_RESOURCE_DESC resDesc;
+                    FillResourceDescForBuffer(out resDesc, bufferSize);
+
+                    for (uint standardCustomI = 0; standardCustomI < 2; ++standardCustomI)
+                    {
+                        bool useCustomPool = standardCustomI > 0;
+                        for (uint flagsI = 0; flagsI < 3; ++flagsI)
+                        {
+                            bool useCommitted = flagsI > 0;
+                            bool neverAllocate = flagsI > 1;
+
+                            D3D12MA_ALLOCATION_DESC allocDesc = default;
+                            if (useCustomPool)
+                            {
+                                allocDesc.CustomPool = pool.Get();
+                                allocDesc.HeapType = unchecked((D3D12_HEAP_TYPE)0xCDCDCDCD); // Should be ignored.
+                                allocDesc.ExtraHeapFlags = unchecked((D3D12_HEAP_FLAGS)0xCDCDCDCD); // Should be ignored.
+                            }
+                            else
+                            {
+                                allocDesc.HeapType = heapType;
+                            }
+
+                            if (useCommitted)
+                            {
+                                allocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_COMMITTED;
+                            }
+                            if (neverAllocate)
+                            {
+                                allocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE;
+                            }
+
+                            D3D12MA_Allocation* allocPtr = null;
+                            int hr = ctx.allocator->CreateResource(
+                                &allocDesc,
+                                &resDesc,
+                                D3D12_RESOURCE_STATE_COMMON,
+                                null, // pOptimizedClearValue
+                                &allocPtr,
+                                null,
+                                null);
+
+                            if (allocPtr != null)
+                            {
+                                allocations.Add(allocPtr);
+                            }
+
+                            bool expectSuccess = !neverAllocate; // NEVER_ALLOCATE should always fail with COMMITTED.
+                            CHECK_BOOL(expectSuccess == SUCCEEDED(hr));
+                            if (SUCCEEDED(hr) && useCommitted)
+                            {
+                                CHECK_BOOL(allocPtr->GetHeap() == null); // Committed allocation has implicit heap.
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    foreach (ref unique_ptr<D3D12MA_Allocation> allocation in CollectionsMarshal.AsSpan(allocations))
+                    {
+                        allocation.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                pool.Dispose();
+            }
         }
 
         private static void TestAliasingMemory([NativeTypeName("const TestContext&")] in TestContext ctx)
@@ -1738,9 +1791,21 @@ namespace TerraFX.Interop.UnitTests
             }
         }
 
+        private static bool IsProtectedResourceSessionSupported([NativeTypeName("const TestContext&")] in TestContext ctx)
+        {
+            D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT support = default;
+            CHECK_HR(ctx.device->CheckFeatureSupport(D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_SUPPORT, &support, (uint)sizeof(D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT)));
+            return support.Support > D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAG_NONE;
+        }
+
         private static void TestDevice4([NativeTypeName("const TestContext&")] in TestContext ctx)
         {
             Console.WriteLine("Test ID3D12Device4");
+
+            if (!IsProtectedResourceSessionSupported(in ctx))
+            {
+                Assert.Inconclusive("D3D12_FEATURE_PROTECTED_RESOURCE_SESSION_SUPPORT returned no support for protected resource session.");
+            }
 
             using ComPtr<ID3D12Device4> dev4 = default;
 
@@ -1879,7 +1944,7 @@ namespace TerraFX.Interop.UnitTests
             TestOtherComInterface(in ctx);
             TestCustomPools(in ctx);
             TestCustomHeaps(in ctx);
-            TestDefaultPoolMinBytes(in ctx);
+            TestStandardCustomCommittedPlaced(in ctx);
             TestAliasingMemory(in ctx);
             TestMapping(in ctx);
             TestStats(in ctx);

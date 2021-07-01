@@ -35,9 +35,6 @@ namespace TerraFX.Interop
 
         private bool m_ExplicitBlockSize;
 
-        [NativeTypeName("UINT64")]
-        private ulong m_MinBytes;
-
         /* There can be at most one allocation that is completely empty - a
         hysteresis to avoid pessimistic case of alternating creation and destruction
         of a VkDeviceMemory. */
@@ -60,7 +57,6 @@ namespace TerraFX.Interop
             pThis.m_MinBlockCount = minBlockCount;
             pThis.m_MaxBlockCount = maxBlockCount;
             pThis.m_ExplicitBlockSize = explicitBlockSize;
-            pThis.m_MinBytes = 0;
             pThis.m_HasEmptyBlock = false;
             D3D12MA_Vector<Pointer<D3D12MA_NormalBlock>>._ctor(ref pThis.m_Blocks, hAllocator->GetAllocs());
             pThis.m_NextBlockId = 0;
@@ -165,7 +161,7 @@ namespace TerraFX.Interop
                 if (pBlock->m_pMetadata->IsEmpty())
                 {
                     // Already has empty Allocation. We don't want to have two, so delete this one.
-                    if ((m_HasEmptyBlock || budgetExceeded) && (blockCount > m_MinBlockCount) && ((sumBlockSize - pBlock->m_pMetadata->GetSize()) >= m_MinBytes))
+                    if ((m_HasEmptyBlock || budgetExceeded) && (blockCount > m_MinBlockCount))
                     {
                         pBlockToDelete = pBlock;
                         Remove(pBlock);
@@ -183,7 +179,7 @@ namespace TerraFX.Interop
 
                     D3D12MA_NormalBlock* pLastBlock = m_Blocks.back()->Value;
 
-                    if (pLastBlock->m_pMetadata->IsEmpty() && ((sumBlockSize - pLastBlock->m_pMetadata->GetSize()) >= m_MinBytes))
+                    if (pLastBlock->m_pMetadata->IsEmpty())
                     {
                         pBlockToDelete = pLastBlock;
                         m_Blocks.pop_back();
@@ -294,95 +290,6 @@ namespace TerraFX.Interop
                 }
             }
 
-            return hr;
-        }
-
-        [return: NativeTypeName("HRESULT")]
-        public int SetMinBytes([NativeTypeName("UINT64")] ulong minBytes)
-        {
-            using var @lock = new D3D12MA_MutexLockWrite(ref m_Mutex, m_hAllocator->UseMutex());
-
-            if (minBytes == m_MinBytes)
-            {
-                return S_OK;
-            }
-
-            HRESULT hr = S_OK;
-            ulong sumBlockSize = CalcSumBlockSize();
-            nuint blockCount = m_Blocks.size();
-
-            // New minBytes is smaller - may be able to free some blocks.
-            if (minBytes < m_MinBytes)
-            {
-                m_HasEmptyBlock = false; // Will recalculate this value from scratch.
-
-                for (nuint blockIndex = blockCount; unchecked(blockIndex-- != 0);)
-                {
-                    D3D12MA_NormalBlock* block = m_Blocks[blockIndex]->Value;
-
-                    ulong size = block->m_pMetadata->GetSize();
-                    bool isEmpty = block->m_pMetadata->IsEmpty();
-
-                    if (isEmpty && ((sumBlockSize - size) >= minBytes) && ((blockCount - 1) >= m_MinBlockCount))
-                    {
-                        D3D12MA_DELETE(m_hAllocator->GetAllocs(), block);
-                        m_Blocks.remove(blockIndex);
-
-                        sumBlockSize -= size;
-                        --blockCount;
-                    }
-                    else
-                    {
-                        if (isEmpty)
-                        {
-                            m_HasEmptyBlock = true;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // New minBytes is larger - may need to allocate some blocks.
-                ulong minBlockSize = m_PreferredBlockSize >> (int)NEW_BLOCK_SIZE_SHIFT_MAX;
-
-                while (SUCCEEDED(hr) && sumBlockSize < minBytes)
-                {
-                    if (blockCount < m_MaxBlockCount)
-                    {
-                        ulong newBlockSize = m_PreferredBlockSize;
-
-                        if (!m_ExplicitBlockSize)
-                        {
-                            if (sumBlockSize + newBlockSize > minBytes)
-                            {
-                                newBlockSize = minBytes - sumBlockSize;
-                            }
-                            else if (((blockCount + 1) < m_MaxBlockCount) && ((sumBlockSize + newBlockSize + minBlockSize) > minBytes))
-                            {
-                                // Next one would be the last block to create and its size would be smaller than
-                                // the smallest block size we want to use here, so make this one smaller.
-
-                                newBlockSize -= minBlockSize + sumBlockSize + m_PreferredBlockSize - minBytes;
-                            }
-                        }
-
-                        hr = CreateBlock(newBlockSize, null);
-
-                        if (SUCCEEDED(hr))
-                        {
-                            m_HasEmptyBlock = true;
-                            sumBlockSize += newBlockSize;
-                            ++blockCount;
-                        }
-                    }
-                    else
-                    {
-                        hr = E_INVALIDARG;
-                    }
-                }
-            }
-
-            m_MinBytes = minBytes;
             return hr;
         }
 

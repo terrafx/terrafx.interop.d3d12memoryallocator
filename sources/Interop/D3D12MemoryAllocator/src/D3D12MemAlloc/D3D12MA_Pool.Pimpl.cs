@@ -17,6 +17,8 @@ namespace TerraFX.Interop
 
         internal D3D12MA_BlockVector* m_BlockVector; // Owned object
 
+        internal D3D12MA_CommittedAllocationList m_CommittedAllocations;
+
         [NativeTypeName("wchar_t*")]
         internal ushort* m_Name;
 
@@ -54,6 +56,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         internal int Init()
         {
+            m_CommittedAllocations.Init(m_Allocator->UseMutex(), m_Desc.HeapProperties.Type, (D3D12MA_Pool*)Unsafe.AsPointer(ref this));
             return m_BlockVector->CreateMinBlocks();
         }
 
@@ -68,12 +71,18 @@ namespace TerraFX.Interop
 
         internal readonly D3D12MA_Allocator* GetAllocator() => m_Allocator;
 
+        internal readonly bool SupportsCommittedAllocations() => m_Desc.BlockSize == 0;
+
         internal D3D12MA_BlockVector* GetBlockVector() => m_BlockVector;
 
-        [return: NativeTypeName("HRESULT")]
-        private int SetMinBytesPimpl([NativeTypeName("UINT64")] ulong minBytes)
+        internal readonly D3D12MA_CommittedAllocationList* GetCommittedAllocationList()
         {
-            return m_BlockVector->SetMinBytes(minBytes);
+            if (SupportsCommittedAllocations())
+            {
+                return (D3D12MA_CommittedAllocationList*)Unsafe.AsPointer(ref Unsafe.AsRef(in m_CommittedAllocations));
+            }
+
+            return null;
         }
 
         private void CalculateStatsPimpl([NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outStats)
@@ -84,7 +93,23 @@ namespace TerraFX.Interop
             outStats->UnusedRangeSizeMin = ulong.MaxValue;
 
             m_BlockVector->AddStats(outStats);
+
+            {
+                Unsafe.SkipInit(out D3D12MA_StatInfo committedStatInfo); // Uninitialized.
+                m_CommittedAllocations.CalculateStats(ref committedStatInfo);
+                AddStatInfo(ref *outStats, ref committedStatInfo);
+            }
+
             PostProcessStatInfo(ref *outStats);
+        }
+
+        internal void AddStats([NativeTypeName("Stats&")] D3D12MA_Stats* inoutStats)
+        {
+            D3D12MA_StatInfo poolStatInfo = default;
+            CalculateStats(&poolStatInfo);
+
+            AddStatInfo(ref inoutStats->Total, ref poolStatInfo);
+            AddStatInfo(ref inoutStats->HeapType[(int)HeapTypeToIndex(m_Desc.HeapProperties.Type)], ref poolStatInfo);
         }
 
         private void SetNamePimpl([NativeTypeName("LPCWSTR")] ushort* Name)

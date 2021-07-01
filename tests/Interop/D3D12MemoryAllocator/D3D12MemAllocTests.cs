@@ -197,7 +197,7 @@ namespace TerraFX.Interop.UnitTests
         public static void TestCustomHeaps() => TestCustomHeaps(in testCtx);
 
         [Test]
-        public static void TestDefaultPoolMinBytes() => TestDefaultPoolMinBytes(in testCtx);
+        public static void TestStandardCustomCommittedPlaced() => TestStandardCustomCommittedPlaced(in testCtx);
 
         [Test]
         public static void TestAliasingMemory() => TestAliasingMemory(in testCtx);

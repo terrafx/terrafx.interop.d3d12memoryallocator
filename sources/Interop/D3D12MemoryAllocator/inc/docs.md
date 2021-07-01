@@ -16,7 +16,6 @@ Documentation of all members: D3D12MemAlloc.h
   - [Mapping memory](#mapping-memory)
   - [Custom pools](#custom-pools)
   - [Resource aliasing](#resource-aliasing)
-  - [Reserving memory](#reserving-memory)
   - [Virtual allocator](#virtual-allocator)
 - [Configuration](#configuration)
   - [Custom CPU memory allocator](#custom-cpu-memory-allocator)
@@ -228,7 +227,7 @@ Pool* pool;
 HRESULT hr = allocator->CreatePool(&poolDesc, &pool);
 ```
 
-To allocate resources out of a custom pool, only set member `D3D12MA::ALLOCATION_DESC::CustomPool`. Other members of this structure are then ignored. Example:
+To allocate resources out of a custom pool, only set member `D3D12MA::ALLOCATION_DESC::CustomPool`. Example:
 
 ```cpp
 ALLOCATION_DESC allocDesc = {};
@@ -239,9 +238,8 @@ hr = allocator->CreateResource(&allocDesc, &resDesc,
     D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &alloc, IID_NULL, NULL);
 ```
 
-Currently all allocations from custom pools are created as Placed, never as Committed.
 All allocations must be released before releasing the pool.
-The pool must be released before relasing the allocator.
+The pool must be released before releasing the allocator.
 
 ```cpp
 alloc->Release();
@@ -252,11 +250,34 @@ pool->Release();
 
 While it is recommended to use default pools whenever possible for simplicity and to give the allocator more opportunities for internal optimizations, custom pools may be useful in following cases:
 - To keep some resources separate from others in memory.
+' To keep track of memory usage of just a specific group of resources. Statistics can be queried using `D3D12MA::Pool::CalculateStats`.
 - To use specific size of a memory block (`ID3D12Heap`). To set it, use member `D3D12MA::POOL_DESC::BlockSize`.
-  When set to 0, the library uses automatically determined, increasing block sizes.
+  When set to 0, the library uses automatically determined, variable block sizes.
 - To reserve some minimum amount of memory allocated. To use it, set member `D3D12MA::POOL_DESC::MinBlockCount`.
 - To limit maximum amount of memory allocated. To use it, set member `D3D12MA::POOL_DESC::MaxBlockCount`.
 - To use extended parameters of the D3D12 memory allocation. While resources created from default pools can only specify `D3D12_HEAP_TYPE_DEFAULT`, `UPLOAD`, `READBACK`, a custom pool may use non-standard `D3D12_HEAP_PROPERTIES` (member D3D12MA::POOL_DESC::HeapProperties) and `D3D12_HEAP_FLAGS` (`D3D12MA::POOL_DESC::HeapFlags`), which is useful e.g. for cross-adapter sharing or UMA (see also `D3D12MA::Allocator::IsUMA`).
+
+New versions of this library support creating **committed allocations in custom pools**.
+
+It is supported only when `D3D12MA::POOL_DESC::BlockSize = 0`.
+To use this feature, set `D3D12MA::ALLOCATION_DESC::CustomPool` to the pointer to your custom pool and
+`D3D12MA::ALLOCATION_DESC::Flags` to `D3D12MA::ALLOCATION_FLAG_COMMITTED`. Example:
+
+```cpp
+ALLOCATION_DESC allocDesc = {};
+allocDesc.CustomPool = pool;
+allocDesc.Flags = ALLOCATION_FLAG_COMMITTED;
+
+D3D12_RESOURCE_DESC resDesc = ...
+Allocation* alloc;
+ID3D12Resource* res;
+hr = allocator->CreateResource(&allocDesc, &resDesc,
+    D3D12_RESOURCE_STATE_GENERIC_READ, NULL, &alloc, IID_PPV_ARGS(&res));
+```
+
+This feature may seem unnecessary, but creating committed allocations from custom pools may be useful
+in some cases, e.g. to have separate memory usage statistics for some group of resources or to use
+extended allocation parameters, like custom `D3D12_HEAP_PROPERTIES`, which are available only in custom pools.
 
 ## Resource aliasing
 
@@ -370,42 +391,6 @@ Additional considerations:
 - Resources of the three categories: buffers, textures with `RENDER_TARGET` or `DEPTH_STENCIL` flags, and all other textures,
   can be placed in the same memory only when `allocator->GetD3D12Options().ResourceHeapTier >= D3D12_RESOURCE_HEAP_TIER_2`.
   Otherwise they must be placed in different memory heap types, and thus aliasing them is not possible.
-
-## Reserving memory
-
-The library automatically allocates and frees memory heaps.
-It also applies some hysteresis so that it doesn't allocate and free entire heap
-when you repeatedly create and release a single resource.
-However, if you want to make sure certain number of bytes is always allocated as heaps in a specific pool,
-you can use functions designed for this purpose:
-
-- For default heaps use D3D12MA::Allocator::SetDefaultHeapMinBytes.
-- For custom heaps use D3D12MA::Pool::SetMinBytes.
-
-Default is 0. You can change this parameter any time.
-Setting it to higher value may cause new heaps to be allocated.
-If this allocation fails, the function returns appropriate error code, but the parameter remains set to the new value.
-Setting it to lower value may cause some empty heaps to be released.
-
-You can always call D3D12MA::Allocator::SetDefaultHeapMinBytes for 3 sets of heap flags separately:
-`D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS`, `D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES`, `D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES`.
-When ResourceHeapTier = 2, so that all types of resourced are kept together,
-these 3 values as simply summed up to calculate minimum amount of bytes for default pool with certain heap type.
-Alternatively, when ResourceHeapTier = 2, you can call this function with
-`D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES` = 0. This will set a single value for the default pool and
-will override the sum of those three.
-
-Reservation of minimum number of bytes interacts correctly with
-D3D12MA::POOL_DESC::MinBlockCount and D3D12MA::POOL_DESC::MaxBlockCount.
-For example, free blocks (heaps) of a custom pool will be released only when
-their number doesn't fall below `MinBlockCount` and their sum size doesn't fall below `MinBytes`.
-
-Some restrictions apply:
-
-- Setting `MinBytes` doesn't interact with memory budget. The allocator tries
-  to create additional heaps when necessary without checking if they will exceed the budget.
-- Resources created as committed don't count into the number of bytes compared with `MinBytes` set.
-  Only placed resources are considered.
 
 ## Virtual allocator
 
