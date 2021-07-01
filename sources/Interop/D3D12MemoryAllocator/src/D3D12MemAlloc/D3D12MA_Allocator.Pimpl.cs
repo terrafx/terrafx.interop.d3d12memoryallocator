@@ -1315,7 +1315,7 @@ namespace TerraFX.Interop
                 uint defaultPoolIndex = CalcDefaultPoolIndex(allocDesc, resourceClass);
                 if (defaultPoolIndex != Windows.UINT32_MAX)
                 {
-                    outBlockVector = (D3D12MA_BlockVector*)Unsafe.AsPointer(ref m_BlockVectors[(int)defaultPoolIndex]);
+                    outBlockVector = m_BlockVectors[(int)defaultPoolIndex].Value;
                     ulong preferredBlockSize = outBlockVector->GetPreferredBlockSize();
                     if (allocSize > preferredBlockSize)
                     {
