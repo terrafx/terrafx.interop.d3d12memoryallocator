@@ -180,7 +180,8 @@ namespace TerraFX.Interop
                     m_PreferredBlockSize,
                     0, // minBlockCount
                     nuint.MaxValue, // maxBlockCount
-                    false // explicitBlockSize
+                    false, // explicitBlockSize
+                    D3D12MA_DEBUG_ALIGNMENT // minAllocationAlignment
                 );
                 m_BlockVectors[(int)i] = blockVector;
 
@@ -272,8 +273,6 @@ namespace TerraFX.Interop
 
             D3D12_RESOURCE_DESC finalResourceDesc = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&finalResourceDesc);
-
-            resAllocInfo.Alignment = D3D12MA_MAX(resAllocInfo.Alignment, D3D12MA_DEBUG_ALIGNMENT);
 
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && IsPow2(resAllocInfo.Alignment));
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
@@ -379,8 +378,6 @@ namespace TerraFX.Interop
             D3D12_RESOURCE_DESC finalResourceDesc = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&finalResourceDesc);
 
-            resAllocInfo.Alignment = D3D12MA_MAX(resAllocInfo.Alignment, D3D12MA_DEBUG_ALIGNMENT);
-
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && IsPow2(resAllocInfo.Alignment));
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
 
@@ -442,8 +439,6 @@ namespace TerraFX.Interop
 
             D3D12_RESOURCE_DESC1 finalResourceDesc = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&finalResourceDesc);
-
-            resAllocInfo.Alignment = D3D12MA_MAX(resAllocInfo.Alignment, D3D12MA_DEBUG_ALIGNMENT);
 
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && IsPow2(resAllocInfo.Alignment));
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));
@@ -636,8 +631,6 @@ namespace TerraFX.Interop
 
             D3D12_RESOURCE_DESC resourceDesc2 = *pResourceDesc;
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(&resourceDesc2);
-
-            resAllocInfo.Alignment = D3D12MA_MAX(resAllocInfo.Alignment, D3D12MA_DEBUG_ALIGNMENT);
 
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && IsPow2(resAllocInfo.Alignment));
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (resAllocInfo.SizeInBytes > 0));

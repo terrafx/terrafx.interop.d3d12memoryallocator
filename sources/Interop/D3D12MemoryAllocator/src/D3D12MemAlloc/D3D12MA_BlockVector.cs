@@ -35,6 +35,9 @@ namespace TerraFX.Interop
 
         private bool m_ExplicitBlockSize;
 
+        [NativeTypeName("UINT64")]
+        private ulong m_MinAllocationAlignment;
+
         /* There can be at most one allocation that is completely empty - a
         hysteresis to avoid pessimistic case of alternating creation and destruction
         of a VkDeviceMemory. */
@@ -48,7 +51,7 @@ namespace TerraFX.Interop
         [NativeTypeName("UINT")]
         private uint m_NextBlockId;
 
-        internal static void _ctor(ref D3D12MA_BlockVector pThis, D3D12MA_Allocator* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize)
+        internal static void _ctor(ref D3D12MA_BlockVector pThis, D3D12MA_Allocator* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize, [NativeTypeName("UINT64")] ulong minAllocationAlignment)
         {
             pThis.m_hAllocator = hAllocator;
             pThis.m_HeapProps = *heapProps;
@@ -57,6 +60,7 @@ namespace TerraFX.Interop
             pThis.m_MinBlockCount = minBlockCount;
             pThis.m_MaxBlockCount = maxBlockCount;
             pThis.m_ExplicitBlockSize = explicitBlockSize;
+            pThis.m_MinAllocationAlignment = minAllocationAlignment;
             pThis.m_HasEmptyBlock = false;
             D3D12MA_Vector<Pointer<D3D12MA_NormalBlock>>._ctor(ref pThis.m_Blocks, hAllocator->GetAllocs());
             pThis.m_NextBlockId = 0;
@@ -545,6 +549,8 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         private int AllocateFromBlock(D3D12MA_NormalBlock* pBlock, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, D3D12MA_ALLOCATION_FLAGS allocFlags, D3D12MA_Allocation** pAllocation)
         {
+            alignment = D3D12MA_MAX(alignment, m_MinAllocationAlignment);
+
             D3D12MA_AllocationRequest currRequest = default;
 
             if (pBlock->m_pMetadata->CreateAllocationRequest(size, alignment, &currRequest))

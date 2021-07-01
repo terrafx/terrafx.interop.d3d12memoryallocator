@@ -840,6 +840,62 @@ namespace TerraFX.Interop.UnitTests
             }
         }
 
+        private static void TestCustomPool_MinAllocationAlignment([NativeTypeName("const TestContext&")] in TestContext ctx)
+        {
+            Console.WriteLine("Test custom pool MinAllocationAlignment");
+
+            const ulong BUFFER_SIZE = 32;
+            const nuint BUFFER_COUNT = 4;
+            const ulong MIN_ALIGNMENT = 128 * 1024;
+
+            D3D12MA_POOL_DESC poolDesc = default;
+            poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+            poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+            poolDesc.MinAllocationAlignment = MIN_ALIGNMENT;
+
+            D3D12MA_Pool* poolPtr;
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, &poolPtr));
+            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+
+            try
+            {
+                D3D12MA_Allocation* allocPtr;
+                D3D12MA_ALLOCATION_DESC allocDesc = default;
+                allocDesc.CustomPool = pool.Get();
+
+                D3D12_RESOURCE_DESC resDesc;
+                FillResourceDescForBuffer(out resDesc, BUFFER_SIZE);
+
+                unique_ptr<D3D12MA_Allocation>* allocs = stackalloc unique_ptr<D3D12MA_Allocation>[(int)BUFFER_COUNT];
+
+                try
+                {
+                    for (nuint i = 0; i < BUFFER_COUNT; ++i)
+                    {
+                        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc,
+                            D3D12_RESOURCE_STATE_GENERIC_READ,
+                            null, // pOptimizedClearValue
+                            &allocPtr,
+                            null,
+                            null)); // riidResource, ppvResource
+                        allocs[i].reset(allocPtr);
+                        CHECK_BOOL(allocPtr->GetOffset() % MIN_ALIGNMENT == 0);
+                    }
+                }
+                finally
+                {
+                    for (nuint i = 0; i < BUFFER_COUNT; i++)
+                    {
+                        allocs[(int)i].Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                pool.Dispose();
+            }
+        }
+
         private static HRESULT TestCustomHeap([NativeTypeName("const TestContext&")] in TestContext ctx, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] in D3D12_HEAP_PROPERTIES heapProps)
         {
             D3D12MA_Stats globalStatsBeg = default;
@@ -1943,6 +1999,7 @@ namespace TerraFX.Interop.UnitTests
             TestPlacedResources(in ctx);
             TestOtherComInterface(in ctx);
             TestCustomPools(in ctx);
+            TestCustomPool_MinAllocationAlignment(in ctx);
             TestCustomHeaps(in ctx);
             TestStandardCustomCommittedPlaced(in ctx);
             TestAliasingMemory(in ctx);
