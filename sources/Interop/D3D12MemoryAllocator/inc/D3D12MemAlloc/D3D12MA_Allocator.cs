@@ -258,7 +258,9 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         public int CreatePool([NativeTypeName("const POOL_DESC*")] D3D12MA_POOL_DESC* pPoolDesc, D3D12MA_Pool** ppPool)
         {
-            if ((pPoolDesc == null) || (ppPool == null) || ((pPoolDesc->MaxBlockCount > 0) && (pPoolDesc->MaxBlockCount < pPoolDesc->MinBlockCount)))
+            if ((pPoolDesc == null) || (ppPool == null) ||
+                ((pPoolDesc->MaxBlockCount > 0) && (pPoolDesc->MaxBlockCount < pPoolDesc->MinBlockCount)) ||
+                ((pPoolDesc->MinAllocationAlignment > 0) && !IsPow2(pPoolDesc->MinAllocationAlignment)))
             {
                 D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreatePool."
                 return E_INVALIDARG;

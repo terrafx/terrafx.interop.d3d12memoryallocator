@@ -49,7 +49,8 @@ namespace TerraFX.Interop
                 heapFlags,
                 preferredBlockSize,
                 desc->MinBlockCount, maxBlockCount,
-                explicitBlockSize
+                explicitBlockSize,
+                D3D12MA_MAX(desc->MinAllocationAlignment, D3D12MA_DEBUG_ALIGNMENT)
             );
         }
 

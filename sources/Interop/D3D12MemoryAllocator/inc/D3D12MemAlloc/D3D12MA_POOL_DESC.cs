@@ -55,5 +55,12 @@ namespace TerraFX.Interop
         /// </summary>
         [NativeTypeName("UINT")]
         public uint MaxBlockCount;
+
+        /// <summary>
+        /// Additional minimum alignment to be used for all allocations created from this pool. Can be 0.
+        /// <para>Leave 0 (default) not to impose any additional alignment. If not 0, it must be a power of two.</para>
+        /// </summary>
+        [NativeTypeName("UINT64")]
+        public ulong MinAllocationAlignment;
     }
 }
