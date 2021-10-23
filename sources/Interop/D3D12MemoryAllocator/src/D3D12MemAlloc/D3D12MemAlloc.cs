@@ -263,67 +263,6 @@ namespace TerraFX.Interop
             return (x + y - 1) / y;
         }
 
-        /// <summary>Returns smallest power of 2 greater or equal to v.</summary>
-        [return: NativeTypeName("UINT")]
-        internal static uint NextPow2([NativeTypeName("UINT")] uint v)
-        {
-            v--;
-            v |= v >> 1;
-            v |= v >> 2;
-            v |= v >> 4;
-            v |= v >> 8;
-            v |= v >> 16;
-            v++;
-            return v;
-        }
-
-        /// <summary>Returns smallest power of 2 greater or equal to v.</summary>
-        [return: NativeTypeName("uint64_t")]
-        internal static ulong NextPow2([NativeTypeName("uint64_t")] ulong v)
-        {
-            v--;
-            v |= v >> 1;
-            v |= v >> 2;
-            v |= v >> 4;
-            v |= v >> 8;
-            v |= v >> 16;
-            v |= v >> 32;
-            v++;
-            return v;
-        }
-
-        /// <summary>Returns largest power of 2 less or equal to v.</summary>
-        [return: NativeTypeName("UINT")]
-        internal static uint PrevPow2([NativeTypeName("UINT")] uint v)
-        {
-            v |= v >> 1;
-            v |= v >> 2;
-            v |= v >> 4;
-            v |= v >> 8;
-            v |= v >> 16;
-            v = v ^ (v >> 1);
-            return v;
-        }
-
-        /// <summary>Returns largest power of 2 less or equal to v.</summary>
-        [return: NativeTypeName("uint64_t")]
-        internal static ulong PrevPow2([NativeTypeName("uint64_t")] ulong v)
-        {
-            v |= v >> 1;
-            v |= v >> 2;
-            v |= v >> 4;
-            v |= v >> 8;
-            v |= v >> 16;
-            v |= v >> 32;
-            v = v ^ (v >> 1);
-            return v;
-        }
-
-        internal static bool StrIsEmpty([NativeTypeName("const char*")] byte* pStr)
-        {
-            return (pStr == null) || (*pStr == '\0');
-        }
-
         /// <summary>
         /// Performs binary search and returns iterator to first element that is greater or equal to <paramref name="key"/>, according to a standard comparison.
         /// <para>Returned value is the found element, if present in the collection or place where new element with value (<paramref name="key"/>) should be inserted.</para>
