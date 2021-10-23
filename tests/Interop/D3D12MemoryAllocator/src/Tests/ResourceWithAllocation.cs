@@ -12,7 +12,7 @@ namespace TerraFX.Interop.UnitTests
     {
         public ComPtr<ID3D12Resource> resource;
 
-        public unique_ptr<D3D12MA_Allocation> allocation;
+        public ComPtr<D3D12MA_Allocation> allocation;
 
         [NativeTypeName("UINT64")]
         public ulong size;
@@ -30,8 +30,16 @@ namespace TerraFX.Interop.UnitTests
 
         public void Reset()
         {
-            resource.Get()->Release();
-            allocation.reset();
+            if (resource.Get()->Release() == 0)
+            {
+                resource = default;
+            }
+
+            if (allocation.Get()->Release() == 0)
+            {
+                allocation = default;
+            }
+
             size = UINT64_MAX;
             dataSeed = 0;
         }

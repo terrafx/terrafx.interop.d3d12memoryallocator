@@ -24,6 +24,22 @@ namespace TerraFX.Interop
     /// </summary>
     public unsafe struct D3D12MA_Allocation : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_Allocation>
     {
+        private static readonly void** Vtbl = InitVtbl();
+
+        private static void** InitVtbl()
+        {
+            void** lpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_Allocation), sizeof(void*) * 4);
+
+            /* QueryInterface */ lpVtbl[0] = (delegate*<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&D3D12MA_IUnknownImpl.QueryInterface;
+            /* AddRef         */ lpVtbl[1] = (delegate*<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.AddRef;
+            /* Release        */ lpVtbl[2] = (delegate*<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.Release;
+            /* ReleaseThis    */ lpVtbl[3] = (delegate*<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
+
+            return lpVtbl;
+        }
+
+        private D3D12MA_IUnknownImpl m_IUnknownImpl;
+
         internal D3D12MA_Allocator* m_Allocator;
 
         [NativeTypeName("UINT64")]
@@ -42,10 +58,17 @@ namespace TerraFX.Interop
         internal PackedData m_PackedData;
 
         /// <summary>
-        /// Deletes this object.
-        /// <para>This function must be used instead of destructor, which is private. There is no reference counting involved.</para>
+        /// Implements <c>IUnknown.Release()</c>.
         /// </summary>
-        public void Release()
+        public uint Release()
+        {
+            return m_IUnknownImpl.Release();
+        }
+
+        /// <summary>
+        /// Releases this instance.
+        /// </summary>
+        private void ReleaseThis()
         {
             if (Unsafe.IsNullRef(ref this))
             {
@@ -80,6 +103,13 @@ namespace TerraFX.Interop
             FreeName();
 
             m_Allocator->GetAllocationObjectAllocator()->Free(ref this);
+        }
+
+        private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (*(void***)pThis) == Vtbl);
+
+            ((D3D12MA_Allocation*)pThis)->ReleaseThis();
         }
 
         /// <summary>
@@ -357,6 +387,8 @@ namespace TerraFX.Interop
 
         internal static void _ctor(ref D3D12MA_Allocation pThis, D3D12MA_Allocator* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
         {
+            D3D12MA_IUnknownImpl._ctor(ref pThis.m_IUnknownImpl, Vtbl);
+
             pThis.m_Allocator = allocator;
             pThis.m_Size = size;
             pThis.m_Resource = null;

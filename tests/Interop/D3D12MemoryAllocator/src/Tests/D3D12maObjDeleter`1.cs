@@ -14,11 +14,7 @@ namespace TerraFX.Interop.UnitTests
         {
             if (obj != null)
             {
-                if (typeof(T) == typeof(D3D12MA_Allocation))
-                {
-                    ((D3D12MA_Allocation*)obj)->Release();
-                }
-                else if (typeof(T) == typeof(D3D12MA_Pool))
+                if (typeof(T) == typeof(D3D12MA_Pool))
                 {
                     ((D3D12MA_Pool*)obj)->Release();
                 }
