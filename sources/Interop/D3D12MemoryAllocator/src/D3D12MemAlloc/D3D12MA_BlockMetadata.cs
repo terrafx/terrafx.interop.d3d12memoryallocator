@@ -42,7 +42,7 @@ namespace TerraFX.Interop
         [NativeTypeName("UINT64")]
         public ulong m_Size;
 
-        public bool m_IsVirtual;
+        public byte m_IsVirtual;
 
         public readonly D3D12MA_ALLOCATION_CALLBACKS* m_pAllocationCallbacks;
 
@@ -51,7 +51,7 @@ namespace TerraFX.Interop
             lpVtbl = Vtbl;
 
             m_Size = 0;
-            m_IsVirtual = isVirtual;
+            m_IsVirtual = (byte)(isVirtual ? 1 : 0);
             m_pAllocationCallbacks = allocationCallbacks;
 
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (allocationCallbacks != null));
@@ -76,7 +76,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("UINT64")]
         public readonly ulong GetSize() => m_Size;
 
-        public readonly bool IsVirtual() => m_IsVirtual;
+        public readonly bool IsVirtual() => m_IsVirtual > 0;
 
         [return: NativeTypeName("size_t")]
         public readonly nuint GetAllocationCount()
