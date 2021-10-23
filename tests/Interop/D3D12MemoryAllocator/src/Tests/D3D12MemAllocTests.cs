@@ -109,20 +109,16 @@ namespace TerraFX.Interop.UnitTests
 
             // # Create block 16 MB
 
-            unique_ptr<D3D12MA_VirtualBlock> block = default;
+            ComPtr<D3D12MA_VirtualBlock> block = default;
 
             try
             {
-                D3D12MA_VirtualBlock* blockPtr = null;
-
                 D3D12MA_VIRTUAL_BLOCK_DESC blockDesc = default;
                 blockDesc.pAllocationCallbacks = ctx.allocationCallbacks;
                 blockDesc.Size = blockSize;
 
-                CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, &blockPtr));
-                CHECK_BOOL(blockPtr != null);
-
-                block.reset(blockPtr);
+                CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, block.GetAddressOf()));
+                CHECK_BOOL(block.Get() != null);
 
                 // # Allocate 8 MB
 
@@ -236,7 +232,6 @@ namespace TerraFX.Interop.UnitTests
             }
             finally
             {
-                delegate*<void*, void*, void> x = &CustomFree;
                 block.Dispose();
             }
         }

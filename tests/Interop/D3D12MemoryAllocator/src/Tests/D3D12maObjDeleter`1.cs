@@ -8,7 +8,7 @@ using System;
 namespace TerraFX.Interop.UnitTests
 {
     internal unsafe struct D3d12maObjDeleter<T>
-            where T : unmanaged
+        where T : unmanaged
     {
         public static void Invoke(T* obj)
         {
@@ -17,10 +17,6 @@ namespace TerraFX.Interop.UnitTests
                 if (typeof(T) == typeof(D3D12MA_Pool))
                 {
                     ((D3D12MA_Pool*)obj)->Release();
-                }
-                else if (typeof(T) == typeof(D3D12MA_VirtualBlock))
-                {
-                    ((D3D12MA_VirtualBlock*)obj)->Release();
                 }
                 else
                 {

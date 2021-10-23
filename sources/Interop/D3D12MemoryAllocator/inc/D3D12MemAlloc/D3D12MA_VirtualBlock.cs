@@ -13,23 +13,52 @@ namespace TerraFX.Interop
     /// Represents pure allocation algorithm and a data structure with allocations in some memory block, without actually allocating any GPU memory.
     /// <para>This class allows to use the core algorithm of the library custom allocations e.g. CPU memory or sub-allocation regions inside a single GPU buffer.</para>
     /// <para>
-    /// To create this object, fill in <see cref="D3D12MA_VIRTUAL_BLOCK_DESC"/> and call <see cref="D3D12MemAlloc.D3D12MA_CreateVirtualBlock"/>.
-    /// To destroy it, call its method <see cref="D3D12MA_VirtualBlock.Release"/>.
+    /// To create this object, fill in <see cref="D3D12MA_VIRTUAL_BLOCK_DESC"/> and call <see cref="D3D12MA_CreateVirtualBlock"/>.
+    /// To destroy it, call its method <see cref="Release"/>.
     /// </para>
     /// </summary>
     public unsafe partial struct D3D12MA_VirtualBlock : IDisposable
     {
+        private static readonly void** Vtbl = InitVtbl();
+
+        private static void** InitVtbl()
+        {
+            void** lpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_VirtualBlock), sizeof(void*) * 4);
+
+            /* QueryInterface */ lpVtbl[0] = (delegate*<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&D3D12MA_IUnknownImpl.QueryInterface;
+            /* AddRef         */ lpVtbl[1] = (delegate*<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.AddRef;
+            /* Release        */ lpVtbl[2] = (delegate*<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.Release;
+            /* ReleaseThis    */ lpVtbl[3] = (delegate*<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
+
+            return lpVtbl;
+        }
+
+        /// <summary>
+        /// Implements <c>IUnknown.Release()</c>.
+        /// </summary>
+        public uint Release()
+        {
+            return m_IUnknownImpl.Release();
+        }
+
         /// <summary>
         /// Destroys this object and frees it from memory.
         /// <para>You need to free all the allocations within this block or call <see cref="Clear"/> before destroying it.</para>
         /// </summary>
-        public void Release()
+        private void ReleaseThis()
         {
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
             // Copy is needed because otherwise we would call destructor and invalidate the structure with callbacks before using it to free memory.
             D3D12MA_ALLOCATION_CALLBACKS allocationCallbacksCopy = m_AllocationCallbacks;
             D3D12MA_DELETE(&allocationCallbacksCopy, ref this);
+        }
+
+        private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (*(void***)pThis) == Vtbl);
+
+            ((D3D12MA_VirtualBlock*)pThis)->ReleaseThis();
         }
 
         /// <summary>Returns true if the block is empty - contains 0 allocations.</summary>
