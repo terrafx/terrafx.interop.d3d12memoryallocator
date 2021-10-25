@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using static TerraFX.Interop.D3D12MemAlloc;
 
@@ -27,25 +28,50 @@ namespace TerraFX.Interop
         [return: NativeTypeName("HRESULT")]
         public int QueryInterface([NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[0] == (delegate*<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&QueryInterface));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[0] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&QueryInterface));
 
-            return QueryInterface((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this), riid, ppvObject);
+            if (ppvObject is null)
+            {
+                return Windows.E_POINTER;
+            }
+
+            if (riid->Equals(Windows.IID_IUnknown))
+            {
+                Interlocked.Increment(ref m_RefCount);
+
+                *ppvObject = Unsafe.AsPointer(ref this);
+
+                return Windows.S_OK;
+            }
+
+            *ppvObject = null;
+
+            return Windows.E_NOINTERFACE;
         }
 
         [return: NativeTypeName("ULONG")]
         public uint AddRef()
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[1] == (delegate*<D3D12MA_IUnknownImpl*, uint>)&AddRef));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[1] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&AddRef));
 
-            return AddRef((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
+            return Interlocked.Increment(ref m_RefCount);
         }
 
         [return: NativeTypeName("ULONG")]
         public uint Release()
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[2] == (delegate*<D3D12MA_IUnknownImpl*, uint>)&Release));
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[2] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&Release));
 
-            return Release((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
+
+            uint newRefCount = Interlocked.Decrement(ref m_RefCount);
+
+            if (newRefCount == 0)
+            {
+                ReleaseThis();
+            }
+
+            return newRefCount;
         }
 
         public void ReleaseThis()
@@ -53,6 +79,7 @@ namespace TerraFX.Interop
             ((delegate*<D3D12MA_IUnknownImpl*, void>)lpVtbl[3])((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
         }
 
+        [UnmanagedCallersOnly]
         [return: NativeTypeName("HRESULT")]
         public static int QueryInterface(D3D12MA_IUnknownImpl* pThis, [NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
         {
@@ -75,12 +102,14 @@ namespace TerraFX.Interop
             return Windows.E_NOINTERFACE;
         }
 
+        [UnmanagedCallersOnly]
         [return: NativeTypeName("ULONG")]
         public static uint AddRef(D3D12MA_IUnknownImpl* pThis)
         {
             return Interlocked.Increment(ref pThis->m_RefCount);
         }
 
+        [UnmanagedCallersOnly]
         [return: NativeTypeName("ULONG")]
         public static uint Release(D3D12MA_IUnknownImpl* pThis)
         {
