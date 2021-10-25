@@ -25,6 +25,28 @@ namespace TerraFX.Interop
     /// </summary>
     public unsafe partial struct D3D12MA_Allocator : IDisposable
     {
+        private static readonly void** Vtbl = InitVtbl();
+
+        private static void** InitVtbl()
+        {
+            void** lpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_Allocator), sizeof(void*) * 4);
+
+            /* QueryInterface */ lpVtbl[0] = (delegate*<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&D3D12MA_IUnknownImpl.QueryInterface;
+            /* AddRef         */ lpVtbl[1] = (delegate*<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.AddRef;
+            /* Release        */ lpVtbl[2] = (delegate*<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.Release;
+            /* ReleaseThis    */ lpVtbl[3] = (delegate*<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
+
+            return lpVtbl;
+        }
+
+        /// <summary>
+        /// Implements <c>IUnknown.Release()</c>.
+        /// </summary>
+        public uint Release()
+        {
+            return m_IUnknownImpl.Release();
+        }
+
         /// <summary>
         /// Deletes this object.
         /// <para>
@@ -32,13 +54,20 @@ namespace TerraFX.Interop
         /// There is no reference counting involved.
         /// </para>
         /// </summary>
-        public void Release()
+        private void ReleaseThis()
         {
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
 
             // Copy is needed because otherwise we would call destructor and invalidate the structure with callbacks before using it to free memory.
             D3D12MA_ALLOCATION_CALLBACKS allocationCallbacksCopy = *GetAllocs();
             D3D12MA_DELETE(&allocationCallbacksCopy, ref this);
+        }
+
+        private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (*(void***)pThis) == Vtbl);
+
+            ((D3D12MA_Allocator*)pThis)->ReleaseThis();
         }
 
         /// <summary>Returns cached options retrieved from D3D12 device.</summary>

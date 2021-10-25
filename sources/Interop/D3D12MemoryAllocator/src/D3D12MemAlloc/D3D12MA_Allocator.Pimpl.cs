@@ -24,6 +24,8 @@ namespace TerraFX.Interop
 {
     public unsafe partial struct D3D12MA_Allocator
     {
+        private D3D12MA_IUnknownImpl m_IUnknownImpl;
+
         internal D3D12MA_CurrentBudgetData m_Budget;
 
 #pragma warning disable CS0649
@@ -76,6 +78,7 @@ namespace TerraFX.Interop
         // target memory location, which would break the references to self fields being used in the code below.
         internal static void _ctor(ref D3D12MA_Allocator pThis, [NativeTypeName("const D3D12MA_ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("const D3D12MA_ALLOCATOR_DESC&")] D3D12MA_ALLOCATOR_DESC* desc)
         {
+            D3D12MA_IUnknownImpl._ctor(ref pThis.m_IUnknownImpl, Vtbl);
             D3D12MA_CurrentBudgetData._ctor(ref pThis.m_Budget);
 
             for (uint i = 0; i < D3D12MA_HEAP_TYPE_COUNT; ++i)
