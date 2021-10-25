@@ -659,10 +659,9 @@ namespace TerraFX.Interop.UnitTests
             poolDesc.MinBlockCount = 1;
             poolDesc.MaxBlockCount = 2;
 
-            D3D12MA_Pool* poolPtr;
-            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, &poolPtr));
+            using ComPtr<D3D12MA_Pool> pool = default;
 
-            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
             try
             {
@@ -833,9 +832,9 @@ namespace TerraFX.Interop.UnitTests
             poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
             poolDesc.MinAllocationAlignment = MIN_ALIGNMENT;
 
-            D3D12MA_Pool* poolPtr;
-            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, &poolPtr));
-            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+            ComPtr<D3D12MA_Pool> pool = default;
+
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
             try
             {
@@ -888,10 +887,9 @@ namespace TerraFX.Interop.UnitTests
 
             const ulong BUFFER_SIZE = 1 * MEGABYTE;
 
-            D3D12MA_Pool* poolPtr;
-            HRESULT hr = ctx.allocator->CreatePool(&poolDesc, &poolPtr);
+            ComPtr<D3D12MA_Pool> pool = default;
 
-            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+            HRESULT hr = ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf());
 
             try
             {
@@ -975,10 +973,9 @@ namespace TerraFX.Interop.UnitTests
             poolDesc.HeapProperties.Type = heapType;
             poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
 
-            D3D12MA_Pool* poolPtr;
-            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, &poolPtr));
+            ComPtr<D3D12MA_Pool> pool = default;
 
-            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
             try
             {

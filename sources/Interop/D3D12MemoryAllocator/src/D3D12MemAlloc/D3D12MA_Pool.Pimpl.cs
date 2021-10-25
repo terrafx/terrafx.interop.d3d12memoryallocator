@@ -11,6 +11,8 @@ namespace TerraFX.Interop
 {
     public unsafe partial struct D3D12MA_Pool : D3D12MA_IItemTypeTraits<D3D12MA_Pool>
     {
+        private D3D12MA_IUnknownImpl m_IUnknownImpl;
+
         internal D3D12MA_Allocator* m_Allocator; // Externally owned object
 
         internal D3D12MA_POOL_DESC m_Desc;
@@ -28,6 +30,8 @@ namespace TerraFX.Interop
 
         internal static void _ctor(ref D3D12MA_Pool pThis, ref D3D12MA_Allocator allocator, [NativeTypeName("const D3D12MA_POOL_DESC&")] D3D12MA_POOL_DESC* desc)
         {
+            D3D12MA_IUnknownImpl._ctor(ref pThis.m_IUnknownImpl, Vtbl);
+
             pThis.m_Allocator = (D3D12MA_Allocator*)Unsafe.AsPointer(ref allocator);
             pThis.m_Desc = *desc;
             pThis.m_BlockVector = null;

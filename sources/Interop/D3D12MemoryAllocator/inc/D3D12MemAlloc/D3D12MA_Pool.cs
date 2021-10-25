@@ -4,6 +4,7 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Runtime.CompilerServices;
 using static TerraFX.Interop.D3D12MemAlloc;
 
 namespace TerraFX.Interop
@@ -19,13 +20,43 @@ namespace TerraFX.Interop
     /// </summary>
     public unsafe partial struct D3D12MA_Pool : IDisposable
     {
+        private static readonly void** Vtbl = InitVtbl();
+
+        private static void** InitVtbl()
+        {
+            void** lpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_Pool), sizeof(void*) * 4);
+
+            /* QueryInterface */ lpVtbl[0] = (delegate*<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&D3D12MA_IUnknownImpl.QueryInterface;
+            /* AddRef         */ lpVtbl[1] = (delegate*<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.AddRef;
+            /* Release        */ lpVtbl[2] = (delegate*<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.Release;
+            /* ReleaseThis    */ lpVtbl[3] = (delegate*<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
+
+            return lpVtbl;
+        }
+
+        /// <summary>
+        /// Implements <c>IUnknown.Release()</c>.
+        /// </summary>
+        public uint Release()
+        {
+            return m_IUnknownImpl.Release();
+        }
+
         /// <summary>
         /// Deletes pool object, frees D3D12 heaps (memory blocks) managed by it. Allocations and resources must already be released!
         /// <para>It doesn't delete allocations and resources created in this pool. They must be all released before calling this function!</para>
         /// </summary>
-        public void Release()
+        private void ReleaseThis()
         {
         }
+
+        private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (*(void***)pThis) == Vtbl);
+
+            ((D3D12MA_Pool*)pThis)->ReleaseThis();
+        }
+
 
         /// <summary>
         /// Returns copy of parameters of the pool.
