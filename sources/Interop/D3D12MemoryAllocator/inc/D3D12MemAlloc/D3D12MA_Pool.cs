@@ -48,6 +48,14 @@ namespace TerraFX.Interop
         /// </summary>
         private void ReleaseThis()
         {
+            if (Unsafe.IsNullRef(ref this))
+            {
+                return;
+            }
+
+            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
+
+            D3D12MA_DELETE(GetAllocator()->GetAllocs(), ref this);
         }
 
         private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)

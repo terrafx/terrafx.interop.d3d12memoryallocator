@@ -67,8 +67,14 @@ namespace TerraFX.Interop
 
         void IDisposable.Dispose()
         {
+            // From Pool::~Pool
+
             GetAllocator()->UnregisterPool(ref this, m_Desc.HeapProperties.Type);
 
+            // This is skipped because PoolPimpl is now inlined into the pool type
+            // D3D12MA_DELETE(m_Pimpl->GetAllocator()->GetAllocs(), m_Pimpl);
+
+            // From PoolPimpl::~PoolPimpl
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_PrevPool == null) && (m_NextPool == null));
             FreeName();
             D3D12MA_DELETE(m_Allocator->GetAllocs(), m_BlockVector);
