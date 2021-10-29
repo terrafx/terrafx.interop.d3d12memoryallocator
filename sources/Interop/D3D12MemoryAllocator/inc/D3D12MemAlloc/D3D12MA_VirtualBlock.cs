@@ -4,7 +4,6 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12MemAlloc;
 

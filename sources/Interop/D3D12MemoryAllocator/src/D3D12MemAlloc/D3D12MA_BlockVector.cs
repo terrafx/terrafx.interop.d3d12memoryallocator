@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.D3D12MA_ALLOCATION_FLAGS;
-using static TerraFX.Interop.D3D12_HEAP_TYPE;
 
 namespace TerraFX.Interop
 {
