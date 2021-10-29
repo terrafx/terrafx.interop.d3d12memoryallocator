@@ -35,6 +35,12 @@ namespace TerraFX.Interop
             /* Release        */ lpVtbl[2] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.Release;
             /* ReleaseThis    */ lpVtbl[3] = (delegate*<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
 
+            // Note: ReleaseThis is intentionally a managed function pointer as this method is internal, and only used
+            // by the default implementation of Release. Since there is no public interface exposing this API, it wouldn't
+            // be possible for anyone to try to invoke this API externally, so leaving the pointer managed is still safe
+            // even if this object was to be passed to some native API as an IUnknown instance, while giving us a small
+            // performance boost on invocation, as we can then drop the managed/unmanaged transitions.
+
             return lpVtbl;
         }
 
