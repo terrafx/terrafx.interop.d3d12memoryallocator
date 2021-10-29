@@ -42,8 +42,9 @@
     <ContinuousIntegrationBuild Condition="'$(GITHUB_RUN_ID)' != ''">true</ContinuousIntegrationBuild>
     <PackageOutputPath>$(BaseArtifactsPath)pkg/$(Configuration)/</PackageOutputPath>
     <Product>TerraFX.Interop.D3D12MemoryAllocator</Product>
-    <VersionPrefix>2.0</VersionPrefix>
-    <VersionSuffix>beta2</VersionSuffix>
+    <VersionPrefix>2.0.0.0</VersionPrefix>
+    <RootNamespace>TerraFX.Interop</RootNamespace>
+    <VersionSuffix Condition="'$(EXCLUDE_SUFFIX_FROM_VERSION)' != 'true'">beta3</VersionSuffix>
     <VersionSuffix Condition="'$(GITHUB_EVENT_NAME)' == 'pull_request'">pr</VersionSuffix>
   </PropertyGroup>
 
