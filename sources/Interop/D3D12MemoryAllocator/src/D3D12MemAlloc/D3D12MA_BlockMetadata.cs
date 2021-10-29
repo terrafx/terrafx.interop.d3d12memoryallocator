@@ -76,7 +76,7 @@ namespace TerraFX.Interop
         [return: NativeTypeName("UINT64")]
         public readonly ulong GetSize() => m_Size;
 
-        public readonly bool IsVirtual() => m_IsVirtual > 0;
+        public readonly bool IsVirtual() => m_IsVirtual != 0;
 
         [return: NativeTypeName("size_t")]
         public readonly nuint GetAllocationCount()
