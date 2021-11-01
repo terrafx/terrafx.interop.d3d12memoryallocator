@@ -88,11 +88,9 @@ namespace TerraFX.Interop.UnitTests
 
         private static D3D12MA_ALLOCATION_CALLBACKS* g_AllocationCallbacks = (D3D12MA_ALLOCATION_CALLBACKS*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MemAllocTests), sizeof(D3D12MA_ALLOCATION_CALLBACKS)); // Used only when ENABLE_CPU_ALLOCATION_CALLBACKS
 
-        [NativeTypeName("HINSTANCE")]
-        private static IntPtr g_Instance;
+        private static HINSTANCE g_Instance;
 
-        [NativeTypeName("HWND")]
-        private static IntPtr g_Wnd;
+        private static HWND g_Wnd;
 
         [NativeTypeName("UINT64")]
         private static ulong g_TimeOffset; // In ms.
@@ -123,8 +121,7 @@ namespace TerraFX.Interop.UnitTests
         private static _e__FixedBuffer<ComPtr<ID3D12Fence>> g_Fences;    // an object that is locked while our command list is being executed by the gpu. We need as many 
                                                                          // as we have allocators (more if we want to know when the gpu is finished with an asset)
 
-        [NativeTypeName("HANDLE")]
-        private static IntPtr g_FenceEvent; // a handle to an event when our g_Fences is unlocked by the gpu
+        private static HANDLE g_FenceEvent; // a handle to an event when our g_Fences is unlocked by the gpu
 
         [NativeTypeName("UINT64")]
         private static _e__FixedBuffer<ulong> g_FenceValues; // this value is incremented each frame. each g_Fences will have its own value
@@ -289,7 +286,7 @@ namespace TerraFX.Interop.UnitTests
 
                 // We will wait until the g_Fences has triggered the event that it's current value has reached "g_FenceValues". once it's value
                 // has reached "g_FenceValues", we know the command queue has finished executing
-                WaitForSingleObject(g_FenceEvent, INFINITE);
+                _ = WaitForSingleObject(g_FenceEvent, INFINITE);
             }
         }
 
@@ -313,7 +310,7 @@ namespace TerraFX.Interop.UnitTests
             while (dxgiFactory->EnumAdapters1((uint)adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
             {
                 DXGI_ADAPTER_DESC1 desc;
-                adapter->GetDesc1(&desc);
+                _ = adapter->GetDesc1(&desc);
 
                 if ((desc.Flags & (uint)DXGI_ADAPTER_FLAG_SOFTWARE) == 0)
                 {
@@ -326,7 +323,7 @@ namespace TerraFX.Interop.UnitTests
                     }
                 }
 
-                adapter->Release();
+                _ = adapter->Release();
                 adapterIndex++;
             }
 
@@ -491,7 +488,7 @@ namespace TerraFX.Interop.UnitTests
             g_CommandList = commandList;
 
             // command lists are created in the recording state. our main loop will set it up for recording again so close it now
-            g_CommandList.Get()->Close();
+            _ = g_CommandList.Get()->Close();
 
             // create a depth stencil descriptor heap so we can get a pointer to the depth stencil buffer
             D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = default;
@@ -678,7 +675,7 @@ namespace TerraFX.Interop.UnitTests
 
                 fixed (char* name = "Constant Buffer Upload Resource Heap")
                 {
-                    g_ConstantBufferUploadHeap[i].Get()->SetName((ushort*)name);
+                    _ = g_ConstantBufferUploadHeap[i].Get()->SetName((ushort*)name);
                 }
 
                 D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = default;
@@ -841,7 +838,7 @@ namespace TerraFX.Interop.UnitTests
             // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
             fixed (char* name = "Vertex Buffer Resource Heap")
             {
-                g_VertexBuffer.Get()->SetName((ushort*)name);
+                _ = g_VertexBuffer.Get()->SetName((ushort*)name);
             }
 
             // create upload heap
@@ -876,7 +873,7 @@ namespace TerraFX.Interop.UnitTests
 
             fixed (char* name = "Vertex Buffer Upload Resource Heap")
             {
-                vBufferUploadHeap.Get()->SetName((ushort*)name);
+                _ = vBufferUploadHeap.Get()->SetName((ushort*)name);
             }
 
             // store vertex buffer in upload heap
@@ -969,7 +966,7 @@ namespace TerraFX.Interop.UnitTests
             // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
             fixed (char* name = "Index Buffer Resource Heap")
             {
-                g_IndexBuffer.Get()->SetName((ushort*)name);
+                _ = g_IndexBuffer.Get()->SetName((ushort*)name);
             }
 
             // create upload heap to upload index buffer
@@ -1070,7 +1067,7 @@ namespace TerraFX.Interop.UnitTests
 
                 fixed (char* name = "Constant Buffer Upload Resource Heap")
                 {
-                    g_CbPerObjectUploadHeaps[(int)i].Get()->SetName((ushort*)name);
+                    _ = g_CbPerObjectUploadHeaps[(int)i].Get()->SetName((ushort*)name);
                 }
 
                 void* cbPerObjectAddress;
@@ -1148,7 +1145,7 @@ namespace TerraFX.Interop.UnitTests
 
             fixed (char* name = "g_Texture")
             {
-                g_Texture.Get()->SetName((ushort*)name);
+                _ = g_Texture.Get()->SetName((ushort*)name);
             }
 
             ulong textureUploadBufferSize;
@@ -1191,7 +1188,7 @@ namespace TerraFX.Interop.UnitTests
 
             fixed (char* name = "textureUpload")
             {
-                textureUpload.Get()->SetName((ushort*)name);
+                _ = textureUpload.Get()->SetName((ushort*)name);
             }
 
             D3D12_SUBRESOURCE_DATA textureSubresourceData = default;
@@ -1199,7 +1196,7 @@ namespace TerraFX.Interop.UnitTests
             textureSubresourceData.RowPitch = (nint)imageBytesPerRow;
             textureSubresourceData.SlicePitch = (nint)(imageBytesPerRow * textureDesc.Height);
 
-            UpdateSubresources(g_CommandList, g_Texture, textureUpload, 0, 0, 1, &textureSubresourceData);
+            _ = UpdateSubresources(g_CommandList, g_Texture, textureUpload, 0, 0, 1, &textureSubresourceData);
 
             D3D12_RESOURCE_BARRIER textureBarrier = default;
             textureBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -1228,7 +1225,7 @@ namespace TerraFX.Interop.UnitTests
             // # END OF INITIAL COMMAND LIST
 
             // Now we execute the command list to upload the initial assets (triangle data)
-            g_CommandList.Get()->Close();
+            _ = g_CommandList.Get()->Close();
 
             const uint _countof_ppCommandLists = 1;
 
@@ -1238,9 +1235,9 @@ namespace TerraFX.Interop.UnitTests
             // increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
             WaitGPUIdle(g_FrameIndex);
 
-            textureUploadAllocation->Release();
-            iBufferUploadHeapAllocation->Release();
-            vBufferUploadHeapAllocation->Release();
+            _ = textureUploadAllocation->Release();
+            _ = iBufferUploadHeapAllocation->Release();
+            _ = vBufferUploadHeapAllocation->Release();
         }
 
         private static void Update()
@@ -1249,7 +1246,7 @@ namespace TerraFX.Interop.UnitTests
                 float f = MathF.Sin(g_Time * (PI * 2.0f)) * 0.5f + 0.5f;
                 ConstantBuffer0_PS cb;
                 cb.Color = new vec4(f, f, f, 1.0f);
-                memcpy(g_ConstantBufferAddress[(int)g_FrameIndex], &cb, (nuint)sizeof(ConstantBuffer0_PS));
+                _ = memcpy(g_ConstantBufferAddress[(int)g_FrameIndex], &cb, (nuint)sizeof(ConstantBuffer0_PS));
             }
 
             {
@@ -1273,13 +1270,13 @@ namespace TerraFX.Interop.UnitTests
                 ConstantBuffer1_VS cb;
                 mat4 worldViewProjection = cube1World * viewProjection;
                 cb.WorldViewProj = worldViewProjection.Transposed();
-                memcpy(g_CbPerObjectAddress[(int)g_FrameIndex], &cb, (nuint)sizeof(ConstantBuffer1_VS));
+                _ = memcpy(g_CbPerObjectAddress[(int)g_FrameIndex], &cb, (nuint)sizeof(ConstantBuffer1_VS));
 
                 mat4 cube2World = mat4.Scaling(0.5f) * mat4.RotationX(g_Time * 2.0f) * mat4.Translation(new vec3(-1.2f, 0.0f, 0.0f)) * cube1World;
 
                 worldViewProjection = cube2World * viewProjection;
                 cb.WorldViewProj = worldViewProjection.Transposed();
-                memcpy((byte*)g_CbPerObjectAddress[(int)g_FrameIndex] + ConstantBufferPerObjectAlignedSize, &cb, (nuint)sizeof(ConstantBuffer1_VS));
+                _ = memcpy((byte*)g_CbPerObjectAddress[(int)g_FrameIndex] + ConstantBufferPerObjectAlignedSize, &cb, (nuint)sizeof(ConstantBuffer1_VS));
             }
         }
 
@@ -1424,57 +1421,57 @@ namespace TerraFX.Interop.UnitTests
             }
 
             // get swapchain out of full screen before exiting
-            int fs = FALSE;
+            BOOL fs = FALSE;
             CHECK_HR(g_SwapChain.Get()->GetFullscreenState(&fs, null));
 
             if (fs != 0)
             {
-                g_SwapChain.Get()->SetFullscreenState(FALSE, null);
+                _ = g_SwapChain.Get()->SetFullscreenState(FALSE, null);
             }
 
             WaitGPUIdle(0);
 
-            g_Texture.Get()->Release();
-            g_TextureAllocation->Release();
+            _ = g_Texture.Get()->Release();
+            _ = g_TextureAllocation->Release();
             g_TextureAllocation = null;
-            g_IndexBuffer.Get()->Release();
-            g_IndexBufferAllocation->Release();
+            _ = g_IndexBuffer.Get()->Release();
+            _ = g_IndexBufferAllocation->Release();
             g_IndexBufferAllocation = null;
-            g_VertexBuffer.Get()->Release();
-            g_VertexBufferAllocation->Release();
+            _ = g_VertexBuffer.Get()->Release();
+            _ = g_VertexBufferAllocation->Release();
             g_VertexBufferAllocation = null;
-            g_PipelineStateObject.Get()->Release();
-            g_RootSignature.Get()->Release();
+            _ = g_PipelineStateObject.Get()->Release();
+            _ = g_RootSignature.Get()->Release();
 
-            CloseHandle(g_FenceEvent);
-            g_CommandList.Get()->Release();
-            g_CommandQueue.Get()->Release();
+            _ = CloseHandle(g_FenceEvent);
+            _ = g_CommandList.Get()->Release();
+            _ = g_CommandQueue.Get()->Release();
 
             for (nuint i = FRAME_BUFFER_COUNT; unchecked(i-- != 0);)
             {
-                g_CbPerObjectUploadHeaps[(int)i].Get()->Release();
-                g_CbPerObjectUploadHeapAllocations[(int)i].Value->Release();
+                _ = g_CbPerObjectUploadHeaps[(int)i].Get()->Release();
+                _ = g_CbPerObjectUploadHeapAllocations[(int)i].Value->Release();
                 g_CbPerObjectUploadHeapAllocations[(int)i] = null;
-                g_MainDescriptorHeap[(int)i].Get()->Release();
-                g_ConstantBufferUploadHeap[(int)i].Get()->Release();
-                g_ConstantBufferUploadAllocation[(int)i].Value->Release();
+                _ = g_MainDescriptorHeap[(int)i].Get()->Release();
+                _ = g_ConstantBufferUploadHeap[(int)i].Get()->Release();
+                _ = g_ConstantBufferUploadAllocation[(int)i].Value->Release();
                 g_ConstantBufferUploadAllocation[(int)i] = null;
             }
 
-            g_DepthStencilDescriptorHeap.Get()->Release();
-            g_DepthStencilBuffer.Get()->Release();
-            g_DepthStencilAllocation->Release();
+            _ = g_DepthStencilDescriptorHeap.Get()->Release();
+            _ = g_DepthStencilBuffer.Get()->Release();
+            _ = g_DepthStencilAllocation->Release();
             g_DepthStencilAllocation = null;
-            g_RtvDescriptorHeap.Get()->Release();
+            _ = g_RtvDescriptorHeap.Get()->Release();
 
             for (nuint i = FRAME_BUFFER_COUNT; unchecked(i-- != 0);)
             {
-                g_RenderTargets[(int)i].Get()->Release();
-                g_CommandAllocators[(int)i].Get()->Release();
-                g_Fences[(int)i].Get()->Release();
+                _ = g_RenderTargets[(int)i].Get()->Release();
+                _ = g_CommandAllocators[(int)i].Get()->Release();
+                _ = g_Fences[(int)i].Get()->Release();
             }
 
-            g_Allocator->Release();
+            _ = g_Allocator->Release();
             g_Allocator = null;
 
             if (ENABLE_CPU_ALLOCATION_CALLBACKS)
@@ -1482,8 +1479,8 @@ namespace TerraFX.Interop.UnitTests
                 Debug.Assert(g_CpuAllocationCount == 0);
             }
 
-            g_Device.Get()->Release();
-            g_SwapChain.Get()->Release();
+            _ = g_Device.Get()->Release();
+            _ = g_SwapChain.Get()->Release();
         }
 
         private static void ExecuteTests()
@@ -1526,7 +1523,7 @@ namespace TerraFX.Interop.UnitTests
 
                 case VK_ESCAPE:
                 {
-                    PostMessage(g_Wnd, WM_CLOSE, 0, 0);
+                    _ = PostMessage(g_Wnd, WM_CLOSE, 0, 0);
                     break;
                 }
             }
@@ -1540,7 +1537,7 @@ namespace TerraFX.Interop.UnitTests
             {
                 case WM_CREATE:
                 {
-                    g_Wnd = wnd;
+                    g_Wnd = (HWND)wnd;
                     InitD3D();
                     g_TimeOffset = GetTickCount64();
                     return 0;
@@ -1560,7 +1557,7 @@ namespace TerraFX.Interop.UnitTests
                 }
             }
 
-            return DefWindowProc(wnd, msg, wParam, lParam);
+            return DefWindowProc((HWND)wnd, msg, wParam, lParam);
         }
 
         private static ID3D12GraphicsCommandList* BeginCommandList()
@@ -1572,7 +1569,7 @@ namespace TerraFX.Interop.UnitTests
 
         private static void EndCommandList(ID3D12GraphicsCommandList* cmdList)
         {
-            cmdList->Close();
+            _ = cmdList->Close();
 
             ID3D12CommandList* genericCmdList = (ID3D12CommandList*)cmdList;
             g_CommandQueue.Get()->ExecuteCommandLists(1, &genericCmdList);

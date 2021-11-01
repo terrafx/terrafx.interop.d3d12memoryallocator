@@ -282,7 +282,7 @@ namespace TerraFX.Interop.UnitTests
                 }
 
                 ctx.allocator->FreeStatsString(pStatsString);
-                alloc->Release();
+                _ = alloc->Release();
             }
         }
 
@@ -337,7 +337,7 @@ namespace TerraFX.Interop.UnitTests
                         ulong refCountAfterAdd = res->AddRef();
                         CHECK_BOOL(refCountAfterAdd == 3);
 
-                        res->Release();
+                        _ = res->Release();
                     }
 
                     // Make sure it has implicit heap.
@@ -785,8 +785,8 @@ namespace TerraFX.Interop.UnitTests
 
                     // # Make room, AllocateMemory, CreateAliasingResource
 
-                    allocs[3].Reset();
-                    allocs[0].Reset();
+                    _ = allocs[3].Reset();
+                    _ = allocs[0].Reset();
 
                     D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = default;
                     resAllocInfo.SizeInBytes = 5 * MEGABYTE;
@@ -1124,8 +1124,8 @@ namespace TerraFX.Interop.UnitTests
 
             // You can use res1 and res2, but not at the same time!
 
-            res2->Release();
-            res1->Release();
+            _ = res2->Release();
+            _ = res1->Release();
         }
 
         private static void TestMapping([NativeTypeName("const TestContext&")] in TestContext ctx)
@@ -1766,7 +1766,7 @@ namespace TerraFX.Interop.UnitTests
                             void* mappedPtr = null;
                             CHECK_HR(resources[(int)resIndex].resource.Get()->Map(0, null, &mappedPtr));
 
-                            ValidateData(mappedPtr, resources[(int)resIndex].size, resources[(int)resIndex].dataSeed);
+                            _ = ValidateData(mappedPtr, resources[(int)resIndex].size, resources[(int)resIndex].dataSeed);
 
                             // Unmap some of them, leave others mapped.
                             if ((resIndex % 3) == 1)
