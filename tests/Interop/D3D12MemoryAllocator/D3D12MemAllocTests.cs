@@ -75,7 +75,7 @@ namespace TerraFX.Interop.UnitTests
                 wndClass.hCursor = LoadCursor(HINSTANCE.NULL, IDC_ARROW);
                 wndClass.hIcon = LoadIcon(HINSTANCE.NULL, IDI_APPLICATION);
                 wndClass.hInstance = g_Instance;
-                wndClass.lpfnWndProc = (delegate* unmanaged<HWND, uint, nuint, nint, nint>)(delegate* unmanaged<IntPtr, uint, nuint, nint, nint>)&WndProc;
+                wndClass.lpfnWndProc = (delegate* unmanaged<HWND, uint, WPARAM, LPARAM, LRESULT>)(delegate* unmanaged<IntPtr, uint, nuint, nint, nint>)&WndProc;
                 wndClass.lpszClassName = (ushort*)className;
 
                 classR = RegisterClassEx(&wndClass);
@@ -122,7 +122,7 @@ namespace TerraFX.Interop.UnitTests
         {
             if (g_Wnd != IntPtr.Zero)
             {
-                _ = PostMessage(g_Wnd, WM_CLOSE, 0, 0);
+                _ = PostMessage(g_Wnd, WM_CLOSE, (WPARAM)0, 0);
             }
 
             g_Device.Dispose();

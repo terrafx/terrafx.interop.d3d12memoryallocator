@@ -1523,7 +1523,7 @@ namespace TerraFX.Interop.UnitTests
 
                 case VK_ESCAPE:
                 {
-                    _ = PostMessage(g_Wnd, WM_CLOSE, 0, 0);
+                    _ = PostMessage(g_Wnd, WM_CLOSE, (WPARAM)0, 0);
                     break;
                 }
             }
