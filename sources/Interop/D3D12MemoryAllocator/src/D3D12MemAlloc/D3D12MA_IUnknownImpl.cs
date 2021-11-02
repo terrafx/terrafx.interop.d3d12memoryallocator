@@ -72,7 +72,7 @@ namespace TerraFX.Interop
 
         public void ReleaseThis()
         {
-            ((delegate*<D3D12MA_IUnknownImpl*, void>)lpVtbl[3])((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
+            ((delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)lpVtbl[3])((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
         }
 
         [UnmanagedCallersOnly]

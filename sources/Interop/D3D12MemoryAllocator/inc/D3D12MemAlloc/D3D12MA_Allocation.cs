@@ -33,7 +33,7 @@ namespace TerraFX.Interop
             /* QueryInterface */ lpVtbl[0] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&D3D12MA_IUnknownImpl.QueryInterface;
             /* AddRef         */ lpVtbl[1] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.AddRef;
             /* Release        */ lpVtbl[2] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.Release;
-            /* ReleaseThis    */ lpVtbl[3] = (delegate*<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
+            /* ReleaseThis    */ lpVtbl[3] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
 
             // Note: ReleaseThis is intentionally a managed function pointer as this method is internal, and only used
             // by the default implementation of Release. Since there is no public interface exposing this API, it wouldn't
@@ -111,6 +111,7 @@ namespace TerraFX.Interop
             m_Allocator->GetAllocationObjectAllocator()->Free(ref this);
         }
 
+        [UnmanagedCallersOnly]
         private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pThis->lpVtbl == Vtbl));

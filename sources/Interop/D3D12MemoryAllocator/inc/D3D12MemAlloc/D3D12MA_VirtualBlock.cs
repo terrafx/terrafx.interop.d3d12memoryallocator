@@ -7,6 +7,7 @@ using System;
 using System.Runtime.CompilerServices;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12MemAlloc;
+using System.Runtime.InteropServices;
 
 namespace TerraFX.Interop
 {
@@ -29,7 +30,7 @@ namespace TerraFX.Interop
             /* QueryInterface */ lpVtbl[0] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&D3D12MA_IUnknownImpl.QueryInterface;
             /* AddRef         */ lpVtbl[1] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.AddRef;
             /* Release        */ lpVtbl[2] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.Release;
-            /* ReleaseThis    */ lpVtbl[3] = (delegate*<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
+            /* ReleaseThis    */ lpVtbl[3] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
 
             return lpVtbl;
         }
@@ -55,6 +56,7 @@ namespace TerraFX.Interop
             D3D12MA_DELETE(&allocationCallbacksCopy, ref this);
         }
 
+        [UnmanagedCallersOnly]
         private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pThis->lpVtbl == Vtbl));
