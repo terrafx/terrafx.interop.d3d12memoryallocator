@@ -37,10 +37,8 @@ namespace TerraFX.Interop
 
             if (riid->Equals(Windows.IID_IUnknown))
             {
-                Interlocked.Increment(ref m_RefCount);
-
+                _ = Interlocked.Increment(ref m_RefCount);
                 *ppvObject = Unsafe.AsPointer(ref this);
-
                 return Windows.S_OK;
             }
 
@@ -53,7 +51,6 @@ namespace TerraFX.Interop
         public uint AddRef()
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[1] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&AddRef));
-
             return Interlocked.Increment(ref m_RefCount);
         }
 
@@ -63,7 +60,6 @@ namespace TerraFX.Interop
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[2] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&Release));
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-
             uint newRefCount = Interlocked.Decrement(ref m_RefCount);
 
             if (newRefCount == 0)
@@ -90,10 +86,8 @@ namespace TerraFX.Interop
 
             if (riid->Equals(Windows.IID_IUnknown))
             {
-                Interlocked.Increment(ref pThis->m_RefCount);
-
+                _ = Interlocked.Increment(ref pThis->m_RefCount);
                 *ppvObject = pThis;
-
                 return Windows.S_OK;
             }
 
@@ -114,7 +108,6 @@ namespace TerraFX.Interop
         public static uint Release(D3D12MA_IUnknownImpl* pThis)
         {
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-
             uint newRefCount = Interlocked.Decrement(ref pThis->m_RefCount);
 
             if (newRefCount == 0)

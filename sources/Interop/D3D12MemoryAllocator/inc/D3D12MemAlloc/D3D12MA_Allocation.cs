@@ -114,7 +114,6 @@ namespace TerraFX.Interop
         private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pThis->lpVtbl == Vtbl));
-
             ((D3D12MA_Allocation*)pThis)->ReleaseThis();
         }
 

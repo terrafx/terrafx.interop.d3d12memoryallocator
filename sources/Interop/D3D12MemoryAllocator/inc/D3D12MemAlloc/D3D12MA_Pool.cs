@@ -54,14 +54,12 @@ namespace TerraFX.Interop
             }
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-
             D3D12MA_DELETE(GetAllocator()->GetAllocs(), ref this);
         }
 
         private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pThis->lpVtbl == Vtbl));
-
             ((D3D12MA_Pool*)pThis)->ReleaseThis();
         }
 

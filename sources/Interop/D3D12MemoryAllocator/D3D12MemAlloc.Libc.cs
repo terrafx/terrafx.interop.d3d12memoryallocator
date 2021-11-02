@@ -20,14 +20,12 @@ namespace TerraFX.Interop
         private static void* memset(void* _Dst, int _Val, [NativeTypeName("size_t")] nuint _Size)
         {
             Unsafe.InitBlock(_Dst, (byte)_Val, (uint)_Size);
-
             return _Dst;
         }
 
         internal static void* memcpy(void* _Dst, [NativeTypeName("void const*")] void* _Src, [NativeTypeName("size_t")] nuint _Size)
         {
             Unsafe.CopyBlock(_Dst, _Src, (uint)_Size);
-
             return _Dst;
         }
 
