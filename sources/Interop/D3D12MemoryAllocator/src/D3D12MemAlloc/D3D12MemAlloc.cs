@@ -172,7 +172,7 @@ namespace TerraFX.Interop
         {
             if (ptr != null)
             {
-                ptr->Release();
+                _ = ptr->Release();
                 ptr = null;
             }
         }
@@ -183,7 +183,7 @@ namespace TerraFX.Interop
         {
             if (ptr != null)
             {
-                ((IUnknown*)ptr)->Release();
+                _ = ((IUnknown*)ptr)->Release();
                 ptr = null;
             }
         }

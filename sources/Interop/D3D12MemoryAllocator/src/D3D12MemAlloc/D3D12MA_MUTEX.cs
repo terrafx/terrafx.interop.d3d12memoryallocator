@@ -24,7 +24,7 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
-            CloseHandle(m_Mutex);
+            _ = CloseHandle(m_Mutex);
         }
     }
 }

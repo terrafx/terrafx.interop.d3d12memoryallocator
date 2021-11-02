@@ -121,8 +121,8 @@ namespace TerraFX.Interop
                     null); // pool
             }
 
-            pThis.m_Device->AddRef();
-            pThis.m_Adapter->AddRef();
+            _ = pThis.m_Device->AddRef();
+            _ = pThis.m_Adapter->AddRef();
         }
 
         [return: NativeTypeName("HRESULT")]
@@ -132,11 +132,11 @@ namespace TerraFX.Interop
 
             if (D3D12MA_DXGI_1_4 != 0)
             {
-                desc->pAdapter->QueryInterface(__uuidof<IDXGIAdapter3>(), (void**)&pThis->m_Adapter3);
+                _ = desc->pAdapter->QueryInterface(__uuidof<IDXGIAdapter3>(), (void**)&pThis->m_Adapter3);
             }
 
-            m_Device->QueryInterface(__uuidof<ID3D12Device4>(), (void**)&pThis->m_Device4);
-            m_Device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)&pThis->m_Device8);
+            _ = m_Device->QueryInterface(__uuidof<ID3D12Device4>(), (void**)&pThis->m_Device4);
+            _ = m_Device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)&pThis->m_Device8);
 
             HRESULT hr = m_Adapter->GetDesc(&pThis->m_AdapterDesc);
 
@@ -191,7 +191,7 @@ namespace TerraFX.Interop
 
             if ((D3D12MA_DXGI_1_4 != 0) && (m_Adapter3 != null))
             {
-                UpdateD3D12Budget();
+                _ = UpdateD3D12Budget();
             }
 
             return S_OK;
@@ -731,7 +731,7 @@ namespace TerraFX.Interop
 
             if ((D3D12MA_DXGI_1_4 != 0) && (m_Adapter3 != null))
             {
-                UpdateD3D12Budget();
+                _ = UpdateD3D12Budget();
             }
         }
 
@@ -858,7 +858,7 @@ namespace TerraFX.Interop
                     }
                     else
                     {
-                        UpdateD3D12Budget(); // Outside of mutex lock
+                        _ = UpdateD3D12Budget(); // Outside of mutex lock
                         GetBudget(outGpuBudget, outCpuBudget); // Recursion
                     }
                 }
@@ -1009,7 +1009,7 @@ namespace TerraFX.Interop
             nuint length = sb.GetLength();
             ushort* result = AllocateArray<ushort>(GetAllocs(), length + 1);
 
-            memcpy(result, sb.GetData(), length * sizeof(ushort));
+            _ = memcpy(result, sb.GetData(), length * sizeof(ushort));
 
             result[length] = '\0';
             *ppStatsString = result;
@@ -1078,7 +1078,7 @@ namespace TerraFX.Interop
                 }
                 else
                 {
-                    res->Release();
+                    _ = res->Release();
                 }
             }
 
@@ -1135,7 +1135,7 @@ namespace TerraFX.Interop
                 }
                 else
                 {
-                    res->Release();
+                    _ = res->Release();
                 }
             }
 
@@ -1193,7 +1193,7 @@ namespace TerraFX.Interop
                 }
                 else
                 {
-                    res->Release();
+                    _ = res->Release();
                 }
             }
 

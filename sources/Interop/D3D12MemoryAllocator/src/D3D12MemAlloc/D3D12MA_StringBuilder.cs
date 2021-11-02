@@ -44,7 +44,7 @@ namespace TerraFX.Interop
             {
                 nuint oldCount = m_Data.size();
                 m_Data.resize(oldCount + len);
-                memcpy(m_Data.data() + oldCount, str, len * sizeof(ushort));
+                _ = memcpy(m_Data.data() + oldCount, str, len * sizeof(ushort));
             }
         }
 

@@ -131,7 +131,7 @@ namespace TerraFX.Interop
             {
                 nuint nameCharCount = wcslen(Name) + 1;
                 m_Name = D3D12MA_NEW_ARRAY<ushort>(m_Allocator->GetAllocs(), nameCharCount);
-                memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
+                _ = memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
             }
         }
 

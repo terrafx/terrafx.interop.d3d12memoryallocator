@@ -230,7 +230,7 @@ namespace TerraFX.Interop
                     }
                     else
                     {
-                        res->Release();
+                        _ = res->Release();
                         SAFE_RELEASE(ref *ppAllocation);
                     }
                 }
@@ -282,7 +282,7 @@ namespace TerraFX.Interop
                     }
                     else
                     {
-                        res->Release();
+                        _ = res->Release();
                         SAFE_RELEASE(ref *ppAllocation);
                     }
                 }

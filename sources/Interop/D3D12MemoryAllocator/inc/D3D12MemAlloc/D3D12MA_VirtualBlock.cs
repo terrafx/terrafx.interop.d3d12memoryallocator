@@ -167,7 +167,7 @@ namespace TerraFX.Interop
 
             nuint length = sb.GetLength();
             ushort* result = AllocateArray<ushort>(ref m_AllocationCallbacks, length + 1);
-            memcpy(result, sb.GetData(), length * sizeof(ushort));
+            _ = memcpy(result, sb.GetData(), length * sizeof(ushort));
             result[length] = '\0';
             *ppStatsString = result;
         }
