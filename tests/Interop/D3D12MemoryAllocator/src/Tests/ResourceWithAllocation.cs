@@ -30,15 +30,8 @@ namespace TerraFX.Interop.UnitTests
 
         public void Reset()
         {
-            if (resource.Get()->Release() == 0)
-            {
-                resource = default;
-            }
-
-            if (allocation.Get()->Release() == 0)
-            {
-                allocation = default;
-            }
+            resource.Dispose();
+            allocation.Dispose();
 
             size = UINT64_MAX;
             dataSeed = 0;
