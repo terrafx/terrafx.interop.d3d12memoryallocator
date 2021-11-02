@@ -1331,7 +1331,7 @@ namespace TerraFX.Interop
             }
 
             if (((allocDesc->Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) != 0) ||
-                m_AlwaysCommitted != 0)
+                (m_AlwaysCommitted != 0))
             {
                 outBlockVector = null;
             }
