@@ -86,7 +86,7 @@ namespace TerraFX.Interop
                 ItemBlock* block = m_ItemBlocks[i];
 
                 Item* pItemPtr;
-                memcpy(&pItemPtr, &ptr, (nuint)sizeof(Item*));
+                _ = memcpy(&pItemPtr, &ptr, (nuint)sizeof(Item*));
 
                 // Check if pItemPtr is in address range of this block.
                 if ((pItemPtr >= block->pItems) && (pItemPtr < block->pItems + block->Capacity))

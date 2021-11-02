@@ -11,7 +11,7 @@ namespace TerraFX.Interop
     internal unsafe struct D3D12MA_MUTEX : IDisposable
     {
         [NativeTypeName("std::mutex")]
-        private IntPtr m_Mutex;
+        private HANDLE m_Mutex;
 
         public void Lock() => WaitForSingleObject(m_Mutex, INFINITE);
 
@@ -24,7 +24,7 @@ namespace TerraFX.Interop
 
         public void Dispose()
         {
-            CloseHandle(m_Mutex);
+            _ = CloseHandle(m_Mutex);
         }
     }
 }

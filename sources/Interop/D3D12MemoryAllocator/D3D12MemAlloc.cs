@@ -127,7 +127,7 @@ namespace TerraFX.Interop
 
         internal static void ZeroMemory(void* dst, [NativeTypeName("size_t")] nuint size)
         {
-            memset(dst, 0, size);
+            _ = memset(dst, 0, size);
         }
 
         private static uint get_app_context_data(string name, uint defaultValue)

@@ -100,7 +100,7 @@ namespace TerraFX.Interop
             {
                 ref ulong blockBytes = ref pThis.m_Allocator->m_Budget.m_BlockBytes[(int)HeapTypeToIndex(pThis.m_HeapProps.Type)];
                 Volatile.Write(ref blockBytes, Volatile.Read(ref blockBytes) - pThis.m_Size);
-                pThis.m_Heap->Release();
+                _ = pThis.m_Heap->Release();
             }
         }
     }

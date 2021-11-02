@@ -11,6 +11,8 @@ namespace TerraFX.Interop
 {
     public unsafe partial struct D3D12MA_Pool : D3D12MA_IItemTypeTraits<D3D12MA_Pool>
     {
+        private D3D12MA_IUnknownImpl m_IUnknownImpl;
+
         internal D3D12MA_Allocator* m_Allocator; // Externally owned object
 
         internal D3D12MA_POOL_DESC m_Desc;
@@ -28,6 +30,8 @@ namespace TerraFX.Interop
 
         internal static void _ctor(ref D3D12MA_Pool pThis, ref D3D12MA_Allocator allocator, [NativeTypeName("const D3D12MA_POOL_DESC&")] D3D12MA_POOL_DESC* desc)
         {
+            D3D12MA_IUnknownImpl._ctor(ref pThis.m_IUnknownImpl, Vtbl);
+
             pThis.m_Allocator = (D3D12MA_Allocator*)Unsafe.AsPointer(ref allocator);
             pThis.m_Desc = *desc;
             pThis.m_BlockVector = null;
@@ -63,8 +67,14 @@ namespace TerraFX.Interop
 
         void IDisposable.Dispose()
         {
+            // From Pool::~Pool
+
             GetAllocator()->UnregisterPool(ref this, m_Desc.HeapProperties.Type);
 
+            // This is skipped because PoolPimpl is now inlined into the pool type
+            // D3D12MA_DELETE(m_Pimpl->GetAllocator()->GetAllocs(), m_Pimpl);
+
+            // From PoolPimpl::~PoolPimpl
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_PrevPool == null) && (m_NextPool == null));
             FreeName();
             D3D12MA_DELETE(m_Allocator->GetAllocs(), m_BlockVector);
@@ -121,7 +131,7 @@ namespace TerraFX.Interop
             {
                 nuint nameCharCount = wcslen(Name) + 1;
                 m_Name = D3D12MA_NEW_ARRAY<ushort>(m_Allocator->GetAllocs(), nameCharCount);
-                memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
+                _ = memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
             }
         }
 

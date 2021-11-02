@@ -50,7 +50,7 @@ namespace TerraFX.Interop
 
             if (pThis.m_Count > 0)
             {
-                memcpy(pThis.m_pArray, src.m_pArray, pThis.m_Count * (nuint)sizeof(T));
+                _ = memcpy(pThis.m_pArray, src.m_pArray, pThis.m_Count * (nuint)sizeof(T));
             }
         }
 
@@ -67,7 +67,7 @@ namespace TerraFX.Interop
 
                 if (lhs.m_Count != 0)
                 {
-                    memcpy(lhs.m_pArray, rhs.m_pArray, lhs.m_Count * (nuint)sizeof(T));
+                    _ = memcpy(lhs.m_pArray, rhs.m_pArray, lhs.m_Count * (nuint)sizeof(T));
                 }
             }
 
@@ -117,7 +117,7 @@ namespace TerraFX.Interop
 
                 if (m_Count != 0)
                 {
-                    memcpy(newArray, m_pArray, m_Count * (nuint)sizeof(T));
+                    _ = memcpy(newArray, m_pArray, m_Count * (nuint)sizeof(T));
                 }
 
                 Free(m_AllocationCallbacks, m_pArray);
@@ -147,7 +147,7 @@ namespace TerraFX.Interop
 
                 if (elementsToCopy != 0)
                 {
-                    memcpy(newArray, m_pArray, elementsToCopy * (nuint)sizeof(T));
+                    _ = memcpy(newArray, m_pArray, elementsToCopy * (nuint)sizeof(T));
                 }
 
                 Free(m_AllocationCallbacks, m_pArray);
@@ -173,7 +173,7 @@ namespace TerraFX.Interop
 
             if (index < oldCount)
             {
-                memcpy(m_pArray + (index + 1), m_pArray + index, (oldCount - index) * (nuint)sizeof(T));
+                _ = memcpy(m_pArray + (index + 1), m_pArray + index, (oldCount - index) * (nuint)sizeof(T));
             }
 
             m_pArray[index] = src;
@@ -187,7 +187,7 @@ namespace TerraFX.Interop
 
             if (index < oldCount - 1)
             {
-                memcpy(m_pArray + index, m_pArray + (index + 1), (oldCount - index - 1) * (nuint)sizeof(T));
+                _ = memcpy(m_pArray + index, m_pArray + (index + 1), (oldCount - index - 1) * (nuint)sizeof(T));
             }
 
             resize(oldCount - 1);

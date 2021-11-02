@@ -158,7 +158,6 @@ namespace TerraFX.Interop
                 D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && pBlock->Validate());
 
                 nuint blockCount = m_Blocks.size();
-                ulong sumBlockSize = CalcSumBlockSize();
 
                 // pBlock became empty after this deallocation.
                 if (pBlock->m_pMetadata->IsEmpty())
@@ -231,7 +230,7 @@ namespace TerraFX.Interop
                     }
                     else
                     {
-                        res->Release();
+                        _ = res->Release();
                         SAFE_RELEASE(ref *ppAllocation);
                     }
                 }
@@ -283,7 +282,7 @@ namespace TerraFX.Interop
                     }
                     else
                     {
-                        res->Release();
+                        _ = res->Release();
                         SAFE_RELEASE(ref *ppAllocation);
                     }
                 }

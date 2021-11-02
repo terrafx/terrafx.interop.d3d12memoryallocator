@@ -11,19 +11,19 @@ namespace TerraFX.Interop
     internal unsafe struct D3D12MA_RW_MUTEX
     {
         [NativeTypeName("SRWLOCK")]
-        private RTL_SRWLOCK m_Lock;
+        private SRWLOCK m_Lock;
 
-        public void LockRead() => AcquireSRWLockShared((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
+        public void LockRead() => AcquireSRWLockShared((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
 
-        public void UnlockRead() => ReleaseSRWLockShared((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
+        public void UnlockRead() => ReleaseSRWLockShared((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
 
-        public void LockWrite() => AcquireSRWLockExclusive((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
+        public void LockWrite() => AcquireSRWLockExclusive((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
 
-        public void UnlockWrite() => ReleaseSRWLockExclusive((RTL_SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
+        public void UnlockWrite() => ReleaseSRWLockExclusive((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
 
         public static void _ctor(ref D3D12MA_RW_MUTEX mutex)
         {
-            InitializeSRWLock((RTL_SRWLOCK*)Unsafe.AsPointer(ref mutex.m_Lock));
+            InitializeSRWLock((SRWLOCK*)Unsafe.AsPointer(ref mutex.m_Lock));
         }
     }
 }

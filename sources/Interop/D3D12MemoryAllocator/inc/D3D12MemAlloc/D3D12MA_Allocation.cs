@@ -24,6 +24,28 @@ namespace TerraFX.Interop
     /// </summary>
     public unsafe struct D3D12MA_Allocation : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_Allocation>
     {
+        private static readonly void** Vtbl = InitVtbl();
+
+        private static void** InitVtbl()
+        {
+            void** lpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_Allocation), sizeof(void*) * 4);
+
+            /* QueryInterface */ lpVtbl[0] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&D3D12MA_IUnknownImpl.QueryInterface;
+            /* AddRef         */ lpVtbl[1] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.AddRef;
+            /* Release        */ lpVtbl[2] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.Release;
+            /* ReleaseThis    */ lpVtbl[3] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
+
+            // Note: ReleaseThis is intentionally a managed function pointer as this method is internal, and only used
+            // by the default implementation of Release. Since there is no public interface exposing this API, it wouldn't
+            // be possible for anyone to try to invoke this API externally, so leaving the pointer managed is still safe
+            // even if this object was to be passed to some native API as an IUnknown instance, while giving us a small
+            // performance boost on invocation, as we can then drop the managed/unmanaged transitions.
+
+            return lpVtbl;
+        }
+
+        private D3D12MA_IUnknownImpl m_IUnknownImpl;
+
         internal D3D12MA_Allocator* m_Allocator;
 
         [NativeTypeName("UINT64")]
@@ -42,10 +64,17 @@ namespace TerraFX.Interop
         internal PackedData m_PackedData;
 
         /// <summary>
-        /// Deletes this object.
-        /// <para>This function must be used instead of destructor, which is private. There is no reference counting involved.</para>
+        /// Implements <c>IUnknown.Release()</c>.
         /// </summary>
-        public void Release()
+        public uint Release()
+        {
+            return m_IUnknownImpl.Release();
+        }
+
+        /// <summary>
+        /// Releases this instance.
+        /// </summary>
+        private void ReleaseThis()
         {
             if (Unsafe.IsNullRef(ref this))
             {
@@ -80,6 +109,13 @@ namespace TerraFX.Interop
             FreeName();
 
             m_Allocator->GetAllocationObjectAllocator()->Free(ref this);
+        }
+
+        [UnmanagedCallersOnly]
+        private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
+        {
+            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pThis->lpVtbl == Vtbl));
+            ((D3D12MA_Allocation*)pThis)->ReleaseThis();
         }
 
         /// <summary>
@@ -179,7 +215,7 @@ namespace TerraFX.Interop
             {
                 nuint nameCharCount = wcslen(Name) + 1;
                 m_Name = D3D12MA_NEW_ARRAY<ushort>(m_Allocator->GetAllocs(), nameCharCount);
-                memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
+                _ = memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
             }
         }
 
@@ -357,6 +393,8 @@ namespace TerraFX.Interop
 
         internal static void _ctor(ref D3D12MA_Allocation pThis, D3D12MA_Allocator* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("BOOL")] int wasZeroInitialized)
         {
+            D3D12MA_IUnknownImpl._ctor(ref pThis.m_IUnknownImpl, Vtbl);
+
             pThis.m_Allocator = allocator;
             pThis.m_Size = size;
             pThis.m_Resource = null;

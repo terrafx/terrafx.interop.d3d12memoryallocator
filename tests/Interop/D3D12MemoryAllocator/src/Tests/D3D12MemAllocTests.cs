@@ -109,20 +109,16 @@ namespace TerraFX.Interop.UnitTests
 
             // # Create block 16 MB
 
-            unique_ptr<D3D12MA_VirtualBlock> block = default;
+            ComPtr<D3D12MA_VirtualBlock> block = default;
 
             try
             {
-                D3D12MA_VirtualBlock* blockPtr = null;
-
                 D3D12MA_VIRTUAL_BLOCK_DESC blockDesc = default;
                 blockDesc.pAllocationCallbacks = ctx.allocationCallbacks;
                 blockDesc.Size = blockSize;
 
-                CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, &blockPtr));
-                CHECK_BOOL(blockPtr != null);
-
-                block.reset(blockPtr);
+                CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, block.GetAddressOf()));
+                CHECK_BOOL(block.Get() != null);
 
                 // # Allocate 8 MB
 
@@ -236,7 +232,6 @@ namespace TerraFX.Interop.UnitTests
             }
             finally
             {
-                delegate*<void*, void*, void> x = &CustomFree;
                 block.Dispose();
             }
         }
@@ -287,7 +282,7 @@ namespace TerraFX.Interop.UnitTests
                 }
 
                 ctx.allocator->FreeStatsString(pStatsString);
-                alloc->Release();
+                _ = alloc->Release();
             }
         }
 
@@ -325,18 +320,14 @@ namespace TerraFX.Interop.UnitTests
                 {
                     bool receiveExplicitResource = i < 2;
 
-                    D3D12MA_Allocation* alloc = null;
-
                     CHECK_HR(ctx.allocator->CreateResource(
                         &allocDesc,
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_COPY_DEST,
                         null,
-                        &alloc,
+                        resources[i].allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), receiveExplicitResource ? (void**)&resources[i].resource : null
                     ));
-
-                    resources[i].allocation.reset(alloc);
 
                     if (receiveExplicitResource)
                     {
@@ -346,7 +337,7 @@ namespace TerraFX.Interop.UnitTests
                         ulong refCountAfterAdd = res->AddRef();
                         CHECK_BOOL(refCountAfterAdd == 3);
 
-                        res->Release();
+                        _ = res->Release();
                     }
 
                     // Make sure it has implicit heap.
@@ -405,10 +396,7 @@ namespace TerraFX.Interop.UnitTests
 
                 D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = default;
                 resAllocInfo.SizeInBytes = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-                resAllocInfo.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-
-                D3D12MA_Allocation* alloc = null;
-                CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, &alloc));
+                resAllocInfo.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;                
 
                 ResourceWithAllocation res;
                 Unsafe.SkipInit(out res);
@@ -416,7 +404,7 @@ namespace TerraFX.Interop.UnitTests
 
                 try
                 {
-                    res.allocation.reset(alloc);
+                    CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, res.allocation.GetAddressOf()));
 
                     // Must be created as separate allocation.
                     CHECK_BOOL(res.allocation.Get()->GetOffset() == 0);
@@ -452,16 +440,14 @@ namespace TerraFX.Interop.UnitTests
 
                 try
                 {
-                    D3D12MA_Allocation* alloc = null;
                     CHECK_HR(ctx.allocator->CreateResource(
                         &allocDesc,
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_COMMON,
                         null,
-                        &alloc,
+                        res.allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), (void**)&res.resource
                     ));
-                    res.allocation.reset(alloc);
 
                     // Must be created as committed.
                     CHECK_BOOL(res.allocation.Get()->GetHeap() == null);
@@ -497,7 +483,6 @@ namespace TerraFX.Interop.UnitTests
                 D3D12_RESOURCE_DESC resourceDesc;
                 FillResourceDescForBuffer(out resourceDesc, bufSize);
 
-                D3D12MA_Allocation* alloc = null;
                 for (uint i = 0; i < count; ++i)
                 {
                     CHECK_HR(ctx.allocator->CreateResource(
@@ -505,10 +490,9 @@ namespace TerraFX.Interop.UnitTests
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_GENERIC_READ,
                         null,
-                        &alloc,
+                        resources[i].allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), (void**)&resources[i].resource
                     ));
-                    resources[i].allocation.reset(alloc);
 
                     // Make sure it doesn't have implicit heap.
                     if (!alwaysCommitted)
@@ -569,10 +553,9 @@ namespace TerraFX.Interop.UnitTests
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_COPY_DEST,
                         null,
-                        &alloc,
+                        textureRes.allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), (void**)&textureRes.resource
                     ));
-                    textureRes.allocation.reset(alloc);
                 }
                 finally
                 {
@@ -604,10 +587,9 @@ namespace TerraFX.Interop.UnitTests
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_RENDER_TARGET,
                         null,
-                        &alloc,
+                        renderTargetRes.allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), (void**)&renderTargetRes.resource
                     ));
-                    renderTargetRes.allocation.reset(alloc);
                 }
                 finally
                 {
@@ -640,7 +622,7 @@ namespace TerraFX.Interop.UnitTests
                     allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
                 }
 
-                D3D12MA_Allocation* alloc = null;
+                using ComPtr< D3D12MA_Allocation> alloc = default;
                 using ComPtr<ID3D12Pageable> pageable = default;
 
                 CHECK_HR(ctx.allocator->CreateResource(
@@ -648,7 +630,7 @@ namespace TerraFX.Interop.UnitTests
                     &resDesc,
                     D3D12_RESOURCE_STATE_COMMON,
                     null, // pOptimizedClearValue
-                    &alloc,
+                    alloc.GetAddressOf(),
                     __uuidof<ID3D12Pageable>(), (void**)&pageable
                 ));
 
@@ -656,8 +638,6 @@ namespace TerraFX.Interop.UnitTests
                 using ComPtr<ID3D12Device> device = default;
                 CHECK_HR(pageable.Get()->GetDevice(__uuidof<ID3D12Device>(), (void**)&device));
                 CHECK_BOOL(device == ctx.device);
-
-                alloc->Release();
             }
         }
 
@@ -679,15 +659,12 @@ namespace TerraFX.Interop.UnitTests
             poolDesc.MinBlockCount = 1;
             poolDesc.MaxBlockCount = 2;
 
-            D3D12MA_Pool* poolPtr;
-            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, &poolPtr));
+            using ComPtr<D3D12MA_Pool> pool = default;
 
-            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
             try
             {
-                D3D12MA_Allocation* allocPtr;
-
                 // # Validate stats for empty pool
 
                 D3D12MA_StatInfo poolStats = default;
@@ -723,7 +700,7 @@ namespace TerraFX.Interop.UnitTests
                 D3D12_RESOURCE_DESC resDesc;
                 FillResourceDescForBuffer(out resDesc, BUFFER_SIZE);
 
-                unique_ptr<D3D12MA_Allocation>* allocs = stackalloc unique_ptr<D3D12MA_Allocation>[4];
+                ComPtr<D3D12MA_Allocation>* allocs = stackalloc ComPtr<D3D12MA_Allocation>[4];
 
                 try
                 {
@@ -732,10 +709,9 @@ namespace TerraFX.Interop.UnitTests
                         CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc,
                             D3D12_RESOURCE_STATE_GENERIC_READ,
                             null, // pOptimizedClearValue
-                            &allocPtr,
+                            allocs[i].GetAddressOf(),
                             __uuidof<ID3D12Resource>(), null // riidResource, ppvResource
                         ));
-                        allocs[i].reset(allocPtr);
                     }
 
                     // # Validate pool stats now
@@ -763,10 +739,12 @@ namespace TerraFX.Interop.UnitTests
                     {
                         allocDesc.Flags = i == 0 ? D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE : D3D12MA_ALLOCATION_FLAG_COMMITTED;
 
+                        using ComPtr<D3D12MA_Allocation> alloc = default;
+
                         int hr = ctx.allocator->CreateResource(&allocDesc, &resDesc,
                             D3D12_RESOURCE_STATE_GENERIC_READ,
                             null, // pOptimizedClearValue
-                            &allocPtr,
+                            alloc.GetAddressOf(),
                             __uuidof<ID3D12Resource>(), null // riidResource, ppvResource
                         );
 
@@ -778,17 +756,19 @@ namespace TerraFX.Interop.UnitTests
                     allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NONE;
                     for (uint i = 2; i < 5; ++i)
                     {
+                        using ComPtr<D3D12MA_Allocation> alloc = default;
+
                         HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &resDesc,
                             D3D12_RESOURCE_STATE_GENERIC_READ,
                             null, // pOptimizedClearValue
-                            &allocPtr,
+                            alloc.GetAddressOf(),
                             __uuidof<ID3D12Resource>(), null // riidResource, ppvResource
                         );
 
                         if (i < 4)
                         {
                             CHECK_HR(hr);
-                            allocs[i].reset(allocPtr);
+                            allocs[i].Attach(alloc.Detach());
                         }
                         else
                         {
@@ -805,15 +785,14 @@ namespace TerraFX.Interop.UnitTests
 
                     // # Make room, AllocateMemory, CreateAliasingResource
 
-                    allocs[3].reset();
-                    allocs[0].reset();
+                    _ = allocs[3].Reset();
+                    _ = allocs[0].Reset();
 
                     D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = default;
                     resAllocInfo.SizeInBytes = 5 * MEGABYTE;
                     resAllocInfo.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 
-                    CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, &allocPtr));
-                    allocs[0].reset(allocPtr);
+                    CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, allocs[0].GetAddressOf()));
 
                     resDesc.Width = 1 * MEGABYTE;
                     using ComPtr<ID3D12Resource> res = default;
@@ -853,20 +832,19 @@ namespace TerraFX.Interop.UnitTests
             poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
             poolDesc.MinAllocationAlignment = MIN_ALIGNMENT;
 
-            D3D12MA_Pool* poolPtr;
-            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, &poolPtr));
-            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+            ComPtr<D3D12MA_Pool> pool = default;
+
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
             try
             {
-                D3D12MA_Allocation* allocPtr;
                 D3D12MA_ALLOCATION_DESC allocDesc = default;
                 allocDesc.CustomPool = pool.Get();
 
                 D3D12_RESOURCE_DESC resDesc;
                 FillResourceDescForBuffer(out resDesc, BUFFER_SIZE);
 
-                unique_ptr<D3D12MA_Allocation>* allocs = stackalloc unique_ptr<D3D12MA_Allocation>[(int)BUFFER_COUNT];
+                ComPtr<D3D12MA_Allocation>* allocs = stackalloc ComPtr<D3D12MA_Allocation>[(int)BUFFER_COUNT];
 
                 try
                 {
@@ -875,11 +853,10 @@ namespace TerraFX.Interop.UnitTests
                         CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc,
                             D3D12_RESOURCE_STATE_GENERIC_READ,
                             null, // pOptimizedClearValue
-                            &allocPtr,
+                            allocs[i].GetAddressOf(),
                             null,
                             null)); // riidResource, ppvResource
-                        allocs[i].reset(allocPtr);
-                        CHECK_BOOL(allocPtr->GetOffset() % MIN_ALIGNMENT == 0);
+                        CHECK_BOOL(allocs[i].Get()->GetOffset() % MIN_ALIGNMENT == 0);
                     }
                 }
                 finally
@@ -910,10 +887,9 @@ namespace TerraFX.Interop.UnitTests
 
             const ulong BUFFER_SIZE = 1 * MEGABYTE;
 
-            D3D12MA_Pool* poolPtr;
-            HRESULT hr = ctx.allocator->CreatePool(&poolDesc, &poolPtr);
+            ComPtr<D3D12MA_Pool> pool = default;
 
-            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+            HRESULT hr = ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf());
 
             try
             {
@@ -926,49 +902,41 @@ namespace TerraFX.Interop.UnitTests
                     FillResourceDescForBuffer(out resDesc, BUFFER_SIZE);
 
                     // Pool already allocated a block. We don't expect CreatePlacedResource to fail.
-                    D3D12MA_Allocation* allocPtr;
+                    using ComPtr<D3D12MA_Allocation> alloc = default;
+
                     CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc,
                         D3D12_RESOURCE_STATE_COPY_DEST,
                         null, // pOptimizedClearValue
-                        &allocPtr,
+                        alloc.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), null)); // riidResource, ppvResource
 
-                    unique_ptr<D3D12MA_Allocation> alloc = allocPtr;
+                    D3D12MA_Stats globalStatsCurr = default;
+                    ctx.allocator->CalculateStats(&globalStatsCurr);
 
-                    try
+                    // Make sure it is accounted only in CUSTOM heap not any of the standard heaps.
+                    CHECK_BOOL(memcmp(Unsafe.AsPointer(ref globalStatsCurr.HeapType[0]), Unsafe.AsPointer(ref globalStatsBeg.HeapType[0]), (nuint)sizeof(D3D12MA_StatInfo)) == 0);
+                    CHECK_BOOL(memcmp(Unsafe.AsPointer(ref globalStatsCurr.HeapType[1]), Unsafe.AsPointer(ref globalStatsBeg.HeapType[1]), (nuint)sizeof(D3D12MA_StatInfo)) == 0);
+                    CHECK_BOOL(memcmp(Unsafe.AsPointer(ref globalStatsCurr.HeapType[2]), Unsafe.AsPointer(ref globalStatsBeg.HeapType[2]), (nuint)sizeof(D3D12MA_StatInfo)) == 0);
+                    CHECK_BOOL(globalStatsCurr.HeapType[3].AllocationCount == globalStatsBeg.HeapType[3].AllocationCount + 1);
+                    CHECK_BOOL(globalStatsCurr.HeapType[3].BlockCount == globalStatsBeg.HeapType[3].BlockCount + 1);
+                    CHECK_BOOL(globalStatsCurr.HeapType[3].UsedBytes == globalStatsBeg.HeapType[3].UsedBytes + BUFFER_SIZE);
+                    CHECK_BOOL(globalStatsCurr.Total.AllocationCount == globalStatsBeg.Total.AllocationCount + 1);
+                    CHECK_BOOL(globalStatsCurr.Total.BlockCount == globalStatsBeg.Total.BlockCount + 1);
+                    CHECK_BOOL(globalStatsCurr.Total.UsedBytes == globalStatsBeg.Total.UsedBytes + BUFFER_SIZE);
+
+                    // Map and write some data.
+                    if (heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE ||
+                        heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_BACK)
                     {
-                        D3D12MA_Stats globalStatsCurr = default;
-                        ctx.allocator->CalculateStats(&globalStatsCurr);
+                        ID3D12Resource* res = alloc.Get()->GetResource();
 
-                        // Make sure it is accounted only in CUSTOM heap not any of the standard heaps.
-                        CHECK_BOOL(memcmp(Unsafe.AsPointer(ref globalStatsCurr.HeapType[0]), Unsafe.AsPointer(ref globalStatsBeg.HeapType[0]), (nuint)sizeof(D3D12MA_StatInfo)) == 0);
-                        CHECK_BOOL(memcmp(Unsafe.AsPointer(ref globalStatsCurr.HeapType[1]), Unsafe.AsPointer(ref globalStatsBeg.HeapType[1]), (nuint)sizeof(D3D12MA_StatInfo)) == 0);
-                        CHECK_BOOL(memcmp(Unsafe.AsPointer(ref globalStatsCurr.HeapType[2]), Unsafe.AsPointer(ref globalStatsBeg.HeapType[2]), (nuint)sizeof(D3D12MA_StatInfo)) == 0);
-                        CHECK_BOOL(globalStatsCurr.HeapType[3].AllocationCount == globalStatsBeg.HeapType[3].AllocationCount + 1);
-                        CHECK_BOOL(globalStatsCurr.HeapType[3].BlockCount == globalStatsBeg.HeapType[3].BlockCount + 1);
-                        CHECK_BOOL(globalStatsCurr.HeapType[3].UsedBytes == globalStatsBeg.HeapType[3].UsedBytes + BUFFER_SIZE);
-                        CHECK_BOOL(globalStatsCurr.Total.AllocationCount == globalStatsBeg.Total.AllocationCount + 1);
-                        CHECK_BOOL(globalStatsCurr.Total.BlockCount == globalStatsBeg.Total.BlockCount + 1);
-                        CHECK_BOOL(globalStatsCurr.Total.UsedBytes == globalStatsBeg.Total.UsedBytes + BUFFER_SIZE);
+                        uint* mappedPtr = null;
+                        D3D12_RANGE readRange = default;
+                        CHECK_HR(res->Map(0, &readRange, (void**)&mappedPtr));
 
-                        // Map and write some data.
-                        if (heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE ||
-                            heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_BACK)
-                        {
-                            ID3D12Resource* res = alloc.Get()->GetResource();
+                        *mappedPtr = 0xDEADC0DE;
 
-                            uint* mappedPtr = null;
-                            D3D12_RANGE readRange = default;
-                            CHECK_HR(res->Map(0, &readRange, (void**)&mappedPtr));
-
-                            *mappedPtr = 0xDEADC0DE;
-
-                            res->Unmap(0, null);
-                        }
-                    }
-                    finally
-                    {
-                        alloc.Dispose();
+                        res->Unmap(0, null);
                     }
                 }
             }
@@ -1005,14 +973,13 @@ namespace TerraFX.Interop.UnitTests
             poolDesc.HeapProperties.Type = heapType;
             poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
 
-            D3D12MA_Pool* poolPtr;
-            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, &poolPtr));
+            ComPtr<D3D12MA_Pool> pool = default;
 
-            unique_ptr<D3D12MA_Pool> pool = poolPtr;
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
             try
             {
-                var allocations = new List<unique_ptr<D3D12MA_Allocation>>();
+                var allocations = new List<ComPtr<D3D12MA_Allocation>>();
 
                 try
                 {
@@ -1048,17 +1015,18 @@ namespace TerraFX.Interop.UnitTests
                                 allocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE;
                             }
 
-                            D3D12MA_Allocation* allocPtr = null;
+                            ComPtr<D3D12MA_Allocation> allocPtr = default;
+
                             int hr = ctx.allocator->CreateResource(
                                 &allocDesc,
                                 &resDesc,
                                 D3D12_RESOURCE_STATE_COMMON,
                                 null, // pOptimizedClearValue
-                                &allocPtr,
+                                allocPtr.GetAddressOf(),
                                 null,
                                 null);
 
-                            if (allocPtr != null)
+                            if (allocPtr.Get() != null)
                             {
                                 allocations.Add(allocPtr);
                             }
@@ -1067,14 +1035,14 @@ namespace TerraFX.Interop.UnitTests
                             CHECK_BOOL(expectSuccess == SUCCEEDED(hr));
                             if (SUCCEEDED(hr) && useCommitted)
                             {
-                                CHECK_BOOL(allocPtr->GetHeap() == null); // Committed allocation has implicit heap.
+                                CHECK_BOOL(allocPtr.Get()->GetHeap() == null); // Committed allocation has implicit heap.
                             }
                         }
                     }
                 }
                 finally
                 {
-                    foreach (ref unique_ptr<D3D12MA_Allocation> allocation in CollectionsMarshal.AsSpan(allocations))
+                    foreach (ref ComPtr<D3D12MA_Allocation> allocation in CollectionsMarshal.AsSpan(allocations))
                     {
                         allocation.Dispose();
                     }
@@ -1127,9 +1095,10 @@ namespace TerraFX.Interop.UnitTests
             allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
             allocDesc.ExtraHeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES;
 
-            D3D12MA_Allocation* alloc = null;
-            CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &finalAllocInfo, &alloc));
-            CHECK_BOOL((alloc != null) && (alloc->GetHeap() != null));
+            using ComPtr<D3D12MA_Allocation> alloc = default;
+
+            CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &finalAllocInfo, alloc.GetAddressOf()));
+            CHECK_BOOL((alloc.Get() != null) && (alloc.Get()->GetHeap() != null));
 
             ID3D12Resource* res1 = null;
             CHECK_HR(ctx.allocator->CreateAliasingResource(
@@ -1155,9 +1124,8 @@ namespace TerraFX.Interop.UnitTests
 
             // You can use res1 and res2, but not at the same time!
 
-            res2->Release();
-            res1->Release();
-            alloc->Release();
+            _ = res2->Release();
+            _ = res1->Release();
         }
 
         private static void TestMapping([NativeTypeName("const TestContext&")] in TestContext ctx)
@@ -1184,16 +1152,14 @@ namespace TerraFX.Interop.UnitTests
 
                 for (uint i = 0; i < count; ++i)
                 {
-                    D3D12MA_Allocation* alloc = null;
                     CHECK_HR(ctx.allocator->CreateResource(
                         &allocDesc,
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_GENERIC_READ,
                         null,
-                        &alloc,
+                        resources[i].allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), (void**)&resources[i].resource
                     ));
-                    resources[i].allocation.reset(alloc);
 
                     void* mappedPtr = null;
                     CHECK_HR(resources[i].resource.Get()->Map(0, EMPTY_RANGE, &mappedPtr));
@@ -1289,16 +1255,14 @@ namespace TerraFX.Interop.UnitTests
                         allocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_COMMITTED;
                     }
 
-                    D3D12MA_Allocation* alloc = null;
                     CHECK_HR(ctx.allocator->CreateResource(
                         &allocDesc,
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_GENERIC_READ,
                         null,
-                        &alloc,
+                        resources[i].allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), (void**)&resources[i].resource
                     ));
-                    resources[i].allocation.reset(alloc);
                 }
 
                 D3D12MA_Stats endStats = default;
@@ -1389,36 +1353,32 @@ namespace TerraFX.Interop.UnitTests
                 // Create 3 sets of resources.
                 for (uint i = 0; i < count; ++i)
                 {
-                    D3D12MA_Allocation* alloc = null;
                     CHECK_HR(ctx.allocator->CreateResource(
                         &allocDescUpload,
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_GENERIC_READ,
                         null,
-                        &alloc,
+                        resourcesUpload[i].allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), (void**)&resourcesUpload[i].resource
                     ));
-                    resourcesUpload[i].allocation.reset(alloc);
 
                     CHECK_HR(ctx.allocator->CreateResource(
                         &allocDescDefault,
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_COPY_DEST,
                         null,
-                        &alloc,
+                        resourcesDefault[i].allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), (void**)&resourcesDefault[i].resource
                     ));
-                    resourcesDefault[i].allocation.reset(alloc);
 
                     CHECK_HR(ctx.allocator->CreateResource(
                         &allocDescReadback,
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_COPY_DEST,
                         null,
-                        &alloc,
+                        resourcesReadback[i].allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), (void**)&resourcesReadback[i].resource
                     ));
-                    resourcesReadback[i].allocation.reset(alloc);
                 }
 
                 // Map and fill data in UPLOAD.
@@ -1503,7 +1463,6 @@ namespace TerraFX.Interop.UnitTests
             Console.WriteLine("Test zero initialized");
 
             const ulong bufSize = 128ul * 1024;
-            D3D12MA_Allocation* alloc = null;
 
             D3D12_RESOURCE_DESC resourceDesc;
             FillResourceDescForBuffer(out resourceDesc, bufSize);
@@ -1524,9 +1483,8 @@ namespace TerraFX.Interop.UnitTests
                     &resourceDesc,
                     D3D12_RESOURCE_STATE_GENERIC_READ,
                     null,
-                    &alloc,
+                    bufUpload.allocation.GetAddressOf(),
                     __uuidof<ID3D12Resource>(), (void**)&bufUpload.resource));
-                bufUpload.allocation.reset(alloc);
 
                 {
                     void* mappedPtr = null;
@@ -1551,9 +1509,8 @@ namespace TerraFX.Interop.UnitTests
                         &resourceDesc,
                         D3D12_RESOURCE_STATE_COPY_DEST,
                         null,
-                        &alloc,
+                        bufReadback.allocation.GetAddressOf(),
                         __uuidof<ID3D12Resource>(), (void**)&bufReadback.resource));
-                    bufReadback.allocation.reset(alloc);
 
                     Action<IntPtr, IntPtr> CheckBufferData = (IntPtr pBuf, IntPtr pBufReadback) => {
                         ref readonly ResourceWithAllocation buf = ref Unsafe.AsRef<ResourceWithAllocation>((void*)pBuf);
@@ -1604,10 +1561,9 @@ namespace TerraFX.Interop.UnitTests
                                 &resourceDesc,
                                 D3D12_RESOURCE_STATE_COPY_SOURCE,
                                 null,
-                                &alloc,
+                                bufDefault.allocation.GetAddressOf(),
                                 __uuidof<ID3D12Resource>(), (void**)&bufDefault.resource
                             ));
-                            bufDefault.allocation.reset(alloc);
 
                             Console.WriteLine("  Committed: ");
                             CheckBufferData((IntPtr)(&bufDefault), (IntPtr)(&bufReadback));
@@ -1639,10 +1595,9 @@ namespace TerraFX.Interop.UnitTests
                                     &resourceDesc,
                                     D3D12_RESOURCE_STATE_COPY_SOURCE,
                                     null,
-                                    &alloc,
+                                    bufDefault.allocation.GetAddressOf(),
                                     __uuidof<ID3D12Resource>(), (void**)&bufDefault.resource
                                 ));
-                                bufDefault.allocation.reset(alloc);
 
                                 // 2. Check it
 
@@ -1728,16 +1683,14 @@ namespace TerraFX.Interop.UnitTests
                             D3D12_RESOURCE_DESC resourceDesc;
                             FillResourceDescForBuffer(out resourceDesc, res.size);
 
-                            D3D12MA_Allocation* alloc = null;
                             CHECK_HR(ctx.allocator->CreateResource(
                                 &allocDesc,
                                 &resourceDesc,
                                 D3D12_RESOURCE_STATE_GENERIC_READ,
                                 null,
-                                &alloc,
+                                res.allocation.GetAddressOf(),
                                 __uuidof<ID3D12Resource>(), (void**)&res.resource
                             ));
-                            res.allocation.reset(alloc);
 
                             void* mappedPtr = null;
                             CHECK_HR(res.resource.Get()->Map(0, EMPTY_RANGE, &mappedPtr));
@@ -1781,16 +1734,14 @@ namespace TerraFX.Interop.UnitTests
                                 D3D12_RESOURCE_DESC resourceDesc;
                                 FillResourceDescForBuffer(out resourceDesc, res.size);
 
-                                D3D12MA_Allocation* alloc = null;
                                 CHECK_HR(ctx.allocator->CreateResource(
                                     &allocDesc,
                                     &resourceDesc,
                                     D3D12_RESOURCE_STATE_GENERIC_READ,
                                     null,
-                                    &alloc,
+                                    res.allocation.GetAddressOf(),
                                     __uuidof<ID3D12Resource>(), (void**)&res.resource
                                 ));
-                                res.allocation.reset(alloc);
 
                                 void* mappedPtr = null;
                                 CHECK_HR(res.resource.Get()->Map(0, null, &mappedPtr));
@@ -1815,7 +1766,7 @@ namespace TerraFX.Interop.UnitTests
                             void* mappedPtr = null;
                             CHECK_HR(resources[(int)resIndex].resource.Get()->Map(0, null, &mappedPtr));
 
-                            ValidateData(mappedPtr, resources[(int)resIndex].size, resources[(int)resIndex].dataSeed);
+                            _ = ValidateData(mappedPtr, resources[(int)resIndex].size, resources[(int)resIndex].dataSeed);
 
                             // Unmap some of them, leave others mapped.
                             if ((resIndex % 3) == 1)
@@ -1889,38 +1840,31 @@ namespace TerraFX.Interop.UnitTests
             D3D12MA_ALLOCATION_DESC allocDesc = default;
             allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
-            D3D12MA_Allocation* alloc = null;
+            using ComPtr<D3D12MA_Allocation> bufAlloc = default;
             using ComPtr<ID3D12Resource> bufRes = default;
+
             CHECK_HR(ctx.allocator->CreateResource1(
                 &allocDesc,
                 &resourceDesc,
                 D3D12_RESOURCE_STATE_COMMON,
                 null,
                 session,
-                &alloc,
+                bufAlloc.GetAddressOf(),
                 __uuidof<ID3D12Resource>(), (void**)&bufRes
             ));
 
-            unique_ptr<D3D12MA_Allocation> bufAllocPtr = alloc;
-
-            try
-            {
-                // Create a heap
-                // Temporarily commented out as it caues BSOD on RTX2080Ti driver 461.40.
+            // Create a heap
+            // Temporarily commented out as it caues BSOD on RTX2080Ti driver 461.40.
 #if false
-                D3D12_RESOURCE_ALLOCATION_INFO heapAllocInfo = new D3D12_RESOURCE_ALLOCATION_INFO {
-                    SizeInBytes = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT * 100,
-                    Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
-                };
+            D3D12_RESOURCE_ALLOCATION_INFO heapAllocInfo = new D3D12_RESOURCE_ALLOCATION_INFO {
+                SizeInBytes = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT * 100,
+                Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
+            };
 
-                CHECK_HR(ctx.allocator->AllocateMemory1(&allocDesc, &heapAllocInfo, session, &alloc));
-                using unique_ptr<D3D12MA_Allocation> heapAllocPtr = alloc;
+            using ComPtr<D3D12MA_Allocation> heapAlloc = default;
+
+            CHECK_HR(ctx.allocator->AllocateMemory1(&allocDesc, &heapAllocInfo, session, heapAlloc.GetAddressOf()));
 #endif
-            }
-            finally
-            {
-                bufAllocPtr.Dispose();
-            }
         }
 
         private static void TestDevice8([NativeTypeName("const TestContext&")] in TestContext ctx)
@@ -1943,47 +1887,39 @@ namespace TerraFX.Interop.UnitTests
             allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
             allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
 
-            D3D12MA_Allocation* alloc0 = null;
+            using ComPtr<D3D12MA_Allocation> alloc0 = default;
             using ComPtr<ID3D12Resource> res0 = default;
+
             CHECK_HR(ctx.allocator->CreateResource2(
                 &allocDesc,
                 &resourceDesc,
                 D3D12_RESOURCE_STATE_COMMON,
                 null,
                 null,
-                &alloc0,
+                alloc0.GetAddressOf(),
                 __uuidof<ID3D12Resource>(), (void**)&res0
             ));
 
-            unique_ptr<D3D12MA_Allocation> allocPtr0 = alloc0;
+            CHECK_BOOL(alloc0.Get()->GetHeap() == null);
 
-            try
-            {
-                CHECK_BOOL(alloc0->GetHeap() == null);
+            // Create a placed buffer
 
-                // Create a placed buffer
+            allocDesc.Flags &= ~D3D12MA_ALLOCATION_FLAG_COMMITTED;
 
-                allocDesc.Flags &= ~D3D12MA_ALLOCATION_FLAG_COMMITTED;
+            using ComPtr<D3D12MA_Allocation> alloc1 = default;
+            using ComPtr<ID3D12Resource> res1 = default;
 
-                D3D12MA_Allocation* alloc1 = null;
-                using ComPtr<ID3D12Resource> res1 = default;
-                CHECK_HR(ctx.allocator->CreateResource2(
-                    &allocDesc,
-                    &resourceDesc,
-                    D3D12_RESOURCE_STATE_COMMON,
-                    null,
-                    null,
-                    &alloc1,
-                    __uuidof<ID3D12Resource>(), (void**)&res1
-                ));
+            CHECK_HR(ctx.allocator->CreateResource2(
+                &allocDesc,
+                &resourceDesc,
+                D3D12_RESOURCE_STATE_COMMON,
+                null,
+                null,
+                alloc1.GetAddressOf(),
+                __uuidof<ID3D12Resource>(), (void**)&res1
+            ));
 
-                using unique_ptr<D3D12MA_Allocation> allocPtr1 = alloc1;
-                CHECK_BOOL(alloc1->GetHeap() != null);
-            }
-            finally
-            {
-                allocPtr0.Dispose();
-            }
+            CHECK_BOOL(alloc1.Get()->GetHeap() != null);
         }
 
         public static void TestGroupVirtual([NativeTypeName("const TestContext&")] in TestContext ctx)

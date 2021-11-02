@@ -15,7 +15,7 @@ namespace TerraFX.Interop
     /// </summary>
     internal unsafe struct D3D12MA_CommittedAllocationList : IDisposable
     {
-        private bool m_useMutex;
+        private byte m_useMutex;
         private D3D12_HEAP_TYPE m_HeapType;
         private D3D12MA_Pool* m_Pool;
 
@@ -26,7 +26,7 @@ namespace TerraFX.Interop
 
         public static void _ctor(ref D3D12MA_CommittedAllocationList pThis)
         {
-            pThis.m_useMutex = true;
+            pThis.m_useMutex = 1;
             pThis.m_HeapType = D3D12_HEAP_TYPE.D3D12_HEAP_TYPE_CUSTOM;
             pThis.m_Pool = null;
 
@@ -35,7 +35,7 @@ namespace TerraFX.Interop
 
         public void Init(bool useMutex, D3D12_HEAP_TYPE heapType, D3D12MA_Pool* pool)
         {
-            m_useMutex = useMutex;
+            m_useMutex = (byte)(useMutex ? 1 : 0);
             m_HeapType = heapType;
             m_Pool = pool;
         }
@@ -56,7 +56,7 @@ namespace TerraFX.Interop
             outStats.AllocationSizeMin = UINT64_MAX;
             outStats.UnusedRangeSizeMin = UINT64_MAX;
 
-            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex);
+            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex != 0);
 
             for (D3D12MA_Allocation* alloc = m_AllocationList.Front();
                  alloc != null; alloc = D3D12MA_IntrusiveLinkedList<D3D12MA_Allocation>.GetNext(alloc))
@@ -81,7 +81,7 @@ namespace TerraFX.Interop
         /// <summary>Writes JSON array with the list of allocations.</summary>
         public void BuildStatsString([NativeTypeName("JsonWriter&")] ref D3D12MA_JsonWriter json)
         {
-            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex);
+            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex != 0);
 
             json.BeginArray();
             for (D3D12MA_Allocation* alloc = m_AllocationList.Front();
@@ -96,14 +96,14 @@ namespace TerraFX.Interop
 
         public void Register(D3D12MA_Allocation* alloc)
         {
-            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex);
+            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex != 0);
 
             m_AllocationList.PushBack(alloc);
         }
 
         public void Unregister(D3D12MA_Allocation* alloc)
         {
-            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex);
+            using D3D12MA_MutexLockRead @lock = new(ref m_Mutex, m_useMutex != 0);
 
             m_AllocationList.Remove(alloc);
         }

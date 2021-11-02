@@ -192,9 +192,9 @@ namespace TerraFX.Interop
             {
                 D3D12MA_List<D3D12MA_Suballocation>.iterator it = *m_FreeSuballocationsBySize[i];
 
-                D3D12MA_VALIDATE(it.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE);
-                D3D12MA_VALIDATE(it.Get()->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER);
-                D3D12MA_VALIDATE(it.Get()->size >= lastSize);
+                _ = D3D12MA_VALIDATE(it.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE);
+                _ = D3D12MA_VALIDATE(it.Get()->size >= MIN_FREE_SUBALLOCATION_SIZE_TO_REGISTER);
+                _ = D3D12MA_VALIDATE(it.Get()->size >= lastSize);
 
                 lastSize = it.Get()->size;
             }
@@ -345,7 +345,7 @@ namespace TerraFX.Interop
                 }
                 else
                 {
-                    m_FreeSuballocationsBySize.InsertSorted(in item, new D3D12MA_SuballocationItemSizeLess());
+                    _ = m_FreeSuballocationsBySize.InsertSorted(in item, new D3D12MA_SuballocationItemSizeLess());
                 }
             }
 
@@ -418,7 +418,7 @@ namespace TerraFX.Interop
 
         public static bool Validate(in D3D12MA_BlockMetadata_Generic pThis)
         {
-            D3D12MA_VALIDATE(!pThis.m_Suballocations.empty());
+            _ = D3D12MA_VALIDATE(!pThis.m_Suballocations.empty());
 
             // Expected offset of new suballocation as calculated from previous ones.
             ulong calculatedOffset = 0;
@@ -441,18 +441,18 @@ namespace TerraFX.Interop
                 D3D12MA_Suballocation* subAlloc = suballocItem.Get();
 
                 // Actual offset of this suballocation doesn't match expected one.
-                D3D12MA_VALIDATE(subAlloc->offset == calculatedOffset);
+                _ = D3D12MA_VALIDATE(subAlloc->offset == calculatedOffset);
 
                 bool currFree = subAlloc->type == D3D12MA_SUBALLOCATION_TYPE_FREE;
 
                 // Two adjacent free suballocations are invalid. They should be merged.
-                D3D12MA_VALIDATE(!prevFree || !currFree);
+                _ = D3D12MA_VALIDATE(!prevFree || !currFree);
 
                 D3D12MA_Allocation* alloc = (D3D12MA_Allocation*)subAlloc->userData;
 
                 if (!pThis.IsVirtual())
                 {
-                    D3D12MA_VALIDATE(currFree == (alloc == null));
+                    _ = D3D12MA_VALIDATE(currFree == (alloc == null));
                 }
 
                 if (currFree)
@@ -466,18 +466,18 @@ namespace TerraFX.Interop
                     }
 
                     // Margin required between allocations - every free space must be at least that large.
-                    D3D12MA_VALIDATE(subAlloc->size >= D3D12MA_DEBUG_MARGIN);
+                    _ = D3D12MA_VALIDATE(subAlloc->size >= D3D12MA_DEBUG_MARGIN);
                 }
                 else
                 {
                     if (!pThis.IsVirtual())
                     {
-                        D3D12MA_VALIDATE(alloc->GetOffset() == subAlloc->offset);
-                        D3D12MA_VALIDATE(alloc->GetSize() == subAlloc->size);
+                        _ = D3D12MA_VALIDATE(alloc->GetOffset() == subAlloc->offset);
+                        _ = D3D12MA_VALIDATE(alloc->GetSize() == subAlloc->size);
                     }
 
                     // Margin required between allocations - previous allocation must be free.
-                    D3D12MA_VALIDATE(D3D12MA_DEBUG_MARGIN == 0 || prevFree);
+                    _ = D3D12MA_VALIDATE(D3D12MA_DEBUG_MARGIN == 0 || prevFree);
                 }
 
                 calculatedOffset += subAlloc->size;
@@ -486,7 +486,7 @@ namespace TerraFX.Interop
 
             // Number of free suballocations registered in m_FreeSuballocationsBySize doesn't
             // match expected one.
-            D3D12MA_VALIDATE(pThis.m_FreeSuballocationsBySize.size() == freeSuballocationsToRegister);
+            _ = D3D12MA_VALIDATE(pThis.m_FreeSuballocationsBySize.size() == freeSuballocationsToRegister);
 
             ulong lastSize = 0;
             for (nuint i = 0; i < pThis.m_FreeSuballocationsBySize.size(); ++i)
@@ -494,19 +494,19 @@ namespace TerraFX.Interop
                 D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = *pThis.m_FreeSuballocationsBySize[i];
 
                 // Only free suballocations can be registered in m_FreeSuballocationsBySize.
-                D3D12MA_VALIDATE(suballocItem.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE);
+                _ = D3D12MA_VALIDATE(suballocItem.Get()->type == D3D12MA_SUBALLOCATION_TYPE_FREE);
 
                 // They must be sorted by size ascending.
-                D3D12MA_VALIDATE(suballocItem.Get()->size >= lastSize);
+                _ = D3D12MA_VALIDATE(suballocItem.Get()->size >= lastSize);
 
                 lastSize = suballocItem.Get()->size;
             }
 
             // Check if totals match calculacted values.
-            D3D12MA_VALIDATE(pThis.ValidateFreeSuballocationList());
-            D3D12MA_VALIDATE(calculatedOffset == pThis.GetSize());
-            D3D12MA_VALIDATE(calculatedSumFreeSize == pThis.m_SumFreeSize);
-            D3D12MA_VALIDATE(calculatedFreeCount == pThis.m_FreeCount);
+            _ = D3D12MA_VALIDATE(pThis.ValidateFreeSuballocationList());
+            _ = D3D12MA_VALIDATE(calculatedOffset == pThis.GetSize());
+            _ = D3D12MA_VALIDATE(calculatedSumFreeSize == pThis.m_SumFreeSize);
+            _ = D3D12MA_VALIDATE(calculatedFreeCount == pThis.m_FreeCount);
 
             return true;
         }
@@ -675,7 +675,7 @@ namespace TerraFX.Interop
 
                 if (suballoc->offset == offset)
                 {
-                    pThis.FreeSuballocation(suballocItem);
+                    _ = pThis.FreeSuballocation(suballocItem);
                     return;
                 }
             }

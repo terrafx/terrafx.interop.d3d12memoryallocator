@@ -13,7 +13,7 @@ namespace TerraFX.Interop.UnitTests
 {
     [TestFixture]
     [Platform("win")]
-    internal unsafe static partial class D3D12MemAllocTests
+    internal static unsafe partial class D3D12MemAllocTests
     {
         // POSITION
         private static ReadOnlySpan<sbyte> POSITION_SEMANTIC_NAME => new sbyte[] { 0x50, 0x4F, 0x53, 0x49, 0x54, 0x49, 0x4F, 0x4E, 0x00 };
@@ -27,21 +27,21 @@ namespace TerraFX.Interop.UnitTests
         [Explicit]
         public static void RenderTest()
         {
-            ShowWindow(g_Wnd, SW_SHOWNORMAL);
+            _ = ShowWindow(g_Wnd, SW_SHOWNORMAL);
 
             MSG msg;
 
             for (;;)
             {
-                if (PeekMessage(&msg, IntPtr.Zero, 0, 0, PM_REMOVE) != 0)
+                if (PeekMessage(&msg, HWND.NULL, 0, 0, PM_REMOVE) != 0)
                 {
                     if (msg.message == WM_QUIT)
                     {
                         break;
                     }
 
-                    TranslateMessage(&msg);
-                    DispatchMessage(&msg);
+                    _ = TranslateMessage(&msg);
+                    _ = DispatchMessage(&msg);
                 }
                 else
                 {
@@ -60,7 +60,7 @@ namespace TerraFX.Interop.UnitTests
         public static void Setup()
         {
             g_Instance = GetModuleHandle(null);
-            CoInitializeEx(null, 0);
+            _ = CoInitializeEx(null, 0);
 
             ushort classR;
 
@@ -71,11 +71,11 @@ namespace TerraFX.Interop.UnitTests
                 ZeroMemory(&wndClass, (nuint)sizeof(WNDCLASSEXW));
                 wndClass.cbSize = (uint)sizeof(WNDCLASSEXW);
                 wndClass.style = CS_VREDRAW | CS_HREDRAW | CS_DBLCLKS;
-                wndClass.hbrBackground = IntPtr.Zero;
-                wndClass.hCursor = LoadCursor(IntPtr.Zero, IDC_ARROW);
-                wndClass.hIcon = LoadIcon(IntPtr.Zero, IDI_APPLICATION);
+                wndClass.hbrBackground = HBRUSH.NULL;
+                wndClass.hCursor = LoadCursor(HINSTANCE.NULL, IDC_ARROW);
+                wndClass.hIcon = LoadIcon(HINSTANCE.NULL, IDI_APPLICATION);
                 wndClass.hInstance = g_Instance;
-                wndClass.lpfnWndProc = &WndProc;
+                wndClass.lpfnWndProc = (delegate* unmanaged<HWND, uint, WPARAM, LPARAM, LRESULT>)(delegate* unmanaged<IntPtr, uint, nuint, nint, nint>)&WndProc;
                 wndClass.lpszClassName = (ushort*)className;
 
                 classR = RegisterClassEx(&wndClass);
@@ -91,7 +91,7 @@ namespace TerraFX.Interop.UnitTests
                     bottom = SIZE_Y
                 };
 
-                AdjustWindowRectEx(&rect, style, FALSE, exStyle);
+                _ = AdjustWindowRectEx(&rect, style, FALSE, exStyle);
 
                 g_Wnd = CreateWindowEx(
                     exStyle,
@@ -100,8 +100,8 @@ namespace TerraFX.Interop.UnitTests
                     style,
                     CW_USEDEFAULT, CW_USEDEFAULT,
                     rect.right - rect.left, rect.bottom - rect.top,
-                    IntPtr.Zero,
-                    IntPtr.Zero,
+                    HWND.NULL,
+                    HMENU.NULL,
                     g_Instance,
                     null
                 );
@@ -122,7 +122,7 @@ namespace TerraFX.Interop.UnitTests
         {
             if (g_Wnd != IntPtr.Zero)
             {
-                PostMessage(g_Wnd, WM_CLOSE, 0, 0);
+                _ = PostMessage(g_Wnd, WM_CLOSE, (WPARAM)0, 0);
             }
 
             g_Device.Dispose();

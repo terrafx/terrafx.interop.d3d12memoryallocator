@@ -83,7 +83,7 @@ namespace TerraFX.Interop
         /// <summary>Validates all data structures inside this object. If not valid, returns false.</summary>
         public readonly bool Validate()
         {
-            D3D12MA_VALIDATE(
+            _ = D3D12MA_VALIDATE(
                 (GetHeap() != null) &&
                 (m_pMetadata != null) &&
                 (m_pMetadata->GetSize() != 0) &&
