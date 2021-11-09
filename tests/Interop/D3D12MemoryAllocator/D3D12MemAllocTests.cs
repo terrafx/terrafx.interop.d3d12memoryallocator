@@ -5,8 +5,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using NUnit.Framework;
-using TerraFX.Interop.Windows;
 using static TerraFX.Interop.Windows.Windows;
 using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
 
@@ -14,6 +14,7 @@ namespace TerraFX.Interop.Windows.D3D12MA.UnitTests
 {
     [TestFixture]
     [Platform("win")]
+    [SupportedOSPlatform("windows10.0")]
     internal static unsafe partial class D3D12MemAllocTests
     {
         // POSITION

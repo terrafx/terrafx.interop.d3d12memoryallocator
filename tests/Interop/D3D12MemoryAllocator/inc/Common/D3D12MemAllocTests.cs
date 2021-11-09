@@ -35,17 +35,5 @@ namespace TerraFX.Interop.Windows.D3D12MA.UnitTests
         public const float PI = 3.14159265358979323846264338327950288419716939937510582f;
 
         public static readonly D3D12_RANGE* EMPTY_RANGE = (D3D12_RANGE*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MemAllocTests), sizeof(D3D12_RANGE));
-
-        public static float Dot([NativeTypeName("const vec3&")] in vec3 lhs, [NativeTypeName("const vec3&")] in vec3 rhs)
-            => (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z);
-
-        public static vec3 Cross([NativeTypeName("const vec3&")] in vec3 lhs, [NativeTypeName("const vec3&")] in vec3 rhs)
-        {
-            return new vec3(
-                (lhs.y * rhs.z) - (lhs.z * rhs.y),
-                (lhs.z * rhs.x) - (lhs.x * rhs.z),
-                (lhs.x * rhs.y) - (lhs.y * rhs.x)
-            );
-        }
     }
 }
