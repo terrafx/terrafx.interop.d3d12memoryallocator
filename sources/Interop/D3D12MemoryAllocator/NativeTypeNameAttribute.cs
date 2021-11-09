@@ -3,7 +3,7 @@
 using System;
 using System.Diagnostics;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     /// <summary>Defines the type of a member as it was used in the native signature.</summary>
     [AttributeUsage(AttributeTargets.Enum | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = false, Inherited = true)]

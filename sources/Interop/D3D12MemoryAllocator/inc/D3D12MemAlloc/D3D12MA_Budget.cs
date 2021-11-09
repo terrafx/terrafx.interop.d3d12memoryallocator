@@ -5,7 +5,7 @@
 
 using TerraFX.Interop.Windows.DXGI;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     /// <summary>Statistics of current memory usage and available budget, in bytes, for GPU or CPU memory.</summary>
     public struct D3D12MA_Budget

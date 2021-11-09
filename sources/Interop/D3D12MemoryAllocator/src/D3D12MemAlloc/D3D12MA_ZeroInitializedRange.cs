@@ -3,9 +3,9 @@
 // Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     /// <summary>
     /// Keeps track of the range of bytes that are surely initialized with zeros. Everything outside of it is considered uninitialized memory that may contain garbage data.

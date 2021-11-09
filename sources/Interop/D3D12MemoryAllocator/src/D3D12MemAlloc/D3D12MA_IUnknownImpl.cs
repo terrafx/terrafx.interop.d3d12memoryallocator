@@ -8,9 +8,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using static TerraFX.Interop.Windows.Windows;
-using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     /// <summary>The base implementation for COM's <c>IUnknown</c> interface.</summary>
     internal unsafe struct D3D12MA_IUnknownImpl

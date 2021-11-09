@@ -24,11 +24,12 @@ using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_STATES;
 using static TerraFX.Interop.Windows.D3D12.D3D12_TEXTURE_LAYOUT;
 using static TerraFX.Interop.Windows.DXGI.DXGI_FORMAT;
 using static TerraFX.Interop.Windows.Windows;
-using static TerraFX.Interop.D3D12MA.D3D12MA_ALLOCATION_FLAGS;
-using static TerraFX.Interop.D3D12MA.D3D12MA_ALLOCATOR_FLAGS;
-using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.Windows.D3D12.D3D12;
+using static TerraFX.Interop.Windows.D3D12MA.D3D12MA_ALLOCATION_FLAGS;
+using static TerraFX.Interop.Windows.D3D12MA.D3D12MA_ALLOCATOR_FLAGS;
+using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
 
-namespace TerraFX.Interop.D3D12MA.UnitTests
+namespace TerraFX.Interop.Windows.D3D12MA.UnitTests
 {
     internal unsafe static partial class D3D12MemAllocTests
     {

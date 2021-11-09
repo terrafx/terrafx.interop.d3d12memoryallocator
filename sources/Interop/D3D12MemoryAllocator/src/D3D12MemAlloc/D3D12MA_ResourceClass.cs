@@ -3,7 +3,7 @@
 // Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit 49fb8acf85d038afbbd5f532ab964fa0835ce819
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     internal enum D3D12MA_ResourceClass
     {

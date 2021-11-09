@@ -7,7 +7,7 @@ using TerraFX.Interop.Windows;
 using TerraFX.Interop.Windows.D3D12;
 using TerraFX.Interop.Windows.DXGI;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     /// <summary>Parameters of created <see cref="D3D12MA_Allocator"/> object. To be used with <see cref="D3D12MemAlloc.D3D12MA_CreateAllocator"/>.</summary>
     public unsafe struct D3D12MA_ALLOCATOR_DESC

@@ -7,7 +7,7 @@ using TerraFX.Interop.Windows.D3D12;
 using static TerraFX.Interop.Windows.D3D12.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.Windows.D3D12.D3D12_HEAP_FLAGS;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     /// <summary>Parameters of created <see cref="D3D12MA_Allocation"/> object. To be used with <see cref="D3D12MA_Allocator.CreateResource"/>.</summary>
     public unsafe struct D3D12MA_ALLOCATION_DESC

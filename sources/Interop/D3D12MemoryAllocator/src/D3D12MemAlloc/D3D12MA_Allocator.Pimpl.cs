@@ -20,11 +20,11 @@ using static TerraFX.Interop.Windows.D3D12.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.Windows.DXGI.DXGI_MEMORY_SEGMENT_GROUP;
-using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
-using static TerraFX.Interop.D3D12MA.D3D12MA_ALLOCATOR_FLAGS;
-using static TerraFX.Interop.D3D12MA.D3D12MA_ALLOCATION_FLAGS;
+using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.Windows.D3D12MA.D3D12MA_ALLOCATOR_FLAGS;
+using static TerraFX.Interop.Windows.D3D12MA.D3D12MA_ALLOCATION_FLAGS;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     public unsafe partial struct D3D12MA_Allocator
     {

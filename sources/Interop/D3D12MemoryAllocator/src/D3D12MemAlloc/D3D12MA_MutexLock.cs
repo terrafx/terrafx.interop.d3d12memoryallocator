@@ -5,7 +5,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     // Helper RAII class to lock a mutex in constructor and unlock it in destructor (at the end of scope).
     internal readonly unsafe ref struct D3D12MA_MutexLock

@@ -4,9 +4,9 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System.Threading;
-using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     internal unsafe struct D3D12MA_CurrentBudgetData
     {

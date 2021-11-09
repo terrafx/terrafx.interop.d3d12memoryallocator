@@ -8,7 +8,7 @@ using NUnit.Framework;
 using TerraFX.Interop.Windows.D3D12;
 using static TerraFX.Interop.Windows.Windows;
 
-namespace TerraFX.Interop.D3D12MA.UnitTests
+namespace TerraFX.Interop.Windows.D3D12MA.UnitTests
 {
     internal unsafe partial class D3D12MemAllocTests
     {

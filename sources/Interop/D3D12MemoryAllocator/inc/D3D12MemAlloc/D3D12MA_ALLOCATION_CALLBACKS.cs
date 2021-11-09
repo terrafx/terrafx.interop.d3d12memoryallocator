@@ -3,7 +3,7 @@
 // Ported from D3D12MemAlloc.h in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     /// <summary>Custom callbacks to CPU memory allocation functions.</summary>
     public unsafe struct D3D12MA_ALLOCATION_CALLBACKS

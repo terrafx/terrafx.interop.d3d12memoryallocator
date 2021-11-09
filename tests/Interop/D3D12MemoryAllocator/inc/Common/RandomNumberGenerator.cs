@@ -5,7 +5,7 @@
 
 using static TerraFX.Interop.Windows.Windows;
 
-namespace TerraFX.Interop.D3D12MA.UnitTests
+namespace TerraFX.Interop.Windows.D3D12MA.UnitTests
 {
     internal sealed class RandomNumberGenerator
     {

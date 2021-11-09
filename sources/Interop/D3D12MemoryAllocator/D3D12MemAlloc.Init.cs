@@ -4,7 +4,7 @@ using TerraFX.Interop.Windows.D3D12;
 using TerraFX.Interop.Windows.DXGI;
 using static TerraFX.Interop.Windows.D3D12.D3D12;
 
-namespace TerraFX.Interop.D3D12MA
+namespace TerraFX.Interop.Windows.D3D12MA
 {
     public static unsafe partial class D3D12MemAlloc
     {
