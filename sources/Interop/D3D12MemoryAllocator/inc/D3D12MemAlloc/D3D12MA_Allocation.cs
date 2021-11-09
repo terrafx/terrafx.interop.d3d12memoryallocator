@@ -6,7 +6,6 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using TerraFX.Interop.Windows;
 using TerraFX.Interop.Windows.D3D12;
 using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_FLAGS;
@@ -24,7 +23,7 @@ namespace TerraFX.Interop.Windows.D3D12MA
     /// <para>The object remembers size and some other information. To retrieve this information, use methods of this class.</para>
     /// <para>The object also remembers <see cref="ID3D12Resource"/> and "owns" a reference to it, so it calls <see cref="IUnknown.Release"/> on the resource when destroyed.</para>
     /// </summary>
-    public unsafe struct D3D12MA_Allocation : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_Allocation>
+    public unsafe struct D3D12MA_Allocation : IDisposable, D3D12MA_IItemTypeTraits<D3D12MA_Allocation>, IUnknown.Interface
     {
         private static readonly void** Vtbl = InitVtbl();
 
@@ -65,9 +64,19 @@ namespace TerraFX.Interop.Windows.D3D12MA
 
         internal PackedData m_PackedData;
 
-        /// <summary>
-        /// Implements <c>IUnknown.Release()</c>.
-        /// </summary>
+        /// <inheritdoc/>
+        public HRESULT QueryInterface(Guid* riid, void** ppvObject)
+        {
+            return m_IUnknownImpl.QueryInterface(riid, ppvObject);
+        }
+
+        /// <inheritdoc/>
+        public uint AddRef()
+        {
+            return m_IUnknownImpl.AddRef();
+        }
+
+        /// <inheritdoc/>
         public uint Release()
         {
             return m_IUnknownImpl.Release();

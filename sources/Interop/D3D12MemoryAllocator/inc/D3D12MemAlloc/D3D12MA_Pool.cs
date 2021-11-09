@@ -19,7 +19,7 @@ namespace TerraFX.Interop.Windows.D3D12MA
     /// </para>
     /// <para>To create custom pool, fill <see cref="D3D12MA_POOL_DESC"/> and call <see cref="D3D12MA_Allocator.CreatePool"/>.</para>
     /// </summary>
-    public unsafe partial struct D3D12MA_Pool : IDisposable
+    public unsafe partial struct D3D12MA_Pool : IDisposable, IUnknown.Interface
     {
         private static readonly void** Vtbl = InitVtbl();
 
@@ -35,9 +35,19 @@ namespace TerraFX.Interop.Windows.D3D12MA
             return lpVtbl;
         }
 
-        /// <summary>
-        /// Implements <c>IUnknown.Release()</c>.
-        /// </summary>
+        /// <inheritdoc/>
+        public HRESULT QueryInterface(Guid* riid, void** ppvObject)
+        {
+            return m_IUnknownImpl.QueryInterface(riid, ppvObject);
+        }
+
+        /// <inheritdoc/>
+        public uint AddRef()
+        {
+            return m_IUnknownImpl.AddRef();
+        }
+
+        /// <inheritdoc/>
         public uint Release()
         {
             return m_IUnknownImpl.Release();
