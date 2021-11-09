@@ -6,21 +6,21 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.D3D12_RESOURCE_HEAP_TIER;
-using static TerraFX.Interop.D3D12MA_ALLOCATOR_FLAGS;
 using static TerraFX.Interop.D3D12_FEATURE;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
-using static TerraFX.Interop.D3D12MA_ALLOCATION_FLAGS;
 using static TerraFX.Interop.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.DXGI_MEMORY_SEGMENT_GROUP;
-using System.Runtime.InteropServices;
-using System.Threading;
+using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.D3D12MA.D3D12MA_ALLOCATOR_FLAGS;
+using static TerraFX.Interop.D3D12MA.D3D12MA_ALLOCATION_FLAGS;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     public unsafe partial struct D3D12MA_Allocator
     {

@@ -5,9 +5,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12MemAlloc;
+using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     public unsafe partial struct D3D12MA_Pool : D3D12MA_IItemTypeTraits<D3D12MA_Pool>
     {

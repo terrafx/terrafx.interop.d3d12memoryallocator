@@ -5,7 +5,7 @@
 
 using System;
 
-namespace TerraFX.Interop.UnitTests
+namespace TerraFX.Interop.D3D12MA.UnitTests
 {
     internal static class VS
     {

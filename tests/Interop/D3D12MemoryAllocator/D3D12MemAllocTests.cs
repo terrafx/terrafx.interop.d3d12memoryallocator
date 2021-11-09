@@ -6,10 +6,10 @@
 using System;
 using System.Diagnostics;
 using NUnit.Framework;
-using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.Windows;
+using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
 
-namespace TerraFX.Interop.UnitTests
+namespace TerraFX.Interop.D3D12MA.UnitTests
 {
     [TestFixture]
     [Platform("win")]

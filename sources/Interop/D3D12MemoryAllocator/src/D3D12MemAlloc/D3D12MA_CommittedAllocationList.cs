@@ -5,10 +5,10 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.Windows;
+using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     /// <summary>
     /// Stores linked list of Allocation objects that are of TYPE_COMMITTED or TYPE_HEAP. Thread-safe, synchronized internally.

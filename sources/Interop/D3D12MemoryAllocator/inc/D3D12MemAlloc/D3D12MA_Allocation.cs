@@ -6,14 +6,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static TerraFX.Interop.D3D12MemAlloc;
 using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.D3D12_TEXTURE_LAYOUT;
-using static TerraFX.Interop.D3D12MA_Allocation.Type;
-using static TerraFX.Interop.D3D12MA_Allocation._Anonymous_e__Union;
+using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.D3D12MA.D3D12MA_Allocation.Type;
+using static TerraFX.Interop.D3D12MA.D3D12MA_Allocation._Anonymous_e__Union;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     /// <summary>
     /// Represents single memory allocation.

@@ -4,9 +4,9 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using static TerraFX.Interop.UnitTests.D3D12MemAllocTests;
+using static TerraFX.Interop.D3D12MA.UnitTests.D3D12MemAllocTests;
 
-namespace TerraFX.Interop.UnitTests
+namespace TerraFX.Interop.D3D12MA.UnitTests
 {
     internal unsafe struct mat4
     {

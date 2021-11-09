@@ -5,9 +5,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12MemAlloc;
+using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     /// <summary>Dynamically resizing continuous array. Class with interface similar to <c>std::vector</c>.</summary>
     /// <typeparam name="T">Must be POD because constructors and destructors are not called and <see cref="memcpy"/> is used for these objects.</typeparam>

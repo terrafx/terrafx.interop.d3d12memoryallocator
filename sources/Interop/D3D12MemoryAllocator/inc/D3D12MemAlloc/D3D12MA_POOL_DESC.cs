@@ -6,7 +6,7 @@
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     /// <summary>Parameters of created <see cref="D3D12MA_Pool"/> object. To be used with <see cref="D3D12MA_Allocator.CreatePool"/>.</summary>
     public struct D3D12MA_POOL_DESC

@@ -5,7 +5,7 @@
 
 using System;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     /// <summary>Represents a region of <see cref="D3D12MA_NormalBlock"/> that is either assigned and returned as allocated memory block or free.</summary>
     internal unsafe struct D3D12MA_Suballocation : IDisposable

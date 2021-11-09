@@ -3,7 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     public static unsafe partial class D3D12MemAlloc
     {

@@ -6,10 +6,10 @@
 using System;
 using System.Runtime.CompilerServices;
 using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12MemAlloc;
-using static TerraFX.Interop.D3D12MA_ALLOCATION_FLAGS;
+using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.D3D12MA.D3D12MA_ALLOCATION_FLAGS;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     /// <summary>
     /// Sequence of NormalBlock. Represents memory blocks allocated for a specific heap type and possibly resource type(if only Tier 1 is supported).

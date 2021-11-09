@@ -5,13 +5,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12MemAlloc;
+using System.Runtime.InteropServices;
 using static TerraFX.Interop.Windows;
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
-using static TerraFX.Interop.D3D12MA_ALLOCATION_FLAGS;
-using System.Runtime.InteropServices;
+using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.D3D12MA.D3D12MA_ALLOCATION_FLAGS;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     /// <summary>
     /// Represents main object of this library initialized for particular <see cref="ID3D12Device"/>.

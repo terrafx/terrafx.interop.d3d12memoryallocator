@@ -6,7 +6,7 @@
 using System.Runtime.CompilerServices;
 using static TerraFX.Interop.Windows;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     internal unsafe struct D3D12MA_RW_MUTEX
     {

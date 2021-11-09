@@ -5,11 +5,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12MemAlloc;
 using System.Runtime.InteropServices;
+using static TerraFX.Interop.Windows;
+using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     /// <summary>
     /// Represents pure allocation algorithm and a data structure with allocations in some memory block, without actually allocating any GPU memory.

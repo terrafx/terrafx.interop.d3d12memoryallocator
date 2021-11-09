@@ -2,7 +2,7 @@
 
 using static TerraFX.Interop.Windows;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     public static unsafe partial class D3D12MemAlloc
     {

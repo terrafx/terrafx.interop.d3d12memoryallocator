@@ -5,7 +5,7 @@
 
 using static TerraFX.Interop.D3D12_HEAP_FLAGS;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     internal unsafe struct D3D12MA_CommittedAllocationParameters
     {

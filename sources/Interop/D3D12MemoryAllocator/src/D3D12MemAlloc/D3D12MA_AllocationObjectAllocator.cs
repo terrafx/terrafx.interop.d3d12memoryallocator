@@ -6,7 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     /// <summary>Thread-safe wrapper over PoolAllocator free list, for allocation of Allocation objects.</summary>
     internal unsafe struct D3D12MA_AllocationObjectAllocator : IDisposable

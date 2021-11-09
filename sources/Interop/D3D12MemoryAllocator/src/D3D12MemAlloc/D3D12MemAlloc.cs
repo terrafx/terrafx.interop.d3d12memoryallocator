@@ -12,7 +12,7 @@ using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.Windows;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.D3D12MA
 {
     public static unsafe partial class D3D12MemAlloc
     {
