@@ -8,14 +8,18 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12_RESOURCE_HEAP_TIER;
-using static TerraFX.Interop.D3D12_FEATURE;
-using static TerraFX.Interop.D3D12_HEAP_FLAGS;
-using static TerraFX.Interop.D3D12_HEAP_TYPE;
-using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
-using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
-using static TerraFX.Interop.DXGI_MEMORY_SEGMENT_GROUP;
+using TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows.D3D12;
+using TerraFX.Interop.Windows.DXGI;
+using static TerraFX.Interop.Windows.Windows;
+using static TerraFX.Interop.Windows.D3D12.D3D12;
+using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_HEAP_TIER;
+using static TerraFX.Interop.Windows.D3D12.D3D12_FEATURE;
+using static TerraFX.Interop.Windows.D3D12.D3D12_HEAP_FLAGS;
+using static TerraFX.Interop.Windows.D3D12.D3D12_HEAP_TYPE;
+using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_DIMENSION;
+using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_FLAGS;
+using static TerraFX.Interop.Windows.DXGI.DXGI_MEMORY_SEGMENT_GROUP;
 using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
 using static TerraFX.Interop.D3D12MA.D3D12MA_ALLOCATOR_FLAGS;
 using static TerraFX.Interop.D3D12MA.D3D12MA_ALLOCATION_FLAGS;
@@ -1308,7 +1312,7 @@ namespace TerraFX.Interop.D3D12MA
                 D3D12MA_ResourceClass resourceClass = (resDesc != null) ?
                     ResourceDescToResourceClass(resDesc) : HeapFlagsToResourceClass(allocDesc->ExtraHeapFlags);
                 uint defaultPoolIndex = CalcDefaultPoolIndex(allocDesc, resourceClass);
-                if (defaultPoolIndex != Windows.UINT32_MAX)
+                if (defaultPoolIndex != UINT32_MAX)
                 {
                     outBlockVector = m_BlockVectors[(int)defaultPoolIndex].Value;
                     ulong preferredBlockSize = outBlockVector->GetPreferredBlockSize();
@@ -1387,7 +1391,7 @@ namespace TerraFX.Interop.D3D12MA
             D3D12_HEAP_FLAGS extraHeapFlags = allocDesc->ExtraHeapFlags & ~RESOURCE_CLASS_HEAP_FLAGS;
             if (extraHeapFlags != 0)
             {
-                return Windows.UINT32_MAX;
+                return UINT32_MAX;
             }
 
             uint poolIndex = UINT_MAX;
@@ -1443,7 +1447,7 @@ namespace TerraFX.Interop.D3D12MA
 
                     default:
                     {
-                        return Windows.UINT32_MAX;
+                        return UINT32_MAX;
                     }
                 }
             }

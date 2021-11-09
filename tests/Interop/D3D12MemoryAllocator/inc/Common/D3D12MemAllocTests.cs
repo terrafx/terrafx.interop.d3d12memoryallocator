@@ -5,7 +5,8 @@
 
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-using static TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows.D3D12;
+using static TerraFX.Interop.Windows.Windows;
 
 namespace TerraFX.Interop.D3D12MA.UnitTests
 {

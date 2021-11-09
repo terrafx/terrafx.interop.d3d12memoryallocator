@@ -7,6 +7,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using static TerraFX.Interop.Windows.Windows;
 using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
 
 namespace TerraFX.Interop.D3D12MA
@@ -32,19 +33,19 @@ namespace TerraFX.Interop.D3D12MA
 
             if (ppvObject is null)
             {
-                return Windows.E_POINTER;
+                return E_POINTER;
             }
 
-            if (riid->Equals(Windows.IID_IUnknown))
+            if (riid->Equals(IID_IUnknown))
             {
                 _ = Interlocked.Increment(ref m_RefCount);
                 *ppvObject = Unsafe.AsPointer(ref this);
-                return Windows.S_OK;
+                return S_OK;
             }
 
             *ppvObject = null;
 
-            return Windows.E_NOINTERFACE;
+            return E_NOINTERFACE;
         }
 
         [return: NativeTypeName("ULONG")]
@@ -81,19 +82,19 @@ namespace TerraFX.Interop.D3D12MA
         {
             if (ppvObject is null)
             {
-                return Windows.E_POINTER;
+                return E_POINTER;
             }
 
-            if (riid->Equals(Windows.IID_IUnknown))
+            if (riid->Equals(IID_IUnknown))
             {
                 _ = Interlocked.Increment(ref pThis->m_RefCount);
                 *ppvObject = pThis;
-                return Windows.S_OK;
+                return S_OK;
             }
 
             *ppvObject = null;
 
-            return Windows.E_NOINTERFACE;
+            return E_NOINTERFACE;
         }
 
         [UnmanagedCallersOnly]

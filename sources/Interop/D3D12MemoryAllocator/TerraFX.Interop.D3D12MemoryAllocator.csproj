@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TerraFX.Interop.Windows" />
+    <ProjectReference Include="..\..\..\..\terrafx.interop.windows\sources\Interop\Windows\TerraFX.Interop.Windows.csproj" />
   </ItemGroup>
 
 </Project>

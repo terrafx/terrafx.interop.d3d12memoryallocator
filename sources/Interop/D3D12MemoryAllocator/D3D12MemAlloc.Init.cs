@@ -1,6 +1,8 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using static TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows.D3D12;
+using TerraFX.Interop.Windows.DXGI;
+using static TerraFX.Interop.Windows.D3D12.D3D12;
 
 namespace TerraFX.Interop.D3D12MA
 {

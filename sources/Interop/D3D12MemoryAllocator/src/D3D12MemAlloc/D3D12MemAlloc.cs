@@ -5,12 +5,16 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12_HEAP_TYPE;
-using static TerraFX.Interop.D3D12_HEAP_FLAGS;
-using static TerraFX.Interop.DXGI_FORMAT;
-using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
-using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
-using static TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows.D3D12;
+using TerraFX.Interop.Windows.DXGI;
+using static TerraFX.Interop.Windows.D3D12.D3D12_HEAP_TYPE;
+using static TerraFX.Interop.Windows.D3D12.D3D12_HEAP_FLAGS;
+using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_DIMENSION;
+using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_FLAGS;
+using static TerraFX.Interop.Windows.DXGI.DXGI_FORMAT;
+using static TerraFX.Interop.Windows.Windows;
+using static TerraFX.Interop.Windows.D3D12.D3D12;
 
 namespace TerraFX.Interop.D3D12MA
 {

@@ -6,7 +6,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using static TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows.D3D12;
+using static TerraFX.Interop.Windows.Windows;
 using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
 
 namespace TerraFX.Interop.D3D12MA

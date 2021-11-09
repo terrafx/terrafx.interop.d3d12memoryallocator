@@ -7,8 +7,6 @@ namespace TerraFX.Interop.D3D12MA
 {
     public static unsafe partial class D3D12MemAlloc
     {
-        internal const uint UINT32_MAX = uint.MaxValue;
-
         private static void D3D12MA_ASSERT_FAIL(string assertion, string fname, uint line, string func)
         {
             throw new Exception($"D3D12MemoryAllocator: assertion failed.\n at \"{fname}\":{line}, \"{func ?? ""}\"\n assertion: \"{assertion}\"");

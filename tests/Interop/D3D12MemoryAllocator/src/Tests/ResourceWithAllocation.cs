@@ -4,7 +4,9 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using static TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows.D3D12;
+using static TerraFX.Interop.Windows.Windows;
 
 namespace TerraFX.Interop.D3D12MA.UnitTests
 {

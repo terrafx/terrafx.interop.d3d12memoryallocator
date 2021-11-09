@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using TerraFX.Interop.Windows.D3D12;
 using static TerraFX.Interop.D3D12MA.D3D12MemAlloc;
 
 namespace TerraFX.Interop.D3D12MA
