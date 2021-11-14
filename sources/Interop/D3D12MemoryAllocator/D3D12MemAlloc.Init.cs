@@ -3,7 +3,7 @@
 using TerraFX.Interop.DirectX;
 using static TerraFX.Interop.DirectX.DirectX;
 
-namespace TerraFX.Interop.Windows.D3D12MA
+namespace TerraFX.Interop.DirectX
 {
     public static unsafe partial class D3D12MemAlloc
     {

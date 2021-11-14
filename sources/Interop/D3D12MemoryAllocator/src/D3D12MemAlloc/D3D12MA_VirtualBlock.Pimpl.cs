@@ -5,7 +5,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace TerraFX.Interop.Windows.D3D12MA
+namespace TerraFX.Interop.DirectX
 {
     public unsafe partial struct D3D12MA_VirtualBlock
     {

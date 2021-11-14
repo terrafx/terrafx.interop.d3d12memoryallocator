@@ -2,7 +2,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace TerraFX.Interop.Windows.D3D12MA.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests
 {
     internal unsafe static partial class D3D12MemAllocTests
     {

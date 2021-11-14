@@ -9,9 +9,9 @@ using System.Threading;
 using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.Windows.Windows;
-using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop.Windows.D3D12MA
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>Represents a single block of device memory (heap). Base class for inheritance. Thread-safety: This class must be externally synchronized.</summary>
     internal unsafe struct D3D12MA_MemoryBlock : IDisposable

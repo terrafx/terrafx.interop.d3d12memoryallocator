@@ -8,7 +8,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using TerraFX.Interop.DirectX;
+using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.DirectX;
 using static TerraFX.Interop.Windows.E;
 using static TerraFX.Interop.Windows.Windows;
@@ -19,11 +19,11 @@ using static TerraFX.Interop.DirectX.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.DirectX.DXGI_MEMORY_SEGMENT_GROUP;
-using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
-using static TerraFX.Interop.Windows.D3D12MA.D3D12MA_ALLOCATOR_FLAGS;
-using static TerraFX.Interop.Windows.D3D12MA.D3D12MA_ALLOCATION_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATOR_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
 
-namespace TerraFX.Interop.Windows.D3D12MA
+namespace TerraFX.Interop.DirectX
 {
     public unsafe partial struct D3D12MA_Allocator
     {

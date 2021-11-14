@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-namespace TerraFX.Interop.Windows.D3D12MA.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests
 {
     internal unsafe struct Pointer
     {

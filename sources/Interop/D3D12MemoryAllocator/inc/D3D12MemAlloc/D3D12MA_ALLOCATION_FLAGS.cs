@@ -6,7 +6,7 @@
 using System;
 using static TerraFX.Interop.Windows.E;
 
-namespace TerraFX.Interop.Windows.D3D12MA
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>Bit flags to be used with <see cref="D3D12MA_ALLOCATION_DESC.Flags"/>.</summary>
     [Flags]

@@ -5,9 +5,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop.Windows.D3D12MA
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>Data structure used for bookkeeping of allocations and unused ranges of memory in a single ID3D12Heap memory block.</summary>
     internal unsafe struct D3D12MA_BlockMetadata : IDisposable

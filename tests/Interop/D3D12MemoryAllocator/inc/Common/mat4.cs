@@ -5,7 +5,7 @@
 
 using System;
 
-namespace TerraFX.Interop.Windows.D3D12MA.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests
 {
     internal unsafe struct mat4
     {

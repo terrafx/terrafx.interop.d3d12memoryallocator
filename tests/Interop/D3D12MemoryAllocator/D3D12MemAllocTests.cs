@@ -7,12 +7,13 @@ using System;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using NUnit.Framework;
+using TerraFX.Interop.Windows;
 using static TerraFX.Interop.Windows.Windows;
 using static TerraFX.Interop.Windows.WM;
 using static TerraFX.Interop.Windows.WS;
-using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop.Windows.D3D12MA.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests
 {
     [TestFixture]
     [Platform("win")]

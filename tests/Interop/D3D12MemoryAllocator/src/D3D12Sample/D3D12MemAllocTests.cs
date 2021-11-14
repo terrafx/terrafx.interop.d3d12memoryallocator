@@ -7,7 +7,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using TerraFX.Interop.DirectX;
+using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D_FEATURE_LEVEL;
 using static TerraFX.Interop.DirectX.D3D_PRIMITIVE_TOPOLOGY;
 using static TerraFX.Interop.DirectX.D3D_ROOT_SIGNATURE_VERSION;
@@ -52,10 +52,10 @@ using static TerraFX.Interop.Windows.Windows;
 using static TerraFX.Interop.Windows.VK;
 using static TerraFX.Interop.Windows.WM;
 using static TerraFX.Interop.DirectX.DirectX;
-using static TerraFX.Interop.Windows.D3D12MA.D3D12MA_ALLOCATOR_FLAGS;
-using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATOR_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop.Windows.D3D12MA.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests
 {
     internal unsafe static partial class D3D12MemAllocTests
     {

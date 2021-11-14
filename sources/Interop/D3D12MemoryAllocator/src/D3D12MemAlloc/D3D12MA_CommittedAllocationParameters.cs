@@ -6,7 +6,7 @@
 using TerraFX.Interop.DirectX;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
 
-namespace TerraFX.Interop.Windows.D3D12MA
+namespace TerraFX.Interop.DirectX
 {
     internal unsafe struct D3D12MA_CommittedAllocationParameters
     {
