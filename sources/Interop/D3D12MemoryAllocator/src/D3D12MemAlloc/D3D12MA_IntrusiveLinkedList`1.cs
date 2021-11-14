@@ -5,9 +5,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     ////////////////////////////////////////////////////////////////////////////////
     // Private class IntrusiveLinkedList

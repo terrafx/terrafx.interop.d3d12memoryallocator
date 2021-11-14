@@ -5,9 +5,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     internal unsafe struct D3D12MA_List<T> : IDisposable
         where T : unmanaged, IDisposable

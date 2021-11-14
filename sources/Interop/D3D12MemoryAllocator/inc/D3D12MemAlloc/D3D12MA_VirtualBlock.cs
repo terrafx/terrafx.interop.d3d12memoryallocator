@@ -5,11 +5,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12MemAlloc;
 using System.Runtime.InteropServices;
+using TerraFX.Interop.Windows;
+using static TerraFX.Interop.Windows.E;
+using static TerraFX.Interop.Windows.Windows;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>
     /// Represents pure allocation algorithm and a data structure with allocations in some memory block, without actually allocating any GPU memory.
@@ -19,7 +21,7 @@ namespace TerraFX.Interop
     /// To destroy it, call its method <see cref="Release"/>.
     /// </para>
     /// </summary>
-    public unsafe partial struct D3D12MA_VirtualBlock : IDisposable
+    public unsafe partial struct D3D12MA_VirtualBlock : IDisposable, IUnknown.Interface
     {
         private static readonly void** Vtbl = InitVtbl();
 
@@ -35,9 +37,19 @@ namespace TerraFX.Interop
             return lpVtbl;
         }
 
-        /// <summary>
-        /// Implements <c>IUnknown.Release()</c>.
-        /// </summary>
+        /// <inheritdoc/>
+        public HRESULT QueryInterface(Guid* riid, void** ppvObject)
+        {
+            return m_IUnknownImpl.QueryInterface(riid, ppvObject);
+        }
+
+        /// <inheritdoc/>
+        public uint AddRef()
+        {
+            return m_IUnknownImpl.AddRef();
+        }
+
+        /// <inheritdoc/>
         public uint Release()
         {
             return m_IUnknownImpl.Release();

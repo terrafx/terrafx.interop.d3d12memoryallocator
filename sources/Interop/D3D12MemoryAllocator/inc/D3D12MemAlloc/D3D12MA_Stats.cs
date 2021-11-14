@@ -7,9 +7,9 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static TerraFX.Interop.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>General statistics from the current state of the allocator.</summary>
     public struct D3D12MA_Stats

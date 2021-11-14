@@ -4,9 +4,9 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using static TerraFX.Interop.Windows;
+using static TerraFX.Interop.Windows.E;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>Bit flags to be used with <see cref="D3D12MA_ALLOCATION_DESC.Flags"/>.</summary>
     [Flags]

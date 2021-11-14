@@ -6,7 +6,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace TerraFX.Interop.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests
 {
     internal struct vec4
     {

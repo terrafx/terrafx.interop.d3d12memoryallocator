@@ -3,7 +3,9 @@
 // Ported from Tests.h in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-namespace TerraFX.Interop.UnitTests
+using TerraFX.Interop.DirectX;
+
+namespace TerraFX.Interop.DirectX.UnitTests
 {
     internal unsafe struct TestContext
     {

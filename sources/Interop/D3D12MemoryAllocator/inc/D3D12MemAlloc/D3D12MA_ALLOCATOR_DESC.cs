@@ -3,7 +3,9 @@
 // Ported from D3D12MemAlloc.h in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-namespace TerraFX.Interop
+using TerraFX.Interop.Windows;
+
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>Parameters of created <see cref="D3D12MA_Allocator"/> object. To be used with <see cref="D3D12MemAlloc.D3D12MA_CreateAllocator"/>.</summary>
     public unsafe struct D3D12MA_ALLOCATOR_DESC

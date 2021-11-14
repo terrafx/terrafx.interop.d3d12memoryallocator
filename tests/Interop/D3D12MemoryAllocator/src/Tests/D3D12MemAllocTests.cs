@@ -9,24 +9,26 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using NUnit.Framework;
-using static TerraFX.Interop.D3D12_CPU_PAGE_PROPERTY;
-using static TerraFX.Interop.D3D12_FEATURE;
-using static TerraFX.Interop.D3D12_HEAP_FLAGS;
-using static TerraFX.Interop.D3D12_HEAP_TYPE;
-using static TerraFX.Interop.D3D12_MEMORY_POOL;
-using static TerraFX.Interop.D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS;
-using static TerraFX.Interop.D3D12_RESOURCE_BARRIER_TYPE;
-using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
-using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
-using static TerraFX.Interop.D3D12_RESOURCE_STATES;
-using static TerraFX.Interop.D3D12_TEXTURE_LAYOUT;
-using static TerraFX.Interop.D3D12MA_ALLOCATION_FLAGS;
-using static TerraFX.Interop.D3D12MA_ALLOCATOR_FLAGS;
-using static TerraFX.Interop.D3D12MemAlloc;
-using static TerraFX.Interop.DXGI_FORMAT;
-using static TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows;
+using static TerraFX.Interop.DirectX.D3D12_CPU_PAGE_PROPERTY;
+using static TerraFX.Interop.DirectX.D3D12_FEATURE;
+using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12_HEAP_TYPE;
+using static TerraFX.Interop.DirectX.D3D12_MEMORY_POOL;
+using static TerraFX.Interop.DirectX.D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12_RESOURCE_BARRIER_TYPE;
+using static TerraFX.Interop.DirectX.D3D12_RESOURCE_DIMENSION;
+using static TerraFX.Interop.DirectX.D3D12_RESOURCE_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12_RESOURCE_STATES;
+using static TerraFX.Interop.DirectX.D3D12_TEXTURE_LAYOUT;
+using static TerraFX.Interop.DirectX.DXGI_FORMAT;
+using static TerraFX.Interop.Windows.Windows;
+using static TerraFX.Interop.DirectX.DirectX;
+using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATOR_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests
 {
     internal unsafe static partial class D3D12MemAllocTests
     {

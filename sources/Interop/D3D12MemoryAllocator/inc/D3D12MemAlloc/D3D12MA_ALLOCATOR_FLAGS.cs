@@ -5,7 +5,7 @@
 
 using System;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>Bit flags to be used with <see cref="D3D12MA_ALLOCATOR_DESC.Flags"/>.</summary>
     [Flags]

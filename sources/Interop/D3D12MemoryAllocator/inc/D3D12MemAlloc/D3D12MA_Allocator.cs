@@ -5,13 +5,16 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12MemAlloc;
-using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12_HEAP_FLAGS;
-using static TerraFX.Interop.D3D12MA_ALLOCATION_FLAGS;
 using System.Runtime.InteropServices;
+using TerraFX.Interop.Windows;
+using static TerraFX.Interop.Windows.Windows;
+using static TerraFX.Interop.Windows.E;
+using static TerraFX.Interop.DirectX.DirectX;
+using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>
     /// Represents main object of this library initialized for particular <see cref="ID3D12Device"/>.
@@ -24,7 +27,7 @@ namespace TerraFX.Interop
     /// right after Direct3D 12 is initialized and keep it alive until before Direct3D device is destroyed.
     /// </para>
     /// </summary>
-    public unsafe partial struct D3D12MA_Allocator : IDisposable
+    public unsafe partial struct D3D12MA_Allocator : IDisposable, IUnknown.Interface
     {
         private static readonly void** Vtbl = InitVtbl();
 
@@ -40,9 +43,19 @@ namespace TerraFX.Interop
             return lpVtbl;
         }
 
-        /// <summary>
-        /// Implements <c>IUnknown.Release()</c>.
-        /// </summary>
+        /// <inheritdoc/>
+        public HRESULT QueryInterface(Guid* riid, void** ppvObject)
+        {
+            return m_IUnknownImpl.QueryInterface(riid, ppvObject);
+        }
+
+        /// <inheritdoc/>
+        public uint AddRef()
+        {
+            return m_IUnknownImpl.AddRef();
+        }
+
+        /// <inheritdoc/>
         public uint Release()
         {
             return m_IUnknownImpl.Release();

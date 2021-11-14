@@ -5,14 +5,17 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12_HEAP_TYPE;
-using static TerraFX.Interop.D3D12_HEAP_FLAGS;
-using static TerraFX.Interop.DXGI_FORMAT;
-using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
-using static TerraFX.Interop.D3D12_RESOURCE_FLAGS;
-using static TerraFX.Interop.Windows;
+using TerraFX.Interop.Windows;
+using static TerraFX.Interop.DirectX.D3D12_HEAP_TYPE;
+using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12_RESOURCE_DIMENSION;
+using static TerraFX.Interop.DirectX.D3D12_RESOURCE_FLAGS;
+using static TerraFX.Interop.DirectX.DXGI_FORMAT;
+using static TerraFX.Interop.DirectX.DirectX;
+using static TerraFX.Interop.Windows.E;
+using static TerraFX.Interop.Windows.Windows;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     public static unsafe partial class D3D12MemAlloc
     {

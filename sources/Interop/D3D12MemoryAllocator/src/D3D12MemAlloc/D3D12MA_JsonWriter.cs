@@ -5,11 +5,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using static TerraFX.Interop.D3D12_RESOURCE_DIMENSION;
-using static TerraFX.Interop.D3D12MemAlloc;
-using static TerraFX.Interop.D3D12MA_JsonWriter.CollectionType;
+using static TerraFX.Interop.DirectX.D3D12_RESOURCE_DIMENSION;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.D3D12MA_JsonWriter.CollectionType;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     internal unsafe struct D3D12MA_JsonWriter : IDisposable
     {

@@ -3,9 +3,9 @@
 // Ported from D3D12Sample.cpp in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-using static TerraFX.Interop.Windows;
+using static TerraFX.Interop.Windows.Windows;
 
-namespace TerraFX.Interop.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests
 {
     internal sealed class RandomNumberGenerator
     {

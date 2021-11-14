@@ -4,11 +4,12 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using static TerraFX.Interop.Windows;
-using static TerraFX.Interop.D3D12MemAlloc;
 using System.Runtime.CompilerServices;
+using TerraFX.Interop.Windows;
+using static TerraFX.Interop.Windows.Windows;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>Represents a single block of device memory (heap) with all the data about its regions(aka suballocations, Allocation), assigned and free. Thread-safety: This class must be externally synchronized.</summary>
     internal unsafe struct D3D12MA_NormalBlock : IDisposable

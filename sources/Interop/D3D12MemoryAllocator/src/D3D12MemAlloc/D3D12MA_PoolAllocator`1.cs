@@ -6,9 +6,10 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static TerraFX.Interop.D3D12MemAlloc;
+using static TerraFX.Interop.Windows.Windows;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     /// <summary>Allocator for objects of type T using a list of arrays (pools) to speed up allocation.Number of elements that can be allocated is not bounded because allocator can create multiple blocks.</summary>
     /// <typeparam name="T">Should be POD because constructor and destructor is not called in Alloc (see extension) or <see cref="Free"/>.</typeparam>

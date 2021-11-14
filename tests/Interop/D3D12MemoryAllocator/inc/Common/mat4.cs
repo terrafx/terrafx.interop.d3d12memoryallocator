@@ -4,9 +4,8 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using static TerraFX.Interop.UnitTests.D3D12MemAllocTests;
 
-namespace TerraFX.Interop.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests
 {
     internal unsafe struct mat4
     {
@@ -217,6 +216,18 @@ namespace TerraFX.Interop.UnitTests
                 _12, _22, _32, _42,
                 _13, _23, _33, _43,
                 _14, _24, _34, _44
+            );
+        }
+
+        public static float Dot([NativeTypeName("const vec3&")] in vec3 lhs, [NativeTypeName("const vec3&")] in vec3 rhs)
+            => (lhs.x * rhs.x) + (lhs.y * rhs.y) + (lhs.z * rhs.z);
+
+        public static vec3 Cross([NativeTypeName("const vec3&")] in vec3 lhs, [NativeTypeName("const vec3&")] in vec3 rhs)
+        {
+            return new vec3(
+                (lhs.y * rhs.z) - (lhs.z * rhs.y),
+                (lhs.z * rhs.x) - (lhs.x * rhs.z),
+                (lhs.x * rhs.y) - (lhs.y * rhs.x)
             );
         }
     }

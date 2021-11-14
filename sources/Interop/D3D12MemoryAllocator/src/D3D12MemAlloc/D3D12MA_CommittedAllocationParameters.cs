@@ -3,9 +3,10 @@
 // Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit febc1c2cf66eb9211f36da800b50cf73dfde8d68
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-using static TerraFX.Interop.D3D12_HEAP_FLAGS;
+using TerraFX.Interop.DirectX;
+using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     internal unsafe struct D3D12MA_CommittedAllocationParameters
     {

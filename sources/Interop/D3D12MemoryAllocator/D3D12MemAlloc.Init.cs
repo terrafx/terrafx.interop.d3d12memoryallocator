@@ -1,8 +1,9 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using static TerraFX.Interop.Windows;
+using TerraFX.Interop.DirectX;
+using static TerraFX.Interop.DirectX.DirectX;
 
-namespace TerraFX.Interop
+namespace TerraFX.Interop.DirectX
 {
     public static unsafe partial class D3D12MemAlloc
     {
