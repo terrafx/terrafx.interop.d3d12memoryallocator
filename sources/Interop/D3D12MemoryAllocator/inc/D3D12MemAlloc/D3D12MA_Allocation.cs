@@ -6,10 +6,10 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using TerraFX.Interop.Windows.D3D12;
-using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_DIMENSION;
-using static TerraFX.Interop.Windows.D3D12.D3D12_RESOURCE_FLAGS;
-using static TerraFX.Interop.Windows.D3D12.D3D12_TEXTURE_LAYOUT;
+using TerraFX.Interop.DirectX;
+using static TerraFX.Interop.DirectX.D3D12_RESOURCE_DIMENSION;
+using static TerraFX.Interop.DirectX.D3D12_RESOURCE_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12_TEXTURE_LAYOUT;
 using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
 using static TerraFX.Interop.Windows.D3D12MA.D3D12MA_Allocation.Type;
 using static TerraFX.Interop.Windows.D3D12MA.D3D12MA_Allocation._Anonymous_e__Union;

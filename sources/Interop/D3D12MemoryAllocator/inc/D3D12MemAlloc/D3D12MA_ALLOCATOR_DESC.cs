@@ -3,9 +3,7 @@
 // Ported from D3D12MemAlloc.h in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-using TerraFX.Interop.Windows;
-using TerraFX.Interop.Windows.D3D12;
-using TerraFX.Interop.Windows.DXGI;
+using TerraFX.Interop.DirectX;
 
 namespace TerraFX.Interop.Windows.D3D12MA
 {

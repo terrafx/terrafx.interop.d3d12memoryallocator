@@ -6,6 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using static TerraFX.Interop.Windows.E;
 using static TerraFX.Interop.Windows.Windows;
 using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
 

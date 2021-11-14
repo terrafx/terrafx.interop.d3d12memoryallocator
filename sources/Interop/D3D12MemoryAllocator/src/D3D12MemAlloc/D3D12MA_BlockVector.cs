@@ -5,8 +5,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using TerraFX.Interop.Windows;
-using TerraFX.Interop.Windows.D3D12;
+using TerraFX.Interop.DirectX;
+using static TerraFX.Interop.Windows.E;
 using static TerraFX.Interop.Windows.Windows;
 using static TerraFX.Interop.Windows.D3D12MA.D3D12MemAlloc;
 using static TerraFX.Interop.Windows.D3D12MA.D3D12MA_ALLOCATION_FLAGS;
