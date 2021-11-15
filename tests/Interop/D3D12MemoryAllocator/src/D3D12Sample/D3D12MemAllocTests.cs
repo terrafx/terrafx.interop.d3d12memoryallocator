@@ -52,6 +52,8 @@ using static TerraFX.Interop.Windows.Windows;
 using static TerraFX.Interop.Windows.VK;
 using static TerraFX.Interop.Windows.WM;
 using static TerraFX.Interop.DirectX.DirectX;
+using static TerraFX.Interop.DirectX.D3D12;
+using static TerraFX.Interop.DirectX.DXGI;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATOR_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 

@@ -11,8 +11,9 @@ using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.DirectX.DXGI_FORMAT;
-using static TerraFX.Interop.DirectX.DirectX;
+using static TerraFX.Interop.DirectX.D3D12;
 using static TerraFX.Interop.Windows.E;
+using static TerraFX.Interop.Windows.S;
 using static TerraFX.Interop.Windows.Windows;
 
 namespace TerraFX.Interop.DirectX
