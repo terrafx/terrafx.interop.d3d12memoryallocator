@@ -33,7 +33,7 @@
 
   <!-- Package versions for package references across all projects -->
   <ItemGroup>
-    <PackageReference Update="TerraFX.Interop.Windows" Version="10.0.20348-rc2.1460845363" />
+    <PackageReference Update="TerraFX.Interop.Windows" Version="10.0.20348-rc2.1464241963" />
     <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.0.0" />
     <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
     <PackageReference Update="NUnit" Version="3.13.2" />
