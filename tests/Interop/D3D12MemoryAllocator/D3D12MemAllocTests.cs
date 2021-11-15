@@ -42,7 +42,7 @@ namespace TerraFX.Interop.DirectX.UnitTests
 
             for (;;)
             {
-                if (PeekMessage(&msg, HWND.NULL, 0, 0, PM_REMOVE) != 0)
+                if (PeekMessage(&msg, HWND.NULL, 0, 0, PM.PM_REMOVE) != 0)
                 {
                     if (msg.message == WM_QUIT)
                     {
