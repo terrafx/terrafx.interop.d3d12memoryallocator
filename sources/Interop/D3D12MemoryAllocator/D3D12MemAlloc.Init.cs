@@ -1,7 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using TerraFX.Interop.DirectX;
-using static TerraFX.Interop.DirectX.DirectX;
+using static TerraFX.Interop.DirectX.D3D12;
 
 namespace TerraFX.Interop.DirectX
 {

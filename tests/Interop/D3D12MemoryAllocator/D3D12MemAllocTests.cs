@@ -9,8 +9,12 @@ using System.Runtime.Versioning;
 using NUnit.Framework;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.Windows.Windows;
+using static TerraFX.Interop.Windows.CS;
+using static TerraFX.Interop.Windows.IDC;
+using static TerraFX.Interop.Windows.IDI;
 using static TerraFX.Interop.Windows.WM;
 using static TerraFX.Interop.Windows.WS;
+using static TerraFX.Interop.Windows.SW;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
 namespace TerraFX.Interop.DirectX.UnitTests
