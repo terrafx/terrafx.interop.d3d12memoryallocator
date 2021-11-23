@@ -875,6 +875,41 @@ namespace TerraFX.Interop.DirectX.UnitTests
             }
         }
 
+        private static void TestCustomPool_Committed([NativeTypeName("const TestContext&")] in TestContext ctx)
+        {
+            Console.WriteLine("Test custom pool committed");
+
+            const ulong BUFFER_SIZE = 32;
+
+            D3D12MA_POOL_DESC poolDesc = default;
+            poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+            poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+
+            using ComPtr<D3D12MA_Pool> pool = default;
+
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
+
+            D3D12MA_ALLOCATION_DESC allocDesc = default;
+            allocDesc.CustomPool = pool.Get();
+            allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
+
+            D3D12_RESOURCE_DESC resDesc;
+            FillResourceDescForBuffer(out resDesc, BUFFER_SIZE);
+
+            using ComPtr<D3D12MA_Allocation> alloc = default;
+
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc,
+                D3D12_RESOURCE_STATE_COMMON,
+                null, // pOptimizedClearValue
+                alloc.GetAddressOf(),
+                null,
+                null)); // riidResource, ppvResource
+
+            CHECK_BOOL(alloc.Get()->GetHeap() == null);
+            CHECK_BOOL(alloc.Get()->GetResource() != null);
+            CHECK_BOOL(alloc.Get()->GetOffset() == 0);
+        }
+
         private static HRESULT TestCustomHeap([NativeTypeName("const TestContext&")] in TestContext ctx, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] in D3D12_HEAP_PROPERTIES heapProps)
         {
             D3D12MA_Stats globalStatsBeg = default;
@@ -1938,6 +1973,7 @@ namespace TerraFX.Interop.DirectX.UnitTests
             TestOtherComInterface(in ctx);
             TestCustomPools(in ctx);
             TestCustomPool_MinAllocationAlignment(in ctx);
+            TestCustomPool_Committed(in ctx);
             TestCustomHeaps(in ctx);
             TestStandardCustomCommittedPlaced(in ctx);
             TestAliasingMemory(in ctx);
