@@ -70,7 +70,7 @@ namespace TerraFX.Interop.DirectX
 
         public readonly ID3D12Heap* GetHeap() => m_Heap;
 
-        public HRESULT Init()
+        public HRESULT Init(ID3D12ProtectedResourceSession* pProtectedSession)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (m_Heap == null) && (m_Size > 0));
 

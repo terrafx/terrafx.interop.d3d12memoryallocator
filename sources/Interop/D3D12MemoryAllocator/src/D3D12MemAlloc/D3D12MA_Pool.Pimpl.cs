@@ -43,19 +43,23 @@ namespace TerraFX.Interop.DirectX
             bool explicitBlockSize = desc->BlockSize != 0;
             ulong preferredBlockSize = explicitBlockSize ? desc->BlockSize : D3D12MA_DEFAULT_BLOCK_SIZE;
 
-            D3D12_HEAP_FLAGS heapFlags = desc->HeapFlags;
             uint maxBlockCount = desc->MaxBlockCount != 0 ? desc->MaxBlockCount : uint.MaxValue;
+
+            //#ifndef __ID3D12Device4_INTERFACE_DEFINED__
+            //    D3D12MA_ASSERT(m_Desc.pProtectedSession == NULL);
+            //#endif
 
             pThis.m_BlockVector = D3D12MA_NEW<D3D12MA_BlockVector>(allocator.GetAllocs());
             D3D12MA_BlockVector._ctor(
                 ref *pThis.m_BlockVector,
                 (D3D12MA_Allocator*)Unsafe.AsPointer(ref allocator),
                 &desc->HeapProperties,
-                heapFlags,
+                desc->HeapFlags,
                 preferredBlockSize,
                 desc->MinBlockCount, maxBlockCount,
                 explicitBlockSize,
-                D3D12MA_MAX(desc->MinAllocationAlignment, D3D12MA_DEBUG_ALIGNMENT)
+                D3D12MA_MAX(desc->MinAllocationAlignment, D3D12MA_DEBUG_ALIGNMENT),
+                desc->pProtectedSession
             );
         }
 

@@ -46,9 +46,9 @@ namespace TerraFX.Interop.DirectX
         }
 
         [return: NativeTypeName("HRESULT")]
-        public int Init()
+        public int Init(ID3D12ProtectedResourceSession* pProtectedSession)
         {
-            HRESULT hr = Base.Init();
+            HRESULT hr = Base.Init(pProtectedSession);
 
             if (FAILED(hr))
             {

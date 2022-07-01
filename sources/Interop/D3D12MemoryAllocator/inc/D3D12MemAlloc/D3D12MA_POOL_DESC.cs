@@ -10,7 +10,7 @@ using static TerraFX.Interop.Windows.Windows;
 namespace TerraFX.Interop.DirectX
 {
     /// <summary>Parameters of created <see cref="D3D12MA_Pool"/> object. To be used with <see cref="D3D12MA_Allocator.CreatePool"/>.</summary>
-    public struct D3D12MA_POOL_DESC
+    public unsafe struct D3D12MA_POOL_DESC
     {
         /// <summary>
         /// The parameters of memory heap where allocations of this pool should be placed.
@@ -63,5 +63,12 @@ namespace TerraFX.Interop.DirectX
         /// </summary>
         [NativeTypeName("UINT64")]
         public ulong MinAllocationAlignment;
+
+        /// <summary>
+        /// Additional parameter allowing pool to create resources with passed protected session.
+        /// If not <see langword="null"/> then all the heaps and committed resources will be created with this parameter.
+        /// Valid only if <see cref="ID3D12Device4"/> interface is present in current Windows SDK!
+        /// </summary>
+        public ID3D12ProtectedResourceSession* pProtectedSession;
     }
 }

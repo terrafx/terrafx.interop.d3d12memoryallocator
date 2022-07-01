@@ -32,6 +32,10 @@ namespace TerraFX.Interop.DirectX.UnitTests
 {
     internal unsafe static partial class D3D12MemAllocTests
     {
+        private const uint VENDOR_ID_AMD = 0x1002;
+        private const uint VENDOR_ID_NVIDIA = 0x10DE;
+        private const uint VENDOR_ID_INTEL = 0x8086;
+
         [NativeTypeName("ulong")]
         private const ulong MEGABYTE = 1024 * 1024;
 
@@ -2020,39 +2024,57 @@ namespace TerraFX.Interop.DirectX.UnitTests
                 Assert.Inconclusive("ID3D12Device4::CreateProtectedResourceSession FAILED.");
             }
 
-            // Create a buffer
+            D3D12MA_POOL_DESC poolDesc = default;
+            poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+            poolDesc.pProtectedSession = session.Get();
+            poolDesc.MinAllocationAlignment = 0;
+            poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+
+            using ComPtr<D3D12MA_Pool> pool = default;
+            hr = ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf());
+            if (FAILED(hr))
+            {
+                Assert.Inconclusive("Failed to create custom pool.");
+            }
 
             D3D12_RESOURCE_DESC resourceDesc;
             FillResourceDescForBuffer(out resourceDesc, 1024);
 
-            D3D12MA_ALLOCATION_DESC allocDesc = default;
-            allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+            for (uint testIndex = 0; testIndex < 2; ++testIndex)
+            {
+                // Create a buffer
+                D3D12MA_ALLOCATION_DESC allocDesc = default;
+                allocDesc.CustomPool = pool.Get();
+                if (testIndex == 0)
+                {
+                    allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
+                }
 
-            using ComPtr<D3D12MA_Allocation> bufAlloc = default;
-            using ComPtr<ID3D12Resource> bufRes = default;
+                using ComPtr<D3D12MA_Allocation> bufAlloc = default;
+                using ComPtr<ID3D12Resource> bufRes = default;
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc,
+                    D3D12_RESOURCE_STATE_COMMON, null,
+                    bufAlloc.GetAddressOf(), __uuidof(bufRes.Get()), (void**)bufRes.GetAddressOf()));
+                CHECK_BOOL(bufAlloc.Get() != null && bufAlloc.Get()->GetResource() == bufRes.Get());
 
-            CHECK_HR(ctx.allocator->CreateResource1(
-                &allocDesc,
-                &resourceDesc,
-                D3D12_RESOURCE_STATE_COMMON,
-                null,
-                session,
-                bufAlloc.GetAddressOf(),
-                __uuidof<ID3D12Resource>(), (void**)&bufRes
-            ));
+                // Make sure it's (not) committed.
+                CHECK_BOOL(bufAlloc.Get()->GetHeap() == null == (testIndex == 0));
 
-            // Create a heap
-            // Temporarily commented out as it caues BSOD on RTX2080Ti driver 461.40.
-#if false
-            D3D12_RESOURCE_ALLOCATION_INFO heapAllocInfo = new D3D12_RESOURCE_ALLOCATION_INFO {
-                SizeInBytes = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT * 100,
-                Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
-            };
+                // Allocate memory/heap
+                // Temporarily disabled on NVIDIA as it causes BSOD on RTX2080Ti driver 461.40.
+                if (g_AdapterDesc.VendorId != VENDOR_ID_NVIDIA)
+                {
+                    D3D12_RESOURCE_ALLOCATION_INFO heapAllocInfo = new(
+                        D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT * 2, // SizeInBytes
+                        D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT // Alignment
+                    );
 
-            using ComPtr<D3D12MA_Allocation> heapAlloc = default;
+                    using ComPtr<D3D12MA_Allocation> memAlloc = default;
 
-            CHECK_HR(ctx.allocator->AllocateMemory1(&allocDesc, &heapAllocInfo, session, heapAlloc.GetAddressOf()));
-#endif
+                    CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &heapAllocInfo, memAlloc.GetAddressOf()));
+                    CHECK_BOOL(memAlloc.Get()->GetHeap() != null);
+                }
+            }
         }
 
         private static void TestDevice8([NativeTypeName("const TestContext&")] in TestContext ctx)
@@ -2083,7 +2105,6 @@ namespace TerraFX.Interop.DirectX.UnitTests
                 &resourceDesc,
                 D3D12_RESOURCE_STATE_COMMON,
                 null,
-                null,
                 alloc0.GetAddressOf(),
                 __uuidof<ID3D12Resource>(), (void**)&res0
             ));
@@ -2101,7 +2122,6 @@ namespace TerraFX.Interop.DirectX.UnitTests
                 &allocDesc,
                 &resourceDesc,
                 D3D12_RESOURCE_STATE_COMMON,
-                null,
                 null,
                 alloc1.GetAddressOf(),
                 __uuidof<ID3D12Resource>(), (void**)&res1

@@ -13,12 +13,14 @@ namespace TerraFX.Interop.DirectX
         public D3D12MA_CommittedAllocationList* m_List;
         public D3D12_HEAP_PROPERTIES m_HeapProperties;
         public D3D12_HEAP_FLAGS m_HeapFlags;
+        public ID3D12ProtectedResourceSession* m_ProtectedSession;
 
         public static void _ctor(out D3D12MA_CommittedAllocationParameters pThis)
         {
             pThis.m_List = null;
             pThis.m_HeapProperties = default;
             pThis.m_HeapFlags = D3D12_HEAP_FLAG_NONE;
+            pThis.m_ProtectedSession = null;
         }
 
         public readonly bool IsValid() => m_List != null;

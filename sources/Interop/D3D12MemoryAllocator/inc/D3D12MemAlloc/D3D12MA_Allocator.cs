@@ -165,25 +165,7 @@ namespace TerraFX.Interop.DirectX
         }
 
         /// <summary>
-        /// Similar to <see cref="CreateResource"/>, but supports additional parameter <paramref name="pProtectedSession"/>.
-        /// <para>If <paramref name="pProtectedSession"/> is not null, current implementation always creates the resource as committed using <see cref="ID3D12Device4.CreateCommittedResource1"/>.</para>
-        /// <para>To work correctly, <see cref="ID3D12Device4"/> interface must be available in the current system. Otherwise, <see cref="E_NOINTERFACE"/></para>
-        /// </summary>
-        [return: NativeTypeName("HRESULT")]
-        public int CreateResource1([NativeTypeName("const ALLOCATION_DESC*")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC*")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
-        {
-            if ((pAllocDesc == null) || (pResourceDesc == null) || (ppAllocation == null))
-            {
-                D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreateResource1."
-                return E_INVALIDARG;
-            }
-
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return CreateResource1Pimpl(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
-        }
-
-        /// <summary>
-        /// Similar to <see cref="CreateResource1"/>, but supports new structure <see cref="D3D12_RESOURCE_DESC1"/>.
+        /// Similar to <see cref="CreateResource"/>, but supports new structure <see cref="D3D12_RESOURCE_DESC1"/>.
         /// <para>It internally uses <see cref="ID3D12Device8.CreateCommittedResource2"/> or <see cref="ID3D12Device8.CreatePlacedResource1"/>.</para>
         /// <para>To work correctly, <see cref="ID3D12Device8"/> interface must be available in the current system. Otherwise, <see cref="E_NOINTERFACE"/> is returned.</para>
         /// </summary>
@@ -191,12 +173,11 @@ namespace TerraFX.Interop.DirectX
         /// <param name="pResourceDesc"></param>
         /// <param name="InitialResourceState"></param>
         /// <param name="pOptimizedClearValue"></param>
-        /// <param name="pProtectedSession"></param>
         /// <param name="ppAllocation"></param>
         /// <param name="riidResource"></param>
         /// <param name="ppvResource"></param>
         [return: NativeTypeName("HRESULT")]
-        public int CreateResource2([NativeTypeName("const ALLOCATION_DESC*")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC1*")] D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+        public int CreateResource2([NativeTypeName("const ALLOCATION_DESC*")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC1*")] D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
             if ((pAllocDesc == null) || (pResourceDesc == null) || (ppAllocation == null))
             {
@@ -205,7 +186,7 @@ namespace TerraFX.Interop.DirectX
             }
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return CreateResource2Pimpl(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
+            return CreateResource2Pimpl(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
         }
 
         /// <summary>
@@ -235,24 +216,6 @@ namespace TerraFX.Interop.DirectX
 
             using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
             return AllocateMemoryPimpl(pAllocDesc, pAllocInfo, ppAllocation);
-        }
-
-        /// <summary>
-        /// Similar to <see cref="AllocateMemory"/>, but supports additional parameter <paramref name="pProtectedSession"/>.
-        /// <para>If <paramref name="pProtectedSession"/> is not null, current implementation always creates separate heap using <see cref="ID3D12Device4.CreateHeap1"/>.</para>
-        /// <para>To work correctly, <see cref="ID3D12Device4"/> interface must be available in the current system. Otherwise, <see cref="E_NOINTERFACE"/> is returned.</para>
-        /// </summary>
-        [return: NativeTypeName("HRESULT")]
-        public int AllocateMemory1([NativeTypeName("const ALLOCATION_DESC*")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO*")] D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation)
-        {
-            if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
-            {
-                D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::AllocateMemory1."
-                return E_INVALIDARG;
-            }
-
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            return AllocateMemory1Pimpl(pAllocDesc, pAllocInfo, pProtectedSession, ppAllocation);
         }
 
         /// <summary>Creates a new resource in place of an existing allocation. This is useful for memory aliasing.</summary>

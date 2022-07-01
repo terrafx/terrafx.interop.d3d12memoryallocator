@@ -110,6 +110,8 @@ namespace TerraFX.Interop.DirectX.UnitTests
 
         private static ComPtr<ID3D12Device> g_Device;
 
+        private static DXGI_ADAPTER_DESC1 g_AdapterDesc;
+
         private static D3D12MA_Allocator* g_Allocator;
 
         private static ComPtr<IDXGISwapChain3> g_SwapChain; // swapchain used to switch between render targets
@@ -334,6 +336,11 @@ namespace TerraFX.Interop.DirectX.UnitTests
             }
 
             Debug.Assert(adapterFound);
+
+            fixed (DXGI_ADAPTER_DESC1* pDesc1 = &g_AdapterDesc)
+            {
+                CHECK_HR(adapter->GetDesc1(pDesc1));
+            }
 
             // Must be done before D3D12 device is created.
             if (ENABLE_DEBUG_LAYER)

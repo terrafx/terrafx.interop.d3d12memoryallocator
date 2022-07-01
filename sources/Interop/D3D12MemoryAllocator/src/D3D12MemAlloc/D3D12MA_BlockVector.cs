@@ -40,6 +40,9 @@ namespace TerraFX.Interop.DirectX
         [NativeTypeName("UINT64")]
         private ulong m_MinAllocationAlignment;
 
+        [NativeTypeName("ID3D12ProtectedResourceSession* const")]
+        private ID3D12ProtectedResourceSession* m_ProtectedSession;
+
         /* There can be at most one allocation that is completely empty - a
         hysteresis to avoid pessimistic case of alternating creation and destruction
         of a VkDeviceMemory. */
@@ -53,7 +56,7 @@ namespace TerraFX.Interop.DirectX
         [NativeTypeName("UINT")]
         private uint m_NextBlockId;
 
-        internal static void _ctor(ref D3D12MA_BlockVector pThis, D3D12MA_Allocator* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize, [NativeTypeName("UINT64")] ulong minAllocationAlignment)
+        internal static void _ctor(ref D3D12MA_BlockVector pThis, D3D12MA_Allocator* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES&")] D3D12_HEAP_PROPERTIES* heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize, [NativeTypeName("UINT64")] ulong minAllocationAlignment, ID3D12ProtectedResourceSession* pProtectedSession)
         {
             pThis.m_hAllocator = hAllocator;
             pThis.m_HeapProps = *heapProps;
@@ -63,6 +66,7 @@ namespace TerraFX.Interop.DirectX
             pThis.m_MaxBlockCount = maxBlockCount;
             pThis.m_ExplicitBlockSize = explicitBlockSize;
             pThis.m_MinAllocationAlignment = minAllocationAlignment;
+            pThis.m_ProtectedSession = pProtectedSession;
             pThis.m_HasEmptyBlock = false;
             D3D12MA_Vector<Pointer<D3D12MA_NormalBlock>>._ctor(ref pThis.m_Blocks, hAllocator->GetAllocs());
             pThis.m_NextBlockId = 0;
@@ -247,10 +251,8 @@ namespace TerraFX.Interop.DirectX
         }
 
         [return: NativeTypeName("HRESULT")]
-        public int CreateResource2([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, [NativeTypeName("const D3D12MA_ALLOCATION_DESC&")] D3D12MA_ALLOCATION_DESC* allocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC1&")] D3D12_RESOURCE_DESC1* resourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE&")] D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession *pProtectedSession, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+        public int CreateResource2([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, [NativeTypeName("const D3D12MA_ALLOCATION_DESC&")] D3D12MA_ALLOCATION_DESC* allocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC1&")] D3D12_RESOURCE_DESC1* resourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE&")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pProtectedSession == null)); // "Should never get here. pProtectedSession != NULL currently requires committed resources."
-
             ID3D12Device8* device8 = m_hAllocator->GetDevice8();
 
             if (device8 == null)
@@ -588,7 +590,7 @@ namespace TerraFX.Interop.DirectX
                 m_NextBlockId++
             );
 
-            int hr = pBlock->Init();
+            int hr = pBlock->Init(m_ProtectedSession);
 
             if (FAILED(hr))
             {
