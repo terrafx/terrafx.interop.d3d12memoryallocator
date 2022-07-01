@@ -92,8 +92,6 @@ namespace TerraFX.Interop.DirectX
                 return;
             }
 
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-
             SAFE_RELEASE(ref m_Resource);
 
             switch (m_PackedData.GetType())

@@ -62,8 +62,6 @@ namespace TerraFX.Interop.DirectX
         /// </summary>
         private void ReleaseThis()
         {
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-
             // Copy is needed because otherwise we would call destructor and invalidate the structure with callbacks before using it to free memory.
             D3D12MA_ALLOCATION_CALLBACKS allocationCallbacksCopy = m_AllocationCallbacks;
             D3D12MA_DELETE(&allocationCallbacksCopy, ref this);

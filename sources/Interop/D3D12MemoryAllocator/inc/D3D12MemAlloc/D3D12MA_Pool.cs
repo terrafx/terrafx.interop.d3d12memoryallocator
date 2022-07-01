@@ -65,7 +65,6 @@ namespace TerraFX.Interop.DirectX
                 return;
             }
 
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
             D3D12MA_DELETE(GetAllocator()->GetAllocs(), ref this);
         }
 
