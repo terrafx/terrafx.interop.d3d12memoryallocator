@@ -1004,6 +1004,43 @@ namespace TerraFX.Interop.DirectX
 
                     json.EndObject(); // CommittedAllocations
 
+                    json.WriteString("Pools");
+                    json.BeginObject();
+
+                    for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_HEAP_TYPE_COUNT; ++heapTypeIndex)
+                    {
+                        json.WriteString(HeapTypeNames[heapTypeIndex]);
+                        json.BeginArray();
+                        using D3D12MA_MutexLockRead mutex = new(ref m_PoolsMutex[(int)heapTypeIndex], m_UseMutex != 0);
+                        nuint index = 0;
+                        for (var item = m_Pools[(int)heapTypeIndex].Front(); item != null; item = D3D12MA_IntrusiveLinkedList<D3D12MA_Pool>.GetNext(item))
+                        {
+                            json.BeginObject();
+                            json.WriteString("Name");
+                            if (item->GetName() != null)
+                            {
+                                json.WriteString(item->GetName());
+                            }
+                            else
+                            {
+                                json.BeginString();
+                                json.ContinueString(index);
+                                json.EndString();
+                            }
+                            ++index;
+
+                            json.WriteString("Blocks");
+                            item->GetBlockVector()->WriteBlockInfoToJson(&json);
+                            json.WriteString("CommittedAllocations");
+                            item->GetCommittedAllocationList()->BuildStatsString(ref *&json);
+
+                            json.EndObject();
+                        }
+                        json.EndArray();
+                    }
+
+                    json.EndObject(); // Pools
+
                     json.EndObject(); // DetailedMap
                 }
 
