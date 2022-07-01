@@ -262,7 +262,7 @@ namespace TerraFX.Interop.DirectX
         // TODO: AlignDown
         // TODO: RoundDiv
 
-        internal static uint DivideRoudingUp(uint x, uint y)
+        internal static uint DivideRoundingUp(uint x, uint y)
         {
             return (x + y - 1) / y;
         }
@@ -645,8 +645,8 @@ namespace TerraFX.Interop.DirectX
 
             if (IsFormatCompressed(resourceDesc->Format))
             {
-                sizeX = DivideRoudingUp(sizeX / 4, 1u);
-                sizeY = DivideRoudingUp(sizeY / 4, 1u);
+                sizeX = DivideRoundingUp(sizeX / 4, 1u);
+                sizeY = DivideRoundingUp(sizeY / 4, 1u);
                 bitsPerPixel *= 16;
             }
 
@@ -691,7 +691,7 @@ namespace TerraFX.Interop.DirectX
                 default: return false;
             }
 
-            uint tileCount = DivideRoudingUp(sizeX, tileSizeX) * DivideRoudingUp(sizeY, tileSizeY);
+            uint tileCount = DivideRoundingUp(sizeX, tileSizeX) * DivideRoundingUp(sizeY, tileSizeY);
             return tileCount <= 16;
         }
 
