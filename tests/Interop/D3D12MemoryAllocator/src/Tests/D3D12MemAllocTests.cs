@@ -821,6 +821,157 @@ namespace TerraFX.Interop.DirectX.UnitTests
             }
         }
 
+        private static void TestPoolsAndAllocationParameters([NativeTypeName("const TestContext&")] in TestContext ctx)
+        {
+            Console.WriteLine("Test pools and allocation parameters");
+
+            using ComPtr<D3D12MA_Pool> pool1 = default;
+            using ComPtr<D3D12MA_Pool> pool2 = default;
+
+            List<ComPtr<D3D12MA_Allocation>> bufs = new();
+
+            try
+            {
+                D3D12MA_ALLOCATION_DESC allocDesc = default;
+
+                uint totalNewAllocCount = 0, totalNewBlockCount = 0;
+                D3D12MA_Stats statsBeg, statsEnd;
+                ctx.allocator->CalculateStats(&statsBeg);
+
+                HRESULT hr;
+                using ComPtr<D3D12MA_Allocation> alloc = default;
+
+                // poolTypeI:
+                // 0 = default pool
+                // 1 = custom pool, default (flexible) block size and block count
+                // 2 = custom pool, fixed block size and limited block count
+                for (nuint poolTypeI = 0; poolTypeI < 3; ++poolTypeI)
+                {
+                    if (poolTypeI == 0)
+                    {
+                        allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+                        allocDesc.CustomPool = null;
+                    }
+                    else if (poolTypeI == 1)
+                    {
+                        D3D12MA_POOL_DESC poolDesc = default;
+                        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+                        poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+                        hr = ctx.allocator->CreatePool(&poolDesc, pool1.GetAddressOf());
+                        CHECK_HR(hr);
+                        allocDesc.CustomPool = pool1.Get();
+                    }
+                    else if (poolTypeI == 2)
+                    {
+                        D3D12MA_POOL_DESC poolDesc = default;
+                        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+                        poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+                        poolDesc.MaxBlockCount = 1;
+                        poolDesc.BlockSize = (2 * MEGABYTE) + (MEGABYTE / 2); // 2.5 MB
+                        hr = ctx.allocator->CreatePool(&poolDesc, pool2.GetAddressOf());
+                        CHECK_HR(hr);
+                        allocDesc.CustomPool = pool2.Get();
+                    }
+
+                    uint poolAllocCount = 0, poolBlockCount = 0;
+                    FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, MEGABYTE);
+
+                    // Default parameters
+                    allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NONE;
+                    hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), null, null);
+                    CHECK_BOOL(SUCCEEDED(hr) && alloc.Get() != null && alloc.Get()->GetResource() != null);
+                    ID3D12Heap* defaultAllocHeap = alloc.Get()->GetHeap();
+                    ulong defaultAllocOffset = alloc.Get()->GetOffset();
+                    {
+                        ComPtr<D3D12MA_Allocation> move = default;
+                        move.Attach(alloc.Detach());
+                        bufs.Add(move);
+                    }
+                    ++poolAllocCount;
+
+                    // COMMITTED. Should not try pool2 as it may assert on invalid call.
+                    if (poolTypeI != 2)
+                    {
+                        allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
+                        hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), null, null);
+                        CHECK_BOOL(SUCCEEDED(hr) && alloc.Get() != null && alloc.Get()->GetResource() != null);
+                        CHECK_BOOL(alloc.Get()->GetOffset() == 0); // Committed
+                        CHECK_BOOL(alloc.Get()->GetHeap() == null); // Committed
+                        {
+                            ComPtr<D3D12MA_Allocation> move = default;
+                            move.Attach(alloc.Detach());
+                            bufs.Add(move);
+                        }
+                        ++poolAllocCount;
+                    }
+
+                    // NEVER_ALLOCATE #1
+                    allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE;
+                    hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), null, null);
+                    CHECK_BOOL(SUCCEEDED(hr) && alloc.Get() != null && alloc.Get()->GetResource() != null);
+                    CHECK_BOOL(alloc.Get()->GetHeap() == defaultAllocHeap); // Same memory block as default one.
+                    CHECK_BOOL(alloc.Get()->GetOffset() != defaultAllocOffset);
+                    {
+                        ComPtr<D3D12MA_Allocation> move = default;
+                        move.Attach(alloc.Detach());
+                        bufs.Add(move);
+                    }
+                    ++poolAllocCount;
+
+                    // NEVER_ALLOCATE #2. Should fail in pool2 as it has no space.
+                    allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE;
+                    hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), null, null);
+                    if (poolTypeI == 2)
+                    {
+                        CHECK_BOOL(FAILED(hr));
+                    }
+                    else
+                    {
+                        CHECK_BOOL(SUCCEEDED(hr) && alloc.Get() != null && alloc.Get()->GetResource() != null);
+                        {
+                            ComPtr<D3D12MA_Allocation> move = default;
+                            move.Attach(alloc.Detach());
+                            bufs.Add(move);
+                        }
+                        ++poolAllocCount;
+                    }
+
+                    // Pool stats
+                    switch (poolTypeI)
+                    {
+                        case 0: poolBlockCount = 1; break; // At least 1 added for dedicated allocation.
+                        case 1: poolBlockCount = 2; break; // 1 for custom pool block and 1 for dedicated allocation.
+                        case 2: poolBlockCount = 1; break; // Only custom pool, no dedicated allocation.
+                    }
+
+                    if (poolTypeI > 0)
+                    {
+                        D3D12MA_StatInfo poolStats = default;
+                        (poolTypeI == 2 ? pool2.Get() : pool1.Get())->CalculateStats(&poolStats);
+                        CHECK_BOOL(poolStats.AllocationCount == poolAllocCount);
+                        CHECK_BOOL(poolStats.UsedBytes == poolAllocCount * MEGABYTE);
+                        CHECK_BOOL(poolStats.BlockCount == poolBlockCount);
+                    }
+
+                    totalNewAllocCount += poolAllocCount;
+                    totalNewBlockCount += poolBlockCount;
+                }
+
+                ctx.allocator->CalculateStats(&statsEnd);
+
+                CHECK_BOOL(statsEnd.Total.AllocationCount == statsBeg.Total.AllocationCount + totalNewAllocCount);
+                CHECK_BOOL(statsEnd.Total.BlockCount >= statsBeg.Total.BlockCount + totalNewBlockCount);
+                CHECK_BOOL(statsEnd.Total.UsedBytes == statsBeg.Total.UsedBytes + (totalNewAllocCount * MEGABYTE));
+            }
+            finally
+            {
+                foreach (ref ComPtr<D3D12MA_Allocation> allocation in CollectionsMarshal.AsSpan(bufs))
+                {
+                    allocation.Dispose();
+                }
+            }
+        }
+
         private static void TestCustomPool_MinAllocationAlignment([NativeTypeName("const TestContext&")] in TestContext ctx)
         {
             Console.WriteLine("Test custom pool MinAllocationAlignment");
@@ -1974,6 +2125,7 @@ namespace TerraFX.Interop.DirectX.UnitTests
             TestCustomPools(in ctx);
             TestCustomPool_MinAllocationAlignment(in ctx);
             TestCustomPool_Committed(in ctx);
+            TestPoolsAndAllocationParameters(in ctx);
             TestCustomHeaps(in ctx);
             TestStandardCustomCommittedPlaced(in ctx);
             TestAliasingMemory(in ctx);

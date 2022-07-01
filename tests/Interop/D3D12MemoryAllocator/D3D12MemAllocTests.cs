@@ -209,6 +209,9 @@ namespace TerraFX.Interop.DirectX.UnitTests
         public static void TestCustomPool_Committed() => TestCustomPool_Committed(in testCtx);
 
         [Test]
+        public static void TestPoolsAndAllocationParameters() => TestPoolsAndAllocationParameters(in testCtx);
+
+        [Test]
         public static void TestCustomHeaps() => TestCustomHeaps(in testCtx);
 
         [Test]
