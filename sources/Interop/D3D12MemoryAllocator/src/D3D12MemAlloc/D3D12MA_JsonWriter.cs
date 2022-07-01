@@ -11,6 +11,9 @@ using static TerraFX.Interop.DirectX.D3D12MA_JsonWriter.CollectionType;
 
 namespace TerraFX.Interop.DirectX
 {
+    /// <summary>
+    /// Allows to conveniently build a correct JSON document to be written to the <see cref="D3D12MA_StringBuilder"/> passed to the constructor.
+    /// </summary>
     internal unsafe struct D3D12MA_JsonWriter : IDisposable
     {
         private const string INDENT = "  ";
@@ -19,6 +22,11 @@ namespace TerraFX.Interop.DirectX
         private D3D12MA_Vector<StackItem> m_Stack;
         private bool m_InsideString;
 
+        /// <summary>
+        /// Creates a new <see cref="D3D12MA_JsonWriter"/> instance.
+        /// </summary>
+        /// <param name="allocationCallbacks">The allocation callbacks</param>
+        /// <param name="stringBuilder">String builder to write the document to. Must remain alive for the whole lifetime of this object.</param>
         public D3D12MA_JsonWriter([NativeTypeName("const D3D12MA_ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("StringBuilder&")] D3D12MA_StringBuilder* stringBuilder)
         {
             m_SB = stringBuilder;
@@ -29,6 +37,11 @@ namespace TerraFX.Interop.DirectX
             m_InsideString = false;
         }
 
+        /// <summary>
+        /// Creates a new <see cref="D3D12MA_JsonWriter"/> instance.
+        /// </summary>
+        /// <param name="allocationCallbacks">The allocation callbacks</param>
+        /// <param name="stringBuilder">String builder to write the document to. Must remain alive for the whole lifetime of this object.</param>
         public D3D12MA_JsonWriter([NativeTypeName("const D3D12MA_ALLOCATION_CALLBACKS&")] ref D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks, [NativeTypeName("StringBuilder&")] D3D12MA_StringBuilder* stringBuilder)
         {
             m_SB = stringBuilder;
@@ -47,6 +60,12 @@ namespace TerraFX.Interop.DirectX
             m_Stack.Dispose();
         }
 
+        /// <summary>
+        /// Begins object by writing "{".
+        /// Inside an object, you must call pairs of WriteString and a value, e.g.:
+        /// <c>j.BeginObject(true); j.WriteString("A"); j.WriteNumber(1); j.WriteString("B"); j.WriteNumber(2); j.EndObject();</c>
+        /// Will write: <c>{ "A": 1, "B": 2 }</c>.
+        /// </summary>
         public void BeginObject(bool singleLine = false)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && !m_InsideString);
@@ -61,6 +80,9 @@ namespace TerraFX.Interop.DirectX
             m_Stack.push_back(in stackItem);
         }
 
+        /// <summary>
+        /// Ends object by writing "}".
+        /// </summary>
         public void EndObject()
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && !m_InsideString);
@@ -73,6 +95,10 @@ namespace TerraFX.Interop.DirectX
             m_Stack.pop_back();
         }
 
+        /// <summary>
+        /// Begins array by writing "[".
+        /// Inside an array, you can write a sequence of any values.
+        /// </summary>
         public void BeginArray(bool singleLine = false)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && !m_InsideString);
@@ -87,6 +113,9 @@ namespace TerraFX.Interop.DirectX
             m_Stack.push_back(in stackItem);
         }
 
+        /// <summary>
+        /// Ends array by writing "[".
+        /// </summary>
         public void EndArray()
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (!m_InsideString));
@@ -98,12 +127,20 @@ namespace TerraFX.Interop.DirectX
             m_Stack.pop_back();
         }
 
+        /// <summary>
+        /// Writes a string value inside "".
+        /// </summary>
+        /// <param name="pStr">Can contain any UTF-16 characters, including '"', new line etc. - they will be properly escaped.</param>
         public void WriteString([NativeTypeName("LPCWSTR")] ushort* pStr)
         {
             BeginString(pStr);
             EndString();
         }
 
+        /// <summary>
+        /// Writes a string value inside "".
+        /// </summary>
+        /// <param name="str">Can contain any UTF-16 characters, including '"', new line etc. - they will be properly escaped.</param>
         public void WriteString(string str)
         {
             fixed (char* p = str)
@@ -112,6 +149,11 @@ namespace TerraFX.Interop.DirectX
             }
         }
 
+        /// <summary>
+        /// Begins writing a string value.
+        /// Call <see cref="BeginString(ushort*)"/>, <see cref="ContinueString(ushort*)"/>, <see cref="ContinueString(ushort*)"/>, ..., <see cref="EndString(ushort*)"/> instead of
+        /// <see cref="WriteString(ushort*)"/> to conveniently build the string content incrementally, made of parts including numbers.
+        /// </summary>
         public void BeginString([NativeTypeName("LPCWSTR")] ushort* pStr = null)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && !m_InsideString);
@@ -127,6 +169,9 @@ namespace TerraFX.Interop.DirectX
             }
         }
 
+        /// <summary>
+        /// Posts next part of an open string.
+        /// </summary>
         public void ContinueString([NativeTypeName("LPCWSTR")] ushort* pStr)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && m_InsideString);
@@ -135,7 +180,7 @@ namespace TerraFX.Interop.DirectX
             for (ushort* p = pStr; *p != 0; ++p)
             {
                 // the strings we encode are assumed to be in UTF-16LE format, the native
-                // windows wide character unicode format. In this encoding unicode code
+                // windows wide character Unicode format. In this encoding Unicode code
                 // points U+0000 to U+D7FF and U+E000 to U+FFFF are encoded in two bytes,
                 // and everything else takes more than two bytes. We will reject any
                 // multi wchar character encodings for simplicity.
@@ -203,7 +248,7 @@ namespace TerraFX.Interop.DirectX
 
                     default:
                     {
-                        // conservatively use encoding \uXXXX for any unicode character
+                        // conservatively use encoding \uXXXX for any Unicode character
                         // requiring more than one byte.
 
                         if (32 <= val && val < 256)
@@ -244,6 +289,9 @@ namespace TerraFX.Interop.DirectX
             }
         }
 
+        /// <summary>
+        /// Posts next part of an open string. The number is converted to decimal characters.
+        /// </summary>
         public void ContinueString([NativeTypeName("UINT")] uint num)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && m_InsideString);
@@ -329,8 +377,13 @@ namespace TerraFX.Interop.DirectX
             }
         }
 
+        // Posts next part of an open string. Pointer value is converted to characters
+        // using "%p" formatting - shown as hexadecimal number, e.g.: 000000081276Ad00
         // void ContinueString_Pointer(const void* ptr);
 
+        /// <summary>
+        /// Ends writing a string value by writing '"'.
+        /// </summary>
         public void EndString([NativeTypeName("LPCWSTR")] ushort* pStr = null)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && m_InsideString);
@@ -344,6 +397,9 @@ namespace TerraFX.Interop.DirectX
             m_InsideString = false;
         }
 
+        /// <summary>
+        /// Writes a number value.
+        /// </summary>
         public void WriteNumber([NativeTypeName("UINT")] uint num)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && !m_InsideString);
@@ -358,6 +414,9 @@ namespace TerraFX.Interop.DirectX
             m_SB->AddNumber(num);
         }
 
+        /// <summary>
+        /// Writes a boolean value - false or true.
+        /// </summary>
         public void WriteBool(bool b)
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && !m_InsideString);
@@ -373,6 +432,9 @@ namespace TerraFX.Interop.DirectX
             }
         }
 
+        /// <summary>
+        /// Writes a null value.
+        /// </summary>
         public void WriteNull()
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && !m_InsideString);
