@@ -342,6 +342,76 @@ namespace TerraFX.Interop.DirectX
                 m_pList = pList;
                 m_pItem = pItem;
             }
+
+            internal iterator([NativeTypeName("const reverse_iterator&")] in reverse_iterator src)
+            {
+                m_pList = src.m_pList;
+                m_pItem = src.m_pItem;
+            }
+        }
+
+        public struct reverse_iterator
+        {
+            internal D3D12MA_List<T>* m_pList;
+
+            internal Item* m_pItem;
+
+            public readonly T* Get()
+            {
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pItem != null));
+                return &m_pItem->Value;
+            }
+
+            public readonly reverse_iterator MoveNext()
+            {
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pItem != null));
+                return new reverse_iterator {
+                    m_pList = m_pList,
+                    m_pItem = m_pItem->pPrev
+                };
+            }
+
+            public readonly reverse_iterator MoveBack()
+            {
+                var iterator = new reverse_iterator {
+                    m_pList = m_pList
+                };
+
+                if (m_pItem != null)
+                {
+                    iterator.m_pItem = m_pItem->pNext;
+                }
+                else
+                {
+                    D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (!m_pList->IsEmpty()));
+                    iterator.m_pItem = m_pList->Front();
+                }
+
+                return iterator;
+            }
+
+            public static bool operator ==([NativeTypeName("const reverse_iterator&")] in reverse_iterator lhs, [NativeTypeName("const reverse_iterator&")] in reverse_iterator rhs)
+            {
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (lhs.m_pList == rhs.m_pList));
+                return lhs.m_pItem == rhs.m_pItem;
+            }
+
+            public static bool operator !=([NativeTypeName("const reverse_iterator&")] in reverse_iterator lhs, [NativeTypeName("const reverse_iterator&")] in reverse_iterator rhs)
+            {
+                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (lhs.m_pList == rhs.m_pList));
+                return lhs.m_pItem != rhs.m_pItem;
+            }
+
+            internal reverse_iterator(in D3D12MA_List<T> pList, Item* pItem)
+                : this((D3D12MA_List<T>*)Unsafe.AsPointer(ref Unsafe.AsRef(in pList)), pItem)
+            {
+            }
+
+            internal reverse_iterator(D3D12MA_List<T>* pList, Item* pItem)
+            {
+                m_pList = pList;
+                m_pItem = pItem;
+            }
         }
 #pragma warning restore CS0660, CS0661
 
@@ -353,6 +423,10 @@ namespace TerraFX.Interop.DirectX
         public readonly iterator begin() => new iterator(in this, Front());
 
         public readonly iterator end() => new iterator(in this, null);
+
+        public readonly reverse_iterator rbegin() => new reverse_iterator(in this, Back());
+
+        public readonly reverse_iterator rend() => new reverse_iterator(in this, null);
 
         public void clear() => Clear();
 

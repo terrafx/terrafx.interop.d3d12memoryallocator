@@ -184,6 +184,68 @@ namespace TerraFX.Interop.DirectX
             WriteAllocationInfoToJson(in this, json);
         }
 
+        public readonly D3D12MA_List<D3D12MA_Suballocation>.iterator FindAtOffset([NativeTypeName("UINT64")] ulong offset)
+        {
+            ulong last = m_Suballocations.rbegin().Get()->offset;
+
+            if (last == offset)
+            {
+                return new(m_Suballocations.rbegin());
+            }
+
+            ulong first = m_Suballocations.begin().Get()->offset;
+
+            if (first == offset)
+            {
+                return m_Suballocations.begin();
+            }
+
+            nuint suballocCount = m_Suballocations.size();
+            ulong step = (last - first + m_Suballocations.begin().Get()->size) / suballocCount;
+
+            // If requested offset is closer to the end of range, search from the end
+            if ((offset - first) > suballocCount * step / 2)
+            {
+                D3D12MA_List<D3D12MA_Suballocation>.reverse_iterator begin = m_Suballocations.rbegin();
+                D3D12MA_List<D3D12MA_Suballocation>.reverse_iterator end = m_Suballocations.rend();
+
+                for (var suballocItem = begin;
+                    suballocItem != end;
+                    suballocItem = suballocItem.MoveNext())
+                {
+                    D3D12MA_Suballocation* suballoc = suballocItem.Get();
+
+                    if (suballoc->offset == offset)
+                    {
+                        return new(in suballocItem);
+                    }
+                }
+
+                D3D12MA_ASSERT(false); // "Not found!"
+                return m_Suballocations.end();
+            }
+            else
+            {
+                D3D12MA_List<D3D12MA_Suballocation>.iterator begin = m_Suballocations.begin();
+                D3D12MA_List<D3D12MA_Suballocation>.iterator end = m_Suballocations.end();
+
+                for (var suballocItem = begin;
+                    suballocItem != end;
+                    suballocItem = suballocItem.MoveNext())
+                {
+                    D3D12MA_Suballocation* suballoc = suballocItem.Get();
+
+                    if (suballoc->offset == offset)
+                    {
+                        return suballocItem;
+                    }
+                }
+
+                D3D12MA_ASSERT(false); // "Not found!"
+                return m_Suballocations.end();
+            }
+        }
+
         public readonly bool ValidateFreeSuballocationList()
         {
             ulong lastSize = 0;
@@ -537,19 +599,9 @@ namespace TerraFX.Interop.DirectX
 
         public static void GetAllocationInfo(in D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("UINT64")] ulong offset, [NativeTypeName("D3D12MA_VIRTUAL_ALLOCATION_INFO&")] D3D12MA_VIRTUAL_ALLOCATION_INFO* outInfo)
         {
-            for (D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = pThis.m_Suballocations.begin(); suballocItem != pThis.m_Suballocations.end(); suballocItem = suballocItem.MoveNext())
-            {
-                D3D12MA_Suballocation* suballoc = suballocItem.Get();
-
-                if (suballoc->offset == offset)
-                {
-                    outInfo->size = suballoc->size;
-                    outInfo->pUserData = suballoc->userData;
-                    return;
-                }
-            }
-
-            D3D12MA_ASSERT(false); // "Not found!"
+            D3D12MA_Suballocation* suballoc = pThis.FindAtOffset(offset).Get();
+            outInfo->size = suballoc->size;
+            outInfo->pUserData = suballoc->userData;
         }
 
         public static bool CreateAllocationRequest(ref D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, [NativeTypeName("AllocationRequest&")] D3D12MA_AllocationRequest* pAllocationRequest)
@@ -669,18 +721,7 @@ namespace TerraFX.Interop.DirectX
 
         public static void FreeAtOffset(ref D3D12MA_BlockMetadata_Generic pThis, ulong offset)
         {
-            for (D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = pThis.m_Suballocations.begin(); suballocItem != pThis.m_Suballocations.end(); suballocItem = suballocItem.MoveNext())
-            {
-                D3D12MA_Suballocation* suballoc = suballocItem.Get();
-
-                if (suballoc->offset == offset)
-                {
-                    _ = pThis.FreeSuballocation(suballocItem);
-                    return;
-                }
-            }
-
-            D3D12MA_ASSERT(false); // "Not found!"
+            _ = pThis.FreeSuballocation(pThis.FindAtOffset(offset));
         }
 
         public static void Clear(ref D3D12MA_BlockMetadata_Generic pThis)
@@ -704,18 +745,8 @@ namespace TerraFX.Interop.DirectX
 
         public static void SetAllocationUserData(ref D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("UINT64")] ulong offset, void* userData)
         {
-            for (D3D12MA_List<D3D12MA_Suballocation>.iterator suballocItem = pThis.m_Suballocations.begin(); suballocItem != pThis.m_Suballocations.end(); suballocItem = suballocItem.MoveNext())
-            {
-                D3D12MA_Suballocation* suballoc = suballocItem.Get();
-
-                if (suballoc->offset == offset)
-                {
-                    suballoc->userData = userData;
-                    return;
-                }
-            }
-
-            D3D12MA_ASSERT(false); // "Not found!"
+            D3D12MA_Suballocation* suballoc = pThis.FindAtOffset(offset).Get();
+            suballoc->userData = userData;
         }
 
         public static void CalcAllocationStatInfo(in D3D12MA_BlockMetadata_Generic pThis, [NativeTypeName("StatInfo&")] D3D12MA_StatInfo* outInfo)
