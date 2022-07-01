@@ -645,8 +645,8 @@ namespace TerraFX.Interop.DirectX
 
             if (IsFormatCompressed(resourceDesc->Format))
             {
-                sizeX = DivideRoundingUp(sizeX / 4, 1u);
-                sizeY = DivideRoundingUp(sizeY / 4, 1u);
+                sizeX = DivideRoundingUp(sizeX, 4u);
+                sizeY = DivideRoundingUp(sizeY, 4u);
                 bitsPerPixel *= 16;
             }
 
