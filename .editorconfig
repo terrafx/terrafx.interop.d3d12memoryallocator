@@ -21,6 +21,7 @@ end_of_line = lf
 insert_final_newline = true
 indent_style = space
 indent_size = 4
+tab_width = 4
 trim_trailing_whitespace = true
 
 ###############################################################################
@@ -44,13 +45,6 @@ indent_style = tab
 ###############################################################################
 [*.cs]
 file_header_template = Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
-
-###############################################################################
-# Set dotnet diagnostic rules to:
-#    disable any parent diagnostic rules since they are not applicable to interop
-###############################################################################
-dotnet_diagnostic.CA1069.severity = none
-dotnet_diagnostic.CA1401.severity = none
 
 ###############################################################################
 # Set dotnet naming rules to:
@@ -383,6 +377,8 @@ csharp_space_between_square_brackets = false
 #
 #   require inlined variable declarations,
 #
+#   require file scoped namespace declarations,
+#
 #   require local over anonymous functions,
 #   require pattern-matching over "as" with "null" check,
 #   require pattern-matching over "is" with "cast" check,
@@ -419,14 +415,17 @@ csharp_style_implicit_object_creation_when_type_is_apparent = false:error
 
 csharp_style_inlined_variable_declaration = true:error
 
+csharp_style_namespace_declarations= file_scoped:error
+
 csharp_style_pattern_local_over_anonymous_function = true:error
 csharp_style_pattern_matching_over_as_with_null_check = true:error
 csharp_style_pattern_matching_over_is_with_cast_check = true:error
 
 csharp_style_prefer_index_operator = false:error
-csharp_style_prefer_range_operator = false:error
+csharp_style_prefer_method_group_conversion = true:suggestion
 csharp_style_prefer_not_pattern = true:error
 csharp_style_prefer_pattern_matching = true:error
+csharp_style_prefer_range_operator = false:error
 csharp_style_prefer_switch_expression = true:error
 
 csharp_style_throw_expression = true:error

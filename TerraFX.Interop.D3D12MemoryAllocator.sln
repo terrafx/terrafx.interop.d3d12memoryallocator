@@ -8,23 +8,21 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".root", ".root", "{2F337CB6
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		build.cmd = build.cmd
-		build.sh = build.sh
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
+		Directory.Packages.props = Directory.Packages.props
 		LICENSE.md = LICENSE.md
+		NuGet.config = NuGet.config
 		pack.cmd = pack.cmd
-		pack.sh = pack.sh
 		restore.cmd = restore.cmd
-		restore.sh = restore.sh
 		TerraFX.snk = TerraFX.snk
 		test.cmd = test.cmd
-		test.sh = test.sh
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{8793898A-6542-4606-AA82-AB14151D2D20}"
 	ProjectSection(SolutionItems) = preProject
-		docs\CODE_OF_CONDUCT.md = docs\CODE_OF_CONDUCT.md
 		docs\CODEOWNERS = docs\CODEOWNERS
+		docs\CODE_OF_CONDUCT.md = docs\CODE_OF_CONDUCT.md
 		docs\CONTRIBUTING.md = docs\CONTRIBUTING.md
 		docs\ISSUE_TEMPLATE.md = docs\ISSUE_TEMPLATE.md
 		docs\PULL_REQUEST_TEMPLATE.md = docs\PULL_REQUEST_TEMPLATE.md
@@ -64,9 +62,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{48E1F49D-7103-4DE6-9F69-915183B85095}"
 	ProjectSection(SolutionItems) = preProject
 		scripts\build.ps1 = scripts\build.ps1
-		scripts\build.sh = scripts\build.sh
 		scripts\cibuild.cmd = scripts\cibuild.cmd
-		scripts\cibuild.sh = scripts\cibuild.sh
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{14317A6D-D419-404D-A4A9-E64088152E32}"
@@ -76,10 +72,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\ci.yml = .github\workflows\ci.yml
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "generation", "generation", "{FBE83387-7EF8-4D3A-AEA3-47633DF12304}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ISSUE_TEMPLATE", "ISSUE_TEMPLATE", "{7A5823B0-7B46-470B-A422-BA9138FF5218}"
 	ProjectSection(SolutionItems) = preProject
-		generation\remap.rsp = generation\remap.rsp
-		generation\settings.rsp = generation\settings.rsp
+		.github\ISSUE_TEMPLATE\bug.md = .github\ISSUE_TEMPLATE\bug.md
+		.github\ISSUE_TEMPLATE\proposal.md = .github\ISSUE_TEMPLATE\proposal.md
+		.github\ISSUE_TEMPLATE\regression.md = .github\ISSUE_TEMPLATE\regression.md
 	EndProjectSection
 EndProject
 Global
@@ -108,6 +105,7 @@ Global
 		{32D5D5C6-C467-4200-A978-4DCEBAD16ABF} = {7E31C739-2787-44ED-8304-7EFCEE1A2B2C}
 		{FE1214EA-21BD-4087-AD01-D42DBA8572FE} = {32D5D5C6-C467-4200-A978-4DCEBAD16ABF}
 		{2BDD70BB-9023-44D6-A27B-AB51F667C254} = {14317A6D-D419-404D-A4A9-E64088152E32}
+		{7A5823B0-7B46-470B-A422-BA9138FF5218} = {14317A6D-D419-404D-A4A9-E64088152E32}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2FE36DF8-2D9C-4F20-8787-45DC74B57461}
