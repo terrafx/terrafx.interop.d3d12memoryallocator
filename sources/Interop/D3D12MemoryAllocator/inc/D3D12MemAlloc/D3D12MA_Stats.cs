@@ -5,6 +5,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
@@ -29,17 +30,21 @@ namespace TerraFX.Interop.DirectX
             public D3D12MA_StatInfo e2;
             public D3D12MA_StatInfo e3;
 
+            [UnscopedRef]
             public ref D3D12MA_StatInfo this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get => ref AsSpan()[index];
+                get
+                {
+                    return ref AsSpan()[index];
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [UnscopedRef]
             public unsafe Span<D3D12MA_StatInfo> AsSpan()
             {
                 D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((sizeof(__Stats_e__FixedBuffer) / sizeof(D3D12MA_StatInfo)) == D3D12MA_HEAP_TYPE_COUNT) && ((sizeof(__Stats_e__FixedBuffer) % sizeof(D3D12MA_StatInfo)) == 0));
-
                 return MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_HEAP_TYPE_COUNT);
             }
         }

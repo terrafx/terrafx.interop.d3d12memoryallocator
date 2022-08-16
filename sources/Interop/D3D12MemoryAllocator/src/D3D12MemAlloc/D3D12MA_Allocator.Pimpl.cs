@@ -23,6 +23,7 @@ using static TerraFX.Interop.DirectX.DXGI_MEMORY_SEGMENT_GROUP;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATOR_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
+using System.Diagnostics.CodeAnalysis;
 
 namespace TerraFX.Interop.DirectX
 {
@@ -1684,6 +1685,7 @@ namespace TerraFX.Interop.DirectX
             public T e3;
 #pragma warning restore CS0649
 
+            [UnscopedRef]
             public ref T this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1694,10 +1696,10 @@ namespace TerraFX.Interop.DirectX
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [UnscopedRef]
             public Span<T> AsSpan()
             {
                 D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<T>) / sizeof(T)) == (int)D3D12MA_HEAP_TYPE_COUNT) && ((sizeof(_D3D12MA_HEAP_TYPE_COUNT_e__FixedBuffer<T>) % sizeof(T)) == 0));
-
                 return MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_HEAP_TYPE_COUNT);
             }
         }
@@ -1712,6 +1714,7 @@ namespace TerraFX.Interop.DirectX
             public T e2;
 #pragma warning restore CS0649
 
+            [UnscopedRef]
             public ref T this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1722,6 +1725,7 @@ namespace TerraFX.Interop.DirectX
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [UnscopedRef]
             public Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)D3D12MA_STANDARD_HEAP_TYPE_COUNT);
         }
 
@@ -1741,6 +1745,7 @@ namespace TerraFX.Interop.DirectX
             public T e8;
 #pragma warning restore CS0649
 
+            [UnscopedRef]
             public ref T this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1751,6 +1756,7 @@ namespace TerraFX.Interop.DirectX
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [UnscopedRef]
             public Span<T> AsSpan()
             {
                 D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<T>) / sizeof(T)) == (int)D3D12MA_DEFAULT_POOL_MAX_COUNT) && ((sizeof(_D3D12MA_DEFAULT_POOL_MAX_COUNT_e__FixedBuffer<T>) % sizeof(T)) == 0));

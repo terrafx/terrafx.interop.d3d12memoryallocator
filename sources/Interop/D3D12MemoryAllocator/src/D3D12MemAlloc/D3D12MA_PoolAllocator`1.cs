@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static TerraFX.Interop.Windows.Windows;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
+using System.Diagnostics.CodeAnalysis;
 
 namespace TerraFX.Interop.DirectX
 {
@@ -128,7 +129,15 @@ namespace TerraFX.Interop.DirectX
         internal struct Item
         {
             // UINT32_MAX means end of list.
-            public ref uint NextFreeIndex => ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Unsafe.As<T, uint>(ref Value), 1));
+            [UnscopedRef]
+            public ref uint NextFreeIndex
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    return ref Unsafe.As<T, uint>(ref Value);
+                }
+            }
 
             public T Value;
         }

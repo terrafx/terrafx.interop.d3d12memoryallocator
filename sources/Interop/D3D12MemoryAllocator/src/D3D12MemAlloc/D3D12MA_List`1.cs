@@ -279,7 +279,7 @@ namespace TerraFX.Interop.DirectX
             public void Dispose() { }
         }
 
-#pragma warning disable CS0660, CS0661
+#pragma warning disable CS0660, CS0661, CS8981
         public struct iterator
         {
             private D3D12MA_List<T>* m_pList;

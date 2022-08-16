@@ -56,6 +56,7 @@ using static TerraFX.Interop.DirectX.D3D12;
 using static TerraFX.Interop.DirectX.DXGI;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATOR_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
+using System.Diagnostics.CodeAnalysis;
 
 namespace TerraFX.Interop.DirectX.UnitTests
 {
@@ -1592,6 +1593,7 @@ namespace TerraFX.Interop.DirectX.UnitTests
             public T e2;
 #pragma warning restore CS0649
 
+            [UnscopedRef]
             public ref T this[int index]
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1602,10 +1604,10 @@ namespace TerraFX.Interop.DirectX.UnitTests
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [UnscopedRef]
             public Span<T> AsSpan()
             {
                 D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((sizeof(_e__FixedBuffer<T>) / sizeof(T)) == (int)FRAME_BUFFER_COUNT) && ((sizeof(_e__FixedBuffer<T>) % sizeof(T)) == 0));
-
                 return MemoryMarshal.CreateSpan(ref e0, (int)FRAME_BUFFER_COUNT);
             }
         }

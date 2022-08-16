@@ -4,6 +4,7 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using TerraFX.Interop.Windows;
@@ -150,7 +151,7 @@ namespace TerraFX.Interop.DirectX
 
                 case TYPE_PLACED:
                 {
-                    return m_Placed.offset;
+                    return m_Union.m_Placed.offset;
                 }
 
                 default:
@@ -197,12 +198,12 @@ namespace TerraFX.Interop.DirectX
 
                 case TYPE_PLACED:
                 {
-                    return m_Placed.block->GetHeap();
+                    return m_Union.m_Placed.block->GetHeap();
                 }
 
                 case TYPE_HEAP:
                 {
-                    return m_Heap.heap;
+                    return m_Union.m_Heap.heap;
                 }
 
                 default:
@@ -266,22 +267,34 @@ namespace TerraFX.Interop.DirectX
             TYPE_COUNT
         }
 
-        internal readonly ref _m_Committed_e__Struct m_Committed
+        [UnscopedRef]
+        internal ref _m_Committed_e__Struct m_Committed
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Unsafe.AsRef(m_Union.m_Committed), 1));
+            get
+            {
+                return ref m_Union.m_Committed;
+            }
         }
 
-        internal readonly ref _m_Placed_e__Struct m_Placed
+        [UnscopedRef]
+        internal ref _m_Placed_e__Struct m_Placed
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Unsafe.AsRef(m_Union.m_Placed), 1));
+            get
+            {
+                return ref m_Union.m_Placed;
+            }
         }
 
-        internal readonly ref _m_Heap_e__Struct m_Heap
+        [UnscopedRef]
+        internal ref _m_Heap_e__Struct m_Heap
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Unsafe.AsRef(m_Union.m_Heap), 1));
+            get
+            {
+                return ref m_Union.m_Heap;
+            }
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -487,13 +500,13 @@ namespace TerraFX.Interop.DirectX
         readonly D3D12MA_Allocation* D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.GetPrev()
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_PackedData.GetType() == TYPE_COMMITTED) || (m_PackedData.GetType() == TYPE_HEAP)));
-            return m_Committed.prev;
+            return m_Union.m_Committed.prev;
         }
 
         readonly D3D12MA_Allocation* D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.GetNext()
         {
             D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && ((m_PackedData.GetType() == TYPE_COMMITTED) || (m_PackedData.GetType() == TYPE_HEAP)));
-            return m_Committed.next;
+            return m_Union.m_Committed.next;
         }
 
         readonly D3D12MA_Allocation** D3D12MA_IItemTypeTraits<D3D12MA_Allocation>.AccessPrev()

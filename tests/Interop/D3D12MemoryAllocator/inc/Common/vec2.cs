@@ -4,6 +4,8 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace TerraFX.Interop.DirectX.UnitTests
@@ -20,7 +22,15 @@ namespace TerraFX.Interop.DirectX.UnitTests
             this.y = y;
         }
 
-        public ref float this[[NativeTypeName("uint32_t")] uint index] => ref MemoryMarshal.CreateSpan(ref x, 2)[(int)index];
+        [UnscopedRef]
+        public ref float this[[NativeTypeName("uint32_t")] uint index]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return ref MemoryMarshal.CreateSpan(ref x, 2)[(int)index];
+            }
+        }
 
         public static vec2 operator +([NativeTypeName("const vec2&")] in vec2 lhs, [NativeTypeName("const vec2&")] in vec2 rhs)
         {
