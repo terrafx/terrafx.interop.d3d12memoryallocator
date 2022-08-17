@@ -5,29 +5,28 @@
 
 using System.Runtime.CompilerServices;
 
-namespace TerraFX.Interop.DirectX
+namespace TerraFX.Interop.DirectX;
+
+public unsafe partial struct D3D12MA_VirtualBlock
 {
-    public unsafe partial struct D3D12MA_VirtualBlock
+    private D3D12MA_IUnknownImpl m_IUnknownImpl;
+
+    internal D3D12MA_ALLOCATION_CALLBACKS m_AllocationCallbacks;
+
+    [NativeTypeName("UINT64")]
+    internal ulong m_Size;
+
+    internal D3D12MA_BlockMetadata_Generic m_Metadata;
+
+    internal static void _ctor(ref D3D12MA_VirtualBlock pThis, D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("UINT64")] ulong size)
     {
-        private D3D12MA_IUnknownImpl m_IUnknownImpl;
+        D3D12MA_IUnknownImpl._ctor(ref pThis.m_IUnknownImpl, Vtbl);
 
-        internal D3D12MA_ALLOCATION_CALLBACKS m_AllocationCallbacks;
+        pThis.m_AllocationCallbacks = *allocationCallbacks;
+        pThis.m_Size = size;
 
-        [NativeTypeName("UINT64")]
-        internal ulong m_Size;
+        D3D12MA_BlockMetadata_Generic._ctor(ref pThis.m_Metadata, (D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref pThis.m_AllocationCallbacks), true); // isVirtual
 
-        internal D3D12MA_BlockMetadata_Generic m_Metadata;
-
-        internal static void _ctor(ref D3D12MA_VirtualBlock pThis, D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("UINT64")] ulong size)
-        {
-            D3D12MA_IUnknownImpl._ctor(ref pThis.m_IUnknownImpl, Vtbl);
-
-            pThis.m_AllocationCallbacks = *allocationCallbacks;
-            pThis.m_Size = size;
-
-            D3D12MA_BlockMetadata_Generic._ctor(ref pThis.m_Metadata, (D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref pThis.m_AllocationCallbacks), true); // isVirtual
-
-            pThis.m_Metadata.Init(pThis.m_Size);
-        }
+        pThis.m_Metadata.Init(pThis.m_Size);
     }
 }

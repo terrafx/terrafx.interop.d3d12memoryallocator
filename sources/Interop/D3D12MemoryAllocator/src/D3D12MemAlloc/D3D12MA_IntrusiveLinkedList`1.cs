@@ -7,245 +7,244 @@ using System;
 using System.Runtime.CompilerServices;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop.DirectX
+namespace TerraFX.Interop.DirectX;
+
+////////////////////////////////////////////////////////////////////////////////
+// Private class IntrusiveLinkedList
+
+/*
+Expected interface of ItemTypeTraits:
+struct MyItemTypeTraits
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    // Private class IntrusiveLinkedList
+    typedef MyItem ItemType;
+    static ItemType* GetPrev(const ItemType* item) { return item->myPrevPtr; }
+    static ItemType* GetNext(const ItemType* item) { return item->myNextPtr; }
+    static ItemType*& AccessPrev(ItemType* item) { return item->myPrevPtr; }
+    static ItemType*& AccessNext(ItemType* item) { return item->myNextPtr; }
+};
+*/
+internal unsafe struct D3D12MA_IntrusiveLinkedList<TItemType> : IDisposable
+    where TItemType : unmanaged, D3D12MA_IItemTypeTraits<TItemType>
+{
+    private TItemType* m_Front;
+    private TItemType* m_Back;
+    private nuint m_Count;
 
-    /*
-    Expected interface of ItemTypeTraits:
-    struct MyItemTypeTraits
+    public static TItemType* GetPrev([NativeTypeName("const ItemType*")] TItemType* item) => item->GetPrev();
+
+    public static TItemType* GetNext([NativeTypeName("const ItemType*")] TItemType* item) => item->GetNext();
+
+    public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType> pThis)
     {
-        typedef MyItem ItemType;
-        static ItemType* GetPrev(const ItemType* item) { return item->myPrevPtr; }
-        static ItemType* GetNext(const ItemType* item) { return item->myNextPtr; }
-        static ItemType*& AccessPrev(ItemType* item) { return item->myPrevPtr; }
-        static ItemType*& AccessNext(ItemType* item) { return item->myNextPtr; }
-    };
-    */
-    internal unsafe struct D3D12MA_IntrusiveLinkedList<TItemType> : IDisposable
-        where TItemType : unmanaged, D3D12MA_IItemTypeTraits<TItemType>
+        pThis.m_Front = null;
+        pThis.m_Back = null;
+        pThis.m_Count = 0;
+    }
+
+    public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType> pThis, [NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType>** src)
     {
-        private TItemType* m_Front;
-        private TItemType* m_Back;
-        private nuint m_Count;
+        pThis.m_Front = (*src)->m_Front;
+        pThis.m_Back = (*src)->m_Back;
+        pThis.m_Count = (*src)->m_Count;
 
-        public static TItemType* GetPrev([NativeTypeName("const ItemType*")] TItemType* item) => item->GetPrev();
+        (*src)->m_Front = (*src)->m_Back = null;
+        (*src)->m_Count = 0;
+    }
 
-        public static TItemType* GetNext([NativeTypeName("const ItemType*")] TItemType* item) => item->GetNext();
+    public void Dispose()
+    {
+        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (IsEmpty()));
+    }
 
-        public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType> pThis)
+    [return: NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&")]
+    public D3D12MA_IntrusiveLinkedList<TItemType>* Assign([NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType>** src)
+    {
+        if (*src != Unsafe.AsPointer(ref this))
         {
-            pThis.m_Front = null;
-            pThis.m_Back = null;
-            pThis.m_Count = 0;
-        }
-
-        public static void _ctor(ref D3D12MA_IntrusiveLinkedList<TItemType> pThis, [NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType>** src)
-        {
-            pThis.m_Front = (*src)->m_Front;
-            pThis.m_Back = (*src)->m_Back;
-            pThis.m_Count = (*src)->m_Count;
-
+            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (IsEmpty()));
+            m_Front = (*src)->m_Front;
+            m_Back = (*src)->m_Back;
+            m_Count = (*src)->m_Count;
             (*src)->m_Front = (*src)->m_Back = null;
             (*src)->m_Count = 0;
         }
 
-        public void Dispose()
+        return (D3D12MA_IntrusiveLinkedList<TItemType>*)Unsafe.AsPointer(ref this);
+    }
+
+    public void RemoveAll()
+    {
+        if (!IsEmpty())
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (IsEmpty()));
+            TItemType* item = m_Back;
+            while (item != null)
+            {
+                TItemType* prevItem = item->GetPrev();
+                *item->AccessPrev() = null;
+                *item->AccessNext() = null;
+                item = prevItem;
+            }
+            m_Front = null;
+            m_Back = null;
+            m_Count = 0;
         }
+    }
 
-        [return: NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&")]
-        public D3D12MA_IntrusiveLinkedList<TItemType>* Assign([NativeTypeName("IntrusiveLinkedList<ItemTypeTraits>&&")] D3D12MA_IntrusiveLinkedList<TItemType>** src)
+    [return: NativeTypeName("size_t")]
+    public readonly nuint GetCount() => m_Count;
+
+    public readonly bool IsEmpty() => m_Count == 0;
+
+    public readonly TItemType* Front() => m_Front;
+
+    public readonly TItemType* Back() => m_Back;
+
+    public void PushBack(TItemType* item)
+    {
+        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (item->GetPrev() == null) && (item->GetNext() == null));
+        if (IsEmpty())
         {
-            if (*src != Unsafe.AsPointer(ref this))
-            {
-                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (IsEmpty()));
-                m_Front = (*src)->m_Front;
-                m_Back = (*src)->m_Back;
-                m_Count = (*src)->m_Count;
-                (*src)->m_Front = (*src)->m_Back = null;
-                (*src)->m_Count = 0;
-            }
-
-            return (D3D12MA_IntrusiveLinkedList<TItemType>*)Unsafe.AsPointer(ref this);
+            m_Front = item;
+            m_Back = item;
+            m_Count = 1;
         }
-
-        public void RemoveAll()
+        else
         {
-            if (!IsEmpty())
-            {
-                TItemType* item = m_Back;
-                while (item != null)
-                {
-                    TItemType* prevItem = item->GetPrev();
-                    *item->AccessPrev() = null;
-                    *item->AccessNext() = null;
-                    item = prevItem;
-                }
-                m_Front = null;
-                m_Back = null;
-                m_Count = 0;
-            }
+            *item->AccessPrev() = m_Back;
+            *m_Back->AccessNext() = item;
+            m_Back = item;
+            ++m_Count;
         }
+    }
 
-        [return: NativeTypeName("size_t")]
-        public readonly nuint GetCount() => m_Count;
-
-        public readonly bool IsEmpty() => m_Count == 0;
-
-        public readonly TItemType* Front() => m_Front;
-
-        public readonly TItemType* Back() => m_Back;
-
-        public void PushBack(TItemType* item)
+    public void PushFront(TItemType* item)
+    {
+        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (item->GetPrev() == null) && (item->GetNext() == null));
+        if (IsEmpty())
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (item->GetPrev() == null) && (item->GetNext() == null));
-            if (IsEmpty())
-            {
-                m_Front = item;
-                m_Back = item;
-                m_Count = 1;
-            }
-            else
-            {
-                *item->AccessPrev() = m_Back;
-                *m_Back->AccessNext() = item;
-                m_Back = item;
-                ++m_Count;
-            }
+            m_Front = item;
+            m_Back = item;
+            m_Count = 1;
         }
-
-        public void PushFront(TItemType* item)
+        else
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (item->GetPrev() == null) && (item->GetNext() == null));
-            if (IsEmpty())
-            {
-                m_Front = item;
-                m_Back = item;
-                m_Count = 1;
-            }
-            else
-            {
-                *item->AccessNext() = m_Front;
-                *m_Front->AccessPrev() = item;
-                m_Front = item;
-                ++m_Count;
-            }
+            *item->AccessNext() = m_Front;
+            *m_Front->AccessPrev() = item;
+            m_Front = item;
+            ++m_Count;
         }
+    }
 
-        public TItemType* PopBack()
+    public TItemType* PopBack()
+    {
+        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
+        TItemType* backItem = m_Back;
+        TItemType* prevItem = backItem->GetPrev();
+        if (prevItem != null)
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
-            TItemType* backItem = m_Back;
-            TItemType* prevItem = backItem->GetPrev();
+            *prevItem->AccessNext() = null;
+        }
+        m_Back = prevItem;
+        --m_Count;
+        *backItem->AccessPrev() = null;
+        *backItem->AccessNext() = null;
+        return backItem;
+    }
+
+    public TItemType* PopFront()
+    {
+        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
+        TItemType* frontItem = m_Front;
+        TItemType* nextItem = frontItem->GetNext();
+        if (nextItem != null)
+        {
+            *nextItem->AccessPrev() = null;
+        }
+        m_Front = nextItem;
+        --m_Count;
+        *frontItem->AccessPrev() = null;
+        *frontItem->AccessNext() = null;
+        return frontItem;
+    }
+
+    // MyItem can be null - it means PushBack.
+    public void InsertBefore(TItemType* existingItem, TItemType* newItem)
+    {
+        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (newItem != null) && (newItem->GetPrev() == null) && (newItem->GetNext() == null));
+        if (existingItem != null)
+        {
+            TItemType* prevItem = existingItem->GetPrev();
+            *newItem->AccessPrev() = prevItem;
+            *newItem->AccessNext() = existingItem;
+            *existingItem->AccessPrev() = newItem;
             if (prevItem != null)
             {
-                *prevItem->AccessNext() = null;
+                *prevItem->AccessNext() = newItem;
             }
-            m_Back = prevItem;
-            --m_Count;
-            *backItem->AccessPrev() = null;
-            *backItem->AccessNext() = null;
-            return backItem;
+            else
+            {
+                D3D12MA_HEAVY_ASSERT(m_Front == existingItem);
+                m_Front = newItem;
+            }
+            ++m_Count;
         }
-
-        public TItemType* PopFront()
+        else
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
-            TItemType* frontItem = m_Front;
-            TItemType* nextItem = frontItem->GetNext();
+            PushBack(newItem);
+        }
+    }
+
+    // MyItem can be null - it means PushFront.
+    public void InsertAfter(TItemType* existingItem, TItemType* newItem)
+    {
+        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (newItem != null) && (newItem->GetPrev() == null) && (newItem->GetNext() == null));
+        if (existingItem != null)
+        {
+            TItemType* nextItem = existingItem->GetNext();
+            *newItem->AccessNext() = nextItem;
+            *newItem->AccessPrev() = existingItem;
+            *existingItem->AccessNext() = newItem;
             if (nextItem != null)
             {
-                *nextItem->AccessPrev() = null;
+                *nextItem->AccessPrev() = newItem;
             }
-            m_Front = nextItem;
-            --m_Count;
-            *frontItem->AccessPrev() = null;
-            *frontItem->AccessNext() = null;
-            return frontItem;
+            else
+            {
+                D3D12MA_HEAVY_ASSERT(m_Back == existingItem);
+                m_Back = newItem;
+            }
+            ++m_Count;
         }
-
-        // MyItem can be null - it means PushBack.
-        public void InsertBefore(TItemType* existingItem, TItemType* newItem)
+        else
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (newItem != null) && (newItem->GetPrev() == null) && (newItem->GetNext() == null));
-            if (existingItem != null)
-            {
-                TItemType* prevItem = existingItem->GetPrev();
-                *newItem->AccessPrev() = prevItem;
-                *newItem->AccessNext() = existingItem;
-                *existingItem->AccessPrev() = newItem;
-                if (prevItem != null)
-                {
-                    *prevItem->AccessNext() = newItem;
-                }
-                else
-                {
-                    D3D12MA_HEAVY_ASSERT(m_Front == existingItem);
-                    m_Front = newItem;
-                }
-                ++m_Count;
-            }
-            else
-            {
-                PushBack(newItem);
-            }
+            PushFront(newItem);
         }
+    }
 
-        // MyItem can be null - it means PushFront.
-        public void InsertAfter(TItemType* existingItem, TItemType* newItem)
+    public void Remove(TItemType* item)
+    {
+        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (item != null) && (m_Count > 0));
+        if (item->GetPrev() != null)
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (newItem != null) && (newItem->GetPrev() == null) && (newItem->GetNext() == null));
-            if (existingItem != null)
-            {
-                TItemType* nextItem = existingItem->GetNext();
-                *newItem->AccessNext() = nextItem;
-                *newItem->AccessPrev() = existingItem;
-                *existingItem->AccessNext() = newItem;
-                if (nextItem != null)
-                {
-                    *nextItem->AccessPrev() = newItem;
-                }
-                else
-                {
-                    D3D12MA_HEAVY_ASSERT(m_Back == existingItem);
-                    m_Back = newItem;
-                }
-                ++m_Count;
-            }
-            else
-            {
-                PushFront(newItem);
-            }
+            *item->GetPrev()->AccessNext() = item->GetNext();
         }
-
-        public void Remove(TItemType* item)
+        else
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (item != null) && (m_Count > 0));
-            if (item->GetPrev() != null)
-            {
-                *item->GetPrev()->AccessNext() = item->GetNext();
-            }
-            else
-            {
-                D3D12MA_HEAVY_ASSERT(m_Front == item);
-                m_Front = item->GetNext();
-            }
-
-            if (item->GetNext() != null)
-            {
-                *item->GetNext()->AccessPrev() = item->GetPrev();
-            }
-            else
-            {
-                D3D12MA_HEAVY_ASSERT(m_Back == item);
-                m_Back = item->GetPrev();
-            }
-            *item->AccessPrev() = null;
-            *item->AccessNext() = null;
-            --m_Count;
+            D3D12MA_HEAVY_ASSERT(m_Front == item);
+            m_Front = item->GetNext();
         }
+
+        if (item->GetNext() != null)
+        {
+            *item->GetNext()->AccessPrev() = item->GetPrev();
+        }
+        else
+        {
+            D3D12MA_HEAVY_ASSERT(m_Back == item);
+            m_Back = item->GetPrev();
+        }
+        *item->AccessPrev() = null;
+        *item->AccessNext() = null;
+        --m_Count;
     }
 }

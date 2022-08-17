@@ -5,37 +5,36 @@
 
 using static TerraFX.Interop.Windows.Windows;
 
-namespace TerraFX.Interop.DirectX.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests;
+
+internal sealed class RandomNumberGenerator
 {
-    internal sealed class RandomNumberGenerator
+    public RandomNumberGenerator()
     {
-        public RandomNumberGenerator()
-        {
-            m_Value = GetTickCount();
-        }
+        m_Value = GetTickCount();
+    }
 
-        public RandomNumberGenerator([NativeTypeName("uint32_t")] uint seed)
-        {
-            m_Value = seed;
-        }
+    public RandomNumberGenerator([NativeTypeName("uint32_t")] uint seed)
+    {
+        m_Value = seed;
+    }
 
-        public void Seed([NativeTypeName("uint32_t")] uint seed)
-        {
-            m_Value = seed;
-        }
+    public void Seed([NativeTypeName("uint32_t")] uint seed)
+    {
+        m_Value = seed;
+    }
 
-        [return: NativeTypeName("uint32_t")]
-        public uint Generate() => GenerateFast() ^ (GenerateFast() >> 7);
+    [return: NativeTypeName("uint32_t")]
+    public uint Generate() => GenerateFast() ^ (GenerateFast() >> 7);
 
-        public bool GenerateBool() => (GenerateFast() & 0x4) != 0;
+    public bool GenerateBool() => (GenerateFast() & 0x4) != 0;
 
-        [NativeTypeName("uint32_t")]
-        private uint m_Value;
+    [NativeTypeName("uint32_t")]
+    private uint m_Value;
 
-        [return: NativeTypeName("uint32_t")]
-        private uint GenerateFast()
-        {
-            return m_Value = unchecked((m_Value * 196314165) + 907633515);
-        }
+    [return: NativeTypeName("uint32_t")]
+    private uint GenerateFast()
+    {
+        return m_Value = unchecked((m_Value * 196314165) + 907633515);
     }
 }

@@ -3,11 +3,10 @@
 // Ported from UnscopedRefAttribute.cs in the dotnet/runtime repo 
 // Original source is Copyright © .NET Foundation. Licensed under the MIT License (MIT)
 
-namespace System.Diagnostics.CodeAnalysis
+namespace System.Diagnostics.CodeAnalysis;
+
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+internal sealed class UnscopedRefAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    internal sealed class UnscopedRefAttribute : Attribute
-    {
-        public UnscopedRefAttribute() { }
-    }
+    public UnscopedRefAttribute() { }
 }

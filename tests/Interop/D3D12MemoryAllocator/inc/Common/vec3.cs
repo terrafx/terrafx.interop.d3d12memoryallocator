@@ -8,63 +8,62 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace TerraFX.Interop.DirectX.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests;
+
+internal struct vec3
 {
-    internal struct vec3
+    public float x;
+
+    public float y;
+
+    public float z;
+
+    public vec3(float x, float y, float z)
     {
-        public float x;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
 
-        public float y;
-
-        public float z;
-
-        public vec3(float x, float y, float z)
+    [UnscopedRef]
+    public ref float this[[NativeTypeName("uint32_t")] uint index]
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get
         {
-            this.x = x;
-            this.y = y;
-            this.z = z;
+            return ref MemoryMarshal.CreateSpan(ref x, 3)[(int)index];
         }
+    }
 
-        [UnscopedRef]
-        public ref float this[[NativeTypeName("uint32_t")] uint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref MemoryMarshal.CreateSpan(ref x, 3)[(int)index];
-            }
-        }
+    public static vec3 operator +([NativeTypeName("const vec3&")] in vec3 lhs, [NativeTypeName("const vec3&")] in vec3 rhs)
+    {
+        return new vec3(
+            lhs.x + rhs.x,
+            lhs.y + rhs.y,
+            lhs.z + rhs.z
+        );
+    }
 
-        public static vec3 operator +([NativeTypeName("const vec3&")] in vec3 lhs, [NativeTypeName("const vec3&")] in vec3 rhs)
-        {
-            return new vec3(
-                lhs.x + rhs.x,
-                lhs.y + rhs.y,
-                lhs.z + rhs.z
-            );
-        }
+    public static vec3 operator -([NativeTypeName("const vec3&")] in vec3 lhs, [NativeTypeName("const vec3&")] in vec3 rhs)
+    {
+        return new vec3(
+            lhs.x - rhs.x,
+            lhs.y - rhs.y,
+            lhs.z - rhs.z
+        );
+    }
 
-        public static vec3 operator -([NativeTypeName("const vec3&")] in vec3 lhs, [NativeTypeName("const vec3&")] in vec3 rhs)
-        {
-            return new vec3(
-                lhs.x - rhs.x,
-                lhs.y - rhs.y,
-                lhs.z - rhs.z
-            );
-        }
+    public static vec3 operator *([NativeTypeName("const vec3&")] in vec3 lhs, float s)
+    {
+        return new vec3(
+            lhs.x * s,
+            lhs.y * s,
+            lhs.z * s
+        );
+    }
 
-        public static vec3 operator *([NativeTypeName("const vec3&")] in vec3 lhs, float s)
-        {
-            return new vec3(
-                lhs.x * s,
-                lhs.y * s,
-                lhs.z * s
-            );
-        }
-
-        public readonly vec3 Normalized()
-        {
-            return this * (1.0f / MathF.Sqrt((x * x) + (y * y) + (z * z)));
-        }
+    public readonly vec3 Normalized()
+    {
+        return this * (1.0f / MathF.Sqrt((x * x) + (y * y) + (z * z)));
     }
 }

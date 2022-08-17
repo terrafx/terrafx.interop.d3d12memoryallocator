@@ -7,24 +7,23 @@ using System.Runtime.CompilerServices;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.Windows.Windows;
 
-namespace TerraFX.Interop.DirectX
+namespace TerraFX.Interop.DirectX;
+
+internal unsafe struct D3D12MA_RW_MUTEX
 {
-    internal unsafe struct D3D12MA_RW_MUTEX
+    [NativeTypeName("SRWLOCK")]
+    private SRWLOCK m_Lock;
+
+    public void LockRead() => AcquireSRWLockShared((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
+
+    public void UnlockRead() => ReleaseSRWLockShared((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
+
+    public void LockWrite() => AcquireSRWLockExclusive((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
+
+    public void UnlockWrite() => ReleaseSRWLockExclusive((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
+
+    public static void _ctor(ref D3D12MA_RW_MUTEX mutex)
     {
-        [NativeTypeName("SRWLOCK")]
-        private SRWLOCK m_Lock;
-
-        public void LockRead() => AcquireSRWLockShared((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
-
-        public void UnlockRead() => ReleaseSRWLockShared((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
-
-        public void LockWrite() => AcquireSRWLockExclusive((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
-
-        public void UnlockWrite() => ReleaseSRWLockExclusive((SRWLOCK*)Unsafe.AsPointer(ref m_Lock));
-
-        public static void _ctor(ref D3D12MA_RW_MUTEX mutex)
-        {
-            InitializeSRWLock((SRWLOCK*)Unsafe.AsPointer(ref mutex.m_Lock));
-        }
+        InitializeSRWLock((SRWLOCK*)Unsafe.AsPointer(ref mutex.m_Lock));
     }
 }

@@ -5,34 +5,33 @@
 
 using System.Runtime.CompilerServices;
 
-namespace TerraFX.Interop.DirectX
+namespace TerraFX.Interop.DirectX;
+
+// Helper RAII class to lock a RW mutex in constructor and unlock it in destructor (at the end of scope), for reading.
+internal readonly unsafe ref struct D3D12MA_MutexLockRead
 {
-    // Helper RAII class to lock a RW mutex in constructor and unlock it in destructor (at the end of scope), for reading.
-    internal readonly unsafe ref struct D3D12MA_MutexLockRead
+    private readonly D3D12MA_RW_MUTEX* m_pMutex;
+
+    public D3D12MA_MutexLockRead([NativeTypeName("D3D12MA_RW_MUTEX&")] ref D3D12MA_RW_MUTEX mutex, bool useMutex = true)
+        : this((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref mutex), useMutex)
     {
-        private readonly D3D12MA_RW_MUTEX* m_pMutex;
+    }
 
-        public D3D12MA_MutexLockRead([NativeTypeName("D3D12MA_RW_MUTEX&")] ref D3D12MA_RW_MUTEX mutex, bool useMutex = true)
-            : this((D3D12MA_RW_MUTEX*)Unsafe.AsPointer(ref mutex), useMutex)
+    public D3D12MA_MutexLockRead([NativeTypeName("D3D12MA_RW_MUTEX&")] D3D12MA_RW_MUTEX* mutex, bool useMutex = true)
+    {
+        m_pMutex = useMutex ? mutex : null;
+
+        if (m_pMutex != null)
         {
+            m_pMutex->LockRead();
         }
+    }
 
-        public D3D12MA_MutexLockRead([NativeTypeName("D3D12MA_RW_MUTEX&")] D3D12MA_RW_MUTEX* mutex, bool useMutex = true)
+    public void Dispose()
+    {
+        if (m_pMutex != null)
         {
-            m_pMutex = useMutex ? mutex : null;
-
-            if (m_pMutex != null)
-            {
-                m_pMutex->LockRead();
-            }
-        }
-
-        public void Dispose()
-        {
-            if (m_pMutex != null)
-            {
-                m_pMutex->UnlockRead();
-            }
+            m_pMutex->UnlockRead();
         }
     }
 }

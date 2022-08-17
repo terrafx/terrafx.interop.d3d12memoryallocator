@@ -7,85 +7,84 @@ using System;
 using System.Runtime.CompilerServices;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop.DirectX
+namespace TerraFX.Interop.DirectX;
+
+internal unsafe struct D3D12MA_StringBuilder : IDisposable
 {
-    internal unsafe struct D3D12MA_StringBuilder : IDisposable
+    [NativeTypeName("Vector<WCHAR>")]
+    private D3D12MA_Vector<ushort> m_Data;
+
+    public D3D12MA_StringBuilder(D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks)
     {
-        [NativeTypeName("Vector<WCHAR>")]
-        private D3D12MA_Vector<ushort> m_Data;
+        Unsafe.SkipInit(out m_Data);
+        D3D12MA_Vector<ushort>._ctor(ref m_Data, allocationCallbacks);
+    }
 
-        public D3D12MA_StringBuilder(D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks)
+    public D3D12MA_StringBuilder(ref D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks)
+    {
+        Unsafe.SkipInit(out m_Data);
+        D3D12MA_Vector<ushort>._ctor(ref m_Data, (D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref allocationCallbacks));
+    }
+
+    public void Dispose() => m_Data.Dispose();
+
+    [return: NativeTypeName("size_t")]
+    public readonly nuint GetLength() => m_Data.size();
+
+    [return: NativeTypeName("LPCWSTR")]
+    public readonly ushort* GetData() => m_Data.data();
+
+    public void Add([NativeTypeName("WCHAR")] ushort ch) => m_Data.push_back(in ch);
+
+    public void Add([NativeTypeName("LPCWSTR")] ushort* str)
+    {
+        nuint len = wcslen(str);
+
+        if (len > 0)
         {
-            Unsafe.SkipInit(out m_Data);
-            D3D12MA_Vector<ushort>._ctor(ref m_Data, allocationCallbacks);
+            nuint oldCount = m_Data.size();
+            m_Data.resize(oldCount + len);
+            _ = memcpy(m_Data.data() + oldCount, str, len * sizeof(ushort));
         }
+    }
 
-        public D3D12MA_StringBuilder(ref D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks)
+    public void Add(string str)
+    {
+        fixed (char* p = str)
         {
-            Unsafe.SkipInit(out m_Data);
-            D3D12MA_Vector<ushort>._ctor(ref m_Data, (D3D12MA_ALLOCATION_CALLBACKS*)Unsafe.AsPointer(ref allocationCallbacks));
+            Add((ushort*)p);
         }
+    }
 
-        public void Dispose() => m_Data.Dispose();
+    public void AddNewLine() => Add('\n');
 
-        [return: NativeTypeName("size_t")]
-        public readonly nuint GetLength() => m_Data.size();
-
-        [return: NativeTypeName("LPCWSTR")]
-        public readonly ushort* GetData() => m_Data.data();
-
-        public void Add([NativeTypeName("WCHAR")] ushort ch) => m_Data.push_back(in ch);
-
-        public void Add([NativeTypeName("LPCWSTR")] ushort* str)
+    public void AddNumber([NativeTypeName("UINT")] uint num)
+    {
+        ushort* buf = stackalloc ushort[11];
+        buf[10] = '\0';
+        ushort* p = &buf[10];
+        do
         {
-            nuint len = wcslen(str);
-
-            if (len > 0)
-            {
-                nuint oldCount = m_Data.size();
-                m_Data.resize(oldCount + len);
-                _ = memcpy(m_Data.data() + oldCount, str, len * sizeof(ushort));
-            }
+            *--p = (ushort)('0' + (num % 10));
+            num /= 10;
         }
+        while (num > 0);
+        Add(p);
+    }
 
-        public void Add(string str)
+    public void AddNumber([NativeTypeName("UINT64")] ulong num)
+    {
+        ushort* buf = stackalloc ushort[21];
+        buf[20] = '\0';
+        ushort* p = &buf[20];
+
+        do
         {
-            fixed (char* p = str)
-            {
-                Add((ushort*)p);
-            }
+            *--p = (ushort)('0' + (num % 10));
+            num /= 10;
         }
+        while (num > 0);
 
-        public void AddNewLine() => Add('\n');
-
-        public void AddNumber([NativeTypeName("UINT")] uint num)
-        {
-            ushort* buf = stackalloc ushort[11];
-            buf[10] = '\0';
-            ushort* p = &buf[10];
-            do
-            {
-                *--p = (ushort)('0' + (num % 10));
-                num /= 10;
-            }
-            while (num > 0);
-            Add(p);
-        }
-
-        public void AddNumber([NativeTypeName("UINT64")] ulong num)
-        {
-            ushort* buf = stackalloc ushort[21];
-            buf[20] = '\0';
-            ushort* p = &buf[20];
-
-            do
-            {
-                *--p = (ushort)('0' + (num % 10));
-                num /= 10;
-            }
-            while (num > 0);
-
-            Add(p);
-        }
+        Add(p);
     }
 }

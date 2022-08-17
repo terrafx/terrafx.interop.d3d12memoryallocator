@@ -7,41 +7,40 @@ using System;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.Windows.Windows;
 
-namespace TerraFX.Interop.DirectX.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests;
+
+internal unsafe struct ResourceWithAllocation : IDisposable
 {
-    internal unsafe struct ResourceWithAllocation : IDisposable
+    public ComPtr<ID3D12Resource> resource;
+
+    public ComPtr<D3D12MA_Allocation> allocation;
+
+    [NativeTypeName("UINT64")]
+    public ulong size;
+
+    [NativeTypeName("UINT")]
+    public uint dataSeed;
+
+    public static void _ctor(ref ResourceWithAllocation pThis)
     {
-        public ComPtr<ID3D12Resource> resource;
+        pThis.resource = default;
+        pThis.allocation = default;
+        pThis.size = UINT64_MAX;
+        pThis.dataSeed = 0;
+    }
 
-        public ComPtr<D3D12MA_Allocation> allocation;
+    public void Reset()
+    {
+        resource.Dispose();
+        allocation.Dispose();
 
-        [NativeTypeName("UINT64")]
-        public ulong size;
+        size = UINT64_MAX;
+        dataSeed = 0;
+    }
 
-        [NativeTypeName("UINT")]
-        public uint dataSeed;
-
-        public static void _ctor(ref ResourceWithAllocation pThis)
-        {
-            pThis.resource = default;
-            pThis.allocation = default;
-            pThis.size = UINT64_MAX;
-            pThis.dataSeed = 0;
-        }
-
-        public void Reset()
-        {
-            resource.Dispose();
-            allocation.Dispose();
-
-            size = UINT64_MAX;
-            dataSeed = 0;
-        }
-
-        public void Dispose()
-        {
-            resource.Dispose();
-            allocation.Dispose();
-        }
+    public void Dispose()
+    {
+        resource.Dispose();
+        allocation.Dispose();
     }
 }

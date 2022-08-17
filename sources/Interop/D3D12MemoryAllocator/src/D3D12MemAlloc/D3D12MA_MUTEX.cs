@@ -7,25 +7,24 @@ using System;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.Windows.Windows;
 
-namespace TerraFX.Interop.DirectX
+namespace TerraFX.Interop.DirectX;
+
+internal unsafe struct D3D12MA_MUTEX : IDisposable
 {
-    internal unsafe struct D3D12MA_MUTEX : IDisposable
+    [NativeTypeName("std::mutex")]
+    private HANDLE m_Mutex;
+
+    public void Lock() => WaitForSingleObject(m_Mutex, INFINITE);
+
+    public void Unlock() => ReleaseMutex(m_Mutex);
+
+    public static void _ctor(ref D3D12MA_MUTEX mutex)
     {
-        [NativeTypeName("std::mutex")]
-        private HANDLE m_Mutex;
+        mutex.m_Mutex = CreateMutex(null, 0, null);
+    }
 
-        public void Lock() => WaitForSingleObject(m_Mutex, INFINITE);
-
-        public void Unlock() => ReleaseMutex(m_Mutex);
-
-        public static void _ctor(ref D3D12MA_MUTEX mutex)
-        {
-            mutex.m_Mutex = CreateMutex(null, 0, null);
-        }
-
-        public void Dispose()
-        {
-            _ = CloseHandle(m_Mutex);
-        }
+    public void Dispose()
+    {
+        _ = CloseHandle(m_Mutex);
     }
 }

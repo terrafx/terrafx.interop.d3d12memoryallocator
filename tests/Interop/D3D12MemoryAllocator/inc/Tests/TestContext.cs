@@ -5,16 +5,15 @@
 
 using TerraFX.Interop.DirectX;
 
-namespace TerraFX.Interop.DirectX.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests;
+
+internal unsafe struct TestContext
 {
-    internal unsafe struct TestContext
-    {
-        public D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks;
+    public D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks;
 
-        public ID3D12Device* device;
+    public ID3D12Device* device;
 
-        public D3D12MA_Allocator* allocator;
+    public D3D12MA_Allocator* allocator;
 
-        public D3D12MA_ALLOCATOR_FLAGS allocatorFlags;
-    }
+    public D3D12MA_ALLOCATOR_FLAGS allocatorFlags;
 }

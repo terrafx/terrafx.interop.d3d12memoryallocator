@@ -6,21 +6,20 @@
 using TerraFX.Interop.DirectX;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
 
-namespace TerraFX.Interop.DirectX
+namespace TerraFX.Interop.DirectX;
+
+internal unsafe struct D3D12MA_CommittedAllocationParameters
 {
-    internal unsafe struct D3D12MA_CommittedAllocationParameters
+    public D3D12MA_CommittedAllocationList* m_List;
+    public D3D12_HEAP_PROPERTIES m_HeapProperties;
+    public D3D12_HEAP_FLAGS m_HeapFlags;
+
+    public static void _ctor(out D3D12MA_CommittedAllocationParameters pThis)
     {
-        public D3D12MA_CommittedAllocationList* m_List;
-        public D3D12_HEAP_PROPERTIES m_HeapProperties;
-        public D3D12_HEAP_FLAGS m_HeapFlags;
-
-        public static void _ctor(out D3D12MA_CommittedAllocationParameters pThis)
-        {
-            pThis.m_List = null;
-            pThis.m_HeapProperties = default;
-            pThis.m_HeapFlags = D3D12_HEAP_FLAG_NONE;
-        }
-
-        public readonly bool IsValid() => m_List != null;
+        pThis.m_List = null;
+        pThis.m_HeapProperties = default;
+        pThis.m_HeapFlags = D3D12_HEAP_FLAG_NONE;
     }
+
+    public readonly bool IsValid() => m_List != null;
 }

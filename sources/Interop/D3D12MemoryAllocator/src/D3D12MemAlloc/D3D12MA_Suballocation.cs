@@ -5,21 +5,20 @@
 
 using System;
 
-namespace TerraFX.Interop.DirectX
+namespace TerraFX.Interop.DirectX;
+
+/// <summary>Represents a region of <see cref="D3D12MA_NormalBlock"/> that is either assigned and returned as allocated memory block or free.</summary>
+internal unsafe struct D3D12MA_Suballocation : IDisposable
 {
-    /// <summary>Represents a region of <see cref="D3D12MA_NormalBlock"/> that is either assigned and returned as allocated memory block or free.</summary>
-    internal unsafe struct D3D12MA_Suballocation : IDisposable
-    {
-        [NativeTypeName("UINT64")]
-        public ulong offset;
+    [NativeTypeName("UINT64")]
+    public ulong offset;
 
-        [NativeTypeName("UINT64")]
-        public ulong size;
+    [NativeTypeName("UINT64")]
+    public ulong size;
 
-        public void* userData;
+    public void* userData;
 
-        public D3D12MA_SuballocationType type;
+    public D3D12MA_SuballocationType type;
 
-        public void Dispose() { }
-    };
-}
+    public void Dispose() { }
+};

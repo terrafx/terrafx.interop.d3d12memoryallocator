@@ -12,113 +12,112 @@ using static TerraFX.Interop.Windows.S;
 using static TerraFX.Interop.Windows.IID;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
-namespace TerraFX.Interop.DirectX
+namespace TerraFX.Interop.DirectX;
+
+/// <summary>The base implementation for COM's <c>IUnknown</c> interface.</summary>
+internal unsafe struct D3D12MA_IUnknownImpl
 {
-    /// <summary>The base implementation for COM's <c>IUnknown</c> interface.</summary>
-    internal unsafe struct D3D12MA_IUnknownImpl
+    internal void** lpVtbl;
+
+    [NativeTypeName("std::atomic<UINT>")]
+    private volatile uint m_RefCount;
+
+    public static void _ctor(ref D3D12MA_IUnknownImpl pThis, void** lpVtbl)
     {
-        internal void** lpVtbl;
+        pThis.lpVtbl = lpVtbl;
+        pThis.m_RefCount = 1;
+    }
 
-        [NativeTypeName("std::atomic<UINT>")]
-        private volatile uint m_RefCount;
+    [return: NativeTypeName("HRESULT")]
+    public int QueryInterface([NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
+    {
+        D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[0] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&QueryInterface));
 
-        public static void _ctor(ref D3D12MA_IUnknownImpl pThis, void** lpVtbl)
+        if (ppvObject is null)
         {
-            pThis.lpVtbl = lpVtbl;
-            pThis.m_RefCount = 1;
+            return E_POINTER;
         }
 
-        [return: NativeTypeName("HRESULT")]
-        public int QueryInterface([NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
+        if (riid->Equals(IID_IUnknown))
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[0] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&QueryInterface));
-
-            if (ppvObject is null)
-            {
-                return E_POINTER;
-            }
-
-            if (riid->Equals(IID_IUnknown))
-            {
-                _ = Interlocked.Increment(ref m_RefCount);
-                *ppvObject = Unsafe.AsPointer(ref this);
-                return S_OK;
-            }
-
-            *ppvObject = null;
-
-            return E_NOINTERFACE;
+            _ = Interlocked.Increment(ref m_RefCount);
+            *ppvObject = Unsafe.AsPointer(ref this);
+            return S_OK;
         }
 
-        [return: NativeTypeName("ULONG")]
-        public uint AddRef()
+        *ppvObject = null;
+
+        return E_NOINTERFACE;
+    }
+
+    [return: NativeTypeName("ULONG")]
+    public uint AddRef()
+    {
+        D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[1] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&AddRef));
+        return Interlocked.Increment(ref m_RefCount);
+    }
+
+    [return: NativeTypeName("ULONG")]
+    public uint Release()
+    {
+        D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[2] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&Release));
+
+        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
+        uint newRefCount = Interlocked.Decrement(ref m_RefCount);
+
+        if (newRefCount == 0)
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[1] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&AddRef));
-            return Interlocked.Increment(ref m_RefCount);
+            ReleaseThis();
         }
 
-        [return: NativeTypeName("ULONG")]
-        public uint Release()
+        return newRefCount;
+    }
+
+    public void ReleaseThis()
+    {
+        ((delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)lpVtbl[3])((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
+    }
+
+    [UnmanagedCallersOnly]
+    [return: NativeTypeName("HRESULT")]
+    public static int QueryInterface(D3D12MA_IUnknownImpl* pThis, [NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
+    {
+        if (ppvObject is null)
         {
-            D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (lpVtbl[2] == (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&Release));
-
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            uint newRefCount = Interlocked.Decrement(ref m_RefCount);
-
-            if (newRefCount == 0)
-            {
-                ReleaseThis();
-            }
-
-            return newRefCount;
+            return E_POINTER;
         }
 
-        public void ReleaseThis()
+        if (riid->Equals(IID_IUnknown))
         {
-            ((delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)lpVtbl[3])((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
+            _ = Interlocked.Increment(ref pThis->m_RefCount);
+            *ppvObject = pThis;
+            return S_OK;
         }
 
-        [UnmanagedCallersOnly]
-        [return: NativeTypeName("HRESULT")]
-        public static int QueryInterface(D3D12MA_IUnknownImpl* pThis, [NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
+        *ppvObject = null;
+
+        return E_NOINTERFACE;
+    }
+
+    [UnmanagedCallersOnly]
+    [return: NativeTypeName("ULONG")]
+    public static uint AddRef(D3D12MA_IUnknownImpl* pThis)
+    {
+        return Interlocked.Increment(ref pThis->m_RefCount);
+    }
+
+    [UnmanagedCallersOnly]
+    [return: NativeTypeName("ULONG")]
+    public static uint Release(D3D12MA_IUnknownImpl* pThis)
+    {
+        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
+        uint newRefCount = Interlocked.Decrement(ref pThis->m_RefCount);
+
+        if (newRefCount == 0)
         {
-            if (ppvObject is null)
-            {
-                return E_POINTER;
-            }
-
-            if (riid->Equals(IID_IUnknown))
-            {
-                _ = Interlocked.Increment(ref pThis->m_RefCount);
-                *ppvObject = pThis;
-                return S_OK;
-            }
-
-            *ppvObject = null;
-
-            return E_NOINTERFACE;
+            pThis->ReleaseThis();
         }
 
-        [UnmanagedCallersOnly]
-        [return: NativeTypeName("ULONG")]
-        public static uint AddRef(D3D12MA_IUnknownImpl* pThis)
-        {
-            return Interlocked.Increment(ref pThis->m_RefCount);
-        }
-
-        [UnmanagedCallersOnly]
-        [return: NativeTypeName("ULONG")]
-        public static uint Release(D3D12MA_IUnknownImpl* pThis)
-        {
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            uint newRefCount = Interlocked.Decrement(ref pThis->m_RefCount);
-
-            if (newRefCount == 0)
-            {
-                pThis->ReleaseThis();
-            }
-
-            return newRefCount;
-        }
+        return newRefCount;
     }
 }

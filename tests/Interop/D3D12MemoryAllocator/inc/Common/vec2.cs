@@ -8,57 +8,56 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace TerraFX.Interop.DirectX.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests;
+
+internal struct vec2
 {
-    internal struct vec2
+    public float x;
+
+    public float y;
+
+    public vec2(float x, float y)
     {
-        public float x;
+        this.x = x;
+        this.y = y;
+    }
 
-        public float y;
-
-        public vec2(float x, float y)
+    [UnscopedRef]
+    public ref float this[[NativeTypeName("uint32_t")] uint index]
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get
         {
-            this.x = x;
-            this.y = y;
+            return ref MemoryMarshal.CreateSpan(ref x, 2)[(int)index];
         }
+    }
 
-        [UnscopedRef]
-        public ref float this[[NativeTypeName("uint32_t")] uint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref MemoryMarshal.CreateSpan(ref x, 2)[(int)index];
-            }
-        }
+    public static vec2 operator +([NativeTypeName("const vec2&")] in vec2 lhs, [NativeTypeName("const vec2&")] in vec2 rhs)
+    {
+        return new vec2(
+            lhs.x + rhs.x,
+            lhs.y + rhs.y
+        );
+    }
 
-        public static vec2 operator +([NativeTypeName("const vec2&")] in vec2 lhs, [NativeTypeName("const vec2&")] in vec2 rhs)
-        {
-            return new vec2(
-                lhs.x + rhs.x,
-                lhs.y + rhs.y
-            );
-        }
+    public static vec2 operator -([NativeTypeName("const vec2&")] in vec2 lhs, [NativeTypeName("const vec2&")] in vec2 rhs)
+    {
+        return new vec2(
+            lhs.x - rhs.x,
+            lhs.y - rhs.y
+        );
+    }
 
-        public static vec2 operator -([NativeTypeName("const vec2&")] in vec2 lhs, [NativeTypeName("const vec2&")] in vec2 rhs)
-        {
-            return new vec2(
-                lhs.x - rhs.x,
-                lhs.y - rhs.y
-            );
-        }
+    public static vec2 operator *([NativeTypeName("const vec2&")] in vec2 lhs, float s)
+    {
+        return new vec2(
+            lhs.x * s,
+            lhs.y * s
+        );
+    }
 
-        public static vec2 operator *([NativeTypeName("const vec2&")] in vec2 lhs, float s)
-        {
-            return new vec2(
-                lhs.x * s,
-                lhs.y * s
-            );
-        }
-
-        public readonly vec2 Normalized()
-        {
-            return this * (1.0f / MathF.Sqrt((x * x) + (y * y)));
-        }
+    public readonly vec2 Normalized()
+    {
+        return this * (1.0f / MathF.Sqrt((x * x) + (y * y)));
     }
 }
