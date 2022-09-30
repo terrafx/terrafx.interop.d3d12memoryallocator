@@ -1,38 +1,36 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using static TerraFX.Interop.Windows.Windows;
-using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
 namespace TerraFX.Interop.DirectX;
 
 /// <summary>Allocator for objects of type T using a list of arrays (pools) to speed up allocation.Number of elements that can be allocated is not bounded because allocator can create multiple blocks.</summary>
-/// <typeparam name="T">Should be POD because constructor and destructor is not called in Alloc (see extension) or <see cref="Free"/>.</typeparam>
-internal unsafe struct D3D12MA_PoolAllocator<T> : IDisposable
+/// <typeparam name="T">T should be POD because constructor and destructor is not called in Alloc or Free.</typeparam>
+internal unsafe partial struct D3D12MA_PoolAllocator<T> : IDisposable
     where T : unmanaged, IDisposable
 {
-    internal D3D12MA_ALLOCATION_CALLBACKS* m_AllocationCallbacks;
+    [NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")]
+    private readonly D3D12MA_ALLOCATION_CALLBACKS* m_AllocationCallbacks;
 
     [NativeTypeName("UINT")]
-    internal uint m_FirstBlockCapacity;
+    private readonly uint m_FirstBlockCapacity;
 
     internal D3D12MA_Vector<ItemBlock> m_ItemBlocks;
 
     // allocationCallbacks externally owned, must outlive this object.
-    public static void _ctor(ref D3D12MA_PoolAllocator<T> pThis, [NativeTypeName("D3D12MA_ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks, [NativeTypeName("UINT")] uint firstBlockCapacity)
+    public D3D12MA_PoolAllocator([NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks, [NativeTypeName("UINT")] uint firstBlockCapacity)
     {
-        pThis.m_AllocationCallbacks = allocationCallbacks;
-        pThis.m_FirstBlockCapacity = firstBlockCapacity;
+        m_AllocationCallbacks = (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(ref Unsafe.AsRef(in allocationCallbacks)));
+        m_FirstBlockCapacity = firstBlockCapacity;
+        m_ItemBlocks = new D3D12MA_Vector<ItemBlock>(allocationCallbacks);
 
-        D3D12MA_Vector<ItemBlock>._ctor(ref pThis.m_ItemBlocks, allocationCallbacks);
-
-        D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pThis.m_FirstBlockCapacity > 1));
+        D3D12MA_ASSERT(m_FirstBlockCapacity > 1);
     }
 
     public void Dispose()
@@ -43,75 +41,49 @@ internal unsafe struct D3D12MA_PoolAllocator<T> : IDisposable
 
     public void Clear()
     {
-        for (nuint i = m_ItemBlocks.size(); unchecked(i-- != 0);)
+        for (nuint i = m_ItemBlocks.size(); i-- != 0;)
         {
-            D3D12MA_DELETE_ARRAY(m_AllocationCallbacks, m_ItemBlocks[i]->pItems, m_ItemBlocks[i]->Capacity);
+            D3D12MA_DELETE_ARRAY(*m_AllocationCallbacks, m_ItemBlocks[i].pItems);
         }
         m_ItemBlocks.clear(true);
-    }
-
-    public T* Alloc()
-    {
-        T* result;
-        Item* pItem;
-
-        for (nuint i = m_ItemBlocks.size(); unchecked(i-- != 0);)
-        {
-            ItemBlock* block = m_ItemBlocks[i];
-
-            // This block has some free items: Use first one.
-            if (block->FirstFreeIndex != UINT32_MAX)
-            {
-                pItem = &block->pItems[block->FirstFreeIndex];
-                block->FirstFreeIndex = pItem->NextFreeIndex;
-
-                result = (T*)&pItem->Value;
-                return result;
-            }
-        }
-
-        // No block has free item: Create new one and use it.
-        ItemBlock* newBlock = CreateNewBlock();
-        pItem = &newBlock->pItems[0];
-        newBlock->FirstFreeIndex = pItem->NextFreeIndex;
-
-        result = (T*)&pItem->Value;
-        return result;
     }
 
     public void Free(T* ptr)
     {
         // Search all memory blocks to find ptr.
 
-        for (nuint i = m_ItemBlocks.size(); unchecked(i-- != 0);)
+        for (nuint i = m_ItemBlocks.size(); i-- != 0;)
         {
-            ItemBlock* block = m_ItemBlocks[i];
+            ref ItemBlock block = ref m_ItemBlocks[i];
 
             Item* pItemPtr;
-            _ = memcpy(&pItemPtr, &ptr, (nuint)sizeof(Item*));
+            _ = memcpy(&pItemPtr, &ptr, __sizeof<nuint>());
 
             // Check if pItemPtr is in address range of this block.
-            if ((pItemPtr >= block->pItems) && (pItemPtr < block->pItems + block->Capacity))
+            if ((pItemPtr >= block.pItems) && (pItemPtr < block.pItems + block.Capacity))
             {
                 ptr->Dispose(); // Explicit destructor call.
-                uint index = (uint)(pItemPtr - block->pItems);
-                pItemPtr->NextFreeIndex = block->FirstFreeIndex;
-                block->FirstFreeIndex = index;
+                uint index = (uint)(pItemPtr - block.pItems);
+
+                pItemPtr->NextFreeIndex = block.FirstFreeIndex;
+                block.FirstFreeIndex = index;
+
                 return;
             }
         }
 
-        D3D12MA_ASSERT(false); // Pointer doesn't belong to this memory pool
+        D3D12MA_FAIL("Pointer doesn't belong to this memory pool.");
     }
 
-    private ItemBlock* CreateNewBlock()
+    [return: NativeTypeName("D3D12MA::PoolAllocator<T>::ItemBlock &")]
+    internal ref ItemBlock CreateNewBlock()
     {
-        uint newBlockCapacity = m_ItemBlocks.empty() ? m_FirstBlockCapacity : m_ItemBlocks.back()->Capacity * 3 / 2;
+        uint newBlockCapacity = m_ItemBlocks.empty() ? m_FirstBlockCapacity : (m_ItemBlocks.back().Capacity * 3 / 2);
 
-        ItemBlock newBlock = new ItemBlock {
-            pItems = D3D12MA_NEW_ARRAY<Item>(m_AllocationCallbacks, newBlockCapacity),
+        ItemBlock newBlock = new ItemBlock() {
+            pItems = D3D12MA_NEW_ARRAY<Item>(*m_AllocationCallbacks, newBlockCapacity),
             Capacity = newBlockCapacity,
-            FirstFreeIndex = 0
+            FirstFreeIndex = 0,
         };
 
         m_ItemBlocks.push_back(newBlock);
@@ -122,27 +94,29 @@ internal unsafe struct D3D12MA_PoolAllocator<T> : IDisposable
             newBlock.pItems[i].NextFreeIndex = i + 1;
         }
 
-        newBlock.pItems[newBlockCapacity - 1].NextFreeIndex = UINT32_MAX;
-        return m_ItemBlocks.back();
+        newBlock.pItems[newBlockCapacity - 1].NextFreeIndex = uint.MaxValue;
+        return ref m_ItemBlocks.back();
     }
 
-    internal struct Item
+    internal partial struct Item
     {
-        // UINT32_MAX means end of list.
         [UnscopedRef]
+        [NativeTypeName("UINT")]
         public ref uint NextFreeIndex
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
+                // uint.MaxValue means end of list.
                 return ref Unsafe.As<T, uint>(ref Value);
             }
         }
 
+        [NativeTypeName("char[sizeof(T)]")]
         public T Value;
     }
 
-    internal struct ItemBlock
+    internal partial struct ItemBlock
     {
         public Item* pItems;
 

@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -9,14 +9,17 @@ using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
 namespace TerraFX.Interop.DirectX;
 
-internal unsafe struct D3D12MA_List<T> : IDisposable
+/// <summary>Doubly linked list, with elements allocated out of PoolAllocator. Has custom interface, as well as STL-style interface, including iterator and const_iterator.</summary>
+/// <typeparam name="T"></typeparam>
+internal unsafe partial struct D3D12MA_List<T> : IDisposable
     where T : unmanaged, IDisposable
 {
-    private D3D12MA_ALLOCATION_CALLBACKS* m_AllocationCallbacks;
+    [NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")]
+    private readonly D3D12MA_ALLOCATION_CALLBACKS* m_AllocationCallbacks;
 
     private D3D12MA_PoolAllocator<Item> m_ItemAllocator;
 
-    internal Item* m_pFront;
+    private Item* m_pFront;
 
     private Item* m_pBack;
 
@@ -24,50 +27,110 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
     private nuint m_Count;
 
     // allocationCallbacks externally owned, must outlive this object.
-    public static void _ctor(ref D3D12MA_List<T> pThis, [NativeTypeName("const D3D12MA_ALLOCATION_CALLBACKS&")] D3D12MA_ALLOCATION_CALLBACKS* allocationCallbacks)
+    public D3D12MA_List([NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks)
     {
-        pThis.m_AllocationCallbacks = allocationCallbacks;
-        D3D12MA_PoolAllocator<Item>._ctor(ref pThis.m_ItemAllocator, allocationCallbacks, 128);
-        pThis.m_pFront = null;
-        pThis.m_pBack = null;
-        pThis.m_Count = 0;
+        m_AllocationCallbacks = (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(ref Unsafe.AsRef(in allocationCallbacks)));
+        m_ItemAllocator = new D3D12MA_PoolAllocator<Item>(allocationCallbacks, 128);
     }
 
+    // Intentionally not calling Clear, because that would be unnecessary
+    // computations to return all items to m_ItemAllocator as free.
     public void Dispose()
     {
-        // Intentionally not calling Clear, because that would be unnecessary
-        // computations to return all items to m_ItemAllocator as free.
-
         m_ItemAllocator.Dispose();
     }
 
-    public void Clear()
+    [return: NativeTypeName("size_t")]
+    public readonly nuint GetCount()
     {
-        if (!IsEmpty())
-        {
-            Item* pItem = m_pBack;
+        return m_Count;
+    }
 
-            while (pItem != null)
-            {
-                Item* pPrevItem = pItem->pPrev;
-                m_ItemAllocator.Free(pItem);
-                pItem = pPrevItem;
-            }
+    public readonly bool IsEmpty()
+    {
+        return m_Count == 0;
+    }
+    
+    public readonly Item* Front()
+    {
+        return m_pFront;
+    }
 
-            m_pFront = null;
-            m_pBack = null;
-            m_Count = 0;
-        }
+    public readonly Item* Back()
+    {
+        return m_pBack;
+    }
+
+    public readonly bool empty()
+    {
+        return IsEmpty();
     }
 
     [return: NativeTypeName("size_t")]
-    public readonly nuint GetCount() => m_Count;
+    public readonly nuint size()
+    {
+        return GetCount();
+    }
 
-    public readonly bool IsEmpty() => m_Count == 0;
+    public void push_back([NativeTypeName("const T &")] in T value)
+    {
+        _ = PushBack(value);
+    }
 
-    public readonly Item* Front() => m_pFront;
+    public iterator insert(iterator it, [NativeTypeName("const T &")] in T value)
+    {
+        return new iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref this)), InsertBefore(it.m_pItem, value));
+    }
 
-    public readonly Item* Back() => m_pBack;
+    public void clear()
+    {
+        Clear();
+    }
+
+    public void erase(iterator it)
+    {
+        Remove(it.m_pItem);
+    }
+    
+    public iterator begin()
+    {
+        return new iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref this)), Front());
+    }
+
+    public iterator end()
+    {
+        return new iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref this)), null);
+    }
+
+    public reverse_iterator rbegin()
+    {
+        return new reverse_iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref this)), Back());
+    }
+
+    public reverse_iterator rend()
+    {
+        return new reverse_iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref this)), null);
+    }
+    
+    public readonly const_iterator cbegin()
+    {
+        return new const_iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref Unsafe.AsRef(in this))), Front());
+    }
+
+    public readonly const_iterator cend()
+    {
+        return new const_iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref Unsafe.AsRef(in this))), null);
+    }
+
+    public readonly const_reverse_iterator crbegin()
+    {
+        return new const_reverse_iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref Unsafe.AsRef(in this))), Back());
+    }
+
+    public readonly const_reverse_iterator crend()
+    {
+        return new const_reverse_iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref Unsafe.AsRef(in this))), null);
+    }
 
     public Item* PushBack()
     {
@@ -115,14 +178,14 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
         return pNewItem;
     }
 
-    public Item* PushBack([NativeTypeName("const T&")] in T value)
+    public Item* PushBack([NativeTypeName("const T &")] in T value)
     {
         Item* pNewItem = PushBack();
         pNewItem->Value = value;
         return pNewItem;
     }
 
-    public Item* PushFront([NativeTypeName("const T&")] in T value)
+    public Item* PushFront([NativeTypeName("const T &")] in T value)
     {
         Item* pNewItem = PushFront();
         pNewItem->Value = value;
@@ -131,7 +194,7 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
 
     public void PopBack()
     {
-        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
+        D3D12MA_HEAVY_ASSERT(m_Count > 0);
 
         Item* pBackItem = m_pBack;
         Item* pPrevItem = pBackItem->pPrev;
@@ -148,7 +211,7 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
 
     public void PopFront()
     {
-        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
+        D3D12MA_HEAVY_ASSERT(m_Count > 0);
 
         Item* pFrontItem = m_pFront;
         Item* pNextItem = pFrontItem->pNext;
@@ -162,6 +225,7 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
         m_ItemAllocator.Free(pFrontItem);
         --m_Count;
     }
+
 
     // Item can be null - it means PushBack.
     public Item* InsertBefore(Item* pItem)
@@ -181,7 +245,7 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
             }
             else
             {
-                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pFront == pItem));
+                D3D12MA_HEAVY_ASSERT(m_pFront == pItem);
                 m_pFront = newItem;
             }
 
@@ -212,7 +276,7 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
             }
             else
             {
-                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pBack == pItem));
+                D3D12MA_HEAVY_ASSERT(m_pBack == pItem);
                 m_pBack = newItem;
             }
 
@@ -225,24 +289,43 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
         }
     }
 
-    public Item* InsertBefore(Item* pItem, [NativeTypeName("const T&")] in T value)
+    public Item* InsertBefore(Item* pItem, [NativeTypeName("const T &")] in T value)
     {
         Item* newItem = InsertBefore(pItem);
         newItem->Value = value;
         return newItem;
     }
 
-    public Item* InsertAfter(Item* pItem, [NativeTypeName("const T&")] in T value)
+    public Item* InsertAfter(Item* pItem, [NativeTypeName("const T &")] in T value)
     {
         Item* newItem = InsertAfter(pItem);
         newItem->Value = value;
         return newItem;
     }
 
+    public void Clear()
+    {
+        if (!IsEmpty())
+        {
+            Item* pItem = m_pBack;
+
+            while (pItem != null)
+            {
+                Item* pPrevItem = pItem->pPrev;
+                m_ItemAllocator.Free(pItem);
+                pItem = pPrevItem;
+            }
+
+            m_pFront = null;
+            m_pBack = null;
+            m_Count = 0;
+        }
+    }
+
     public void Remove(Item* pItem)
     {
-        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (pItem != null));
-        D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_Count > 0));
+        D3D12MA_HEAVY_ASSERT(pItem != null);
+        D3D12MA_HEAVY_ASSERT(m_Count > 0);
 
         if (pItem->pPrev != null)
         {
@@ -250,7 +333,7 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
         }
         else
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pFront == pItem));
+            D3D12MA_HEAVY_ASSERT(m_pFront == pItem);
             m_pFront = pItem->pNext;
         }
 
@@ -260,7 +343,7 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
         }
         else
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pBack == pItem));
+            D3D12MA_HEAVY_ASSERT(m_pBack == pItem);
             m_pBack = pItem->pPrev;
         }
 
@@ -268,7 +351,7 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
         --m_Count;
     }
 
-    public struct Item : IDisposable
+    public partial struct Item : IDisposable
     {
         public Item* pPrev;
 
@@ -276,65 +359,29 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
 
         public T Value;
 
-        public void Dispose() { }
+        internal void _ctor()
+        {
+            pPrev = null;
+            pNext = null;
+            Value = default;
+        }
+
+        public void Dispose()
+        {
+            Value.Dispose();
+        }
     }
 
-#pragma warning disable CS0660, CS0661, CS8981
-    public struct iterator
+    public partial struct @iterator
     {
-        private D3D12MA_List<T>* m_pList;
+        internal D3D12MA_List<T>* m_pList;
 
         internal Item* m_pItem;
 
-        public readonly T* Get()
+        public iterator([NativeTypeName("const reverse_iterator &")] in reverse_iterator src)
         {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pItem != null));
-            return &m_pItem->Value;
-        }
-
-        public readonly iterator MoveNext()
-        {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (m_pItem != null));
-            return new iterator {
-                m_pList = m_pList,
-                m_pItem = m_pItem->pNext
-            };
-        }
-
-        public readonly iterator MoveBack()
-        {
-            var iterator = new iterator {
-                m_pList = m_pList
-            };
-
-            if (m_pItem != null)
-            {
-                iterator.m_pItem = m_pItem->pPrev;
-            }
-            else
-            {
-                D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (!m_pList->IsEmpty()));
-                iterator.m_pItem = m_pList->Back();
-            }
-
-            return iterator;
-        }
-
-        public static bool operator ==([NativeTypeName("const iterator&")] in iterator lhs, [NativeTypeName("const iterator&")] in iterator rhs)
-        {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (lhs.m_pList == rhs.m_pList));
-            return lhs.m_pItem == rhs.m_pItem;
-        }
-
-        public static bool operator !=([NativeTypeName("const iterator&")] in iterator lhs, [NativeTypeName("const iterator&")] in iterator rhs)
-        {
-            D3D12MA_HEAVY_ASSERT((D3D12MA_DEBUG_LEVEL > 1) && (lhs.m_pList == rhs.m_pList));
-            return lhs.m_pItem != rhs.m_pItem;
-        }
-
-        internal iterator(in D3D12MA_List<T> pList, Item* pItem)
-            : this((D3D12MA_List<T>*)Unsafe.AsPointer(ref Unsafe.AsRef(in pList)), pItem)
-        {
+            m_pList = src.m_pList;
+            m_pItem = src.m_pItem;
         }
 
         internal iterator(D3D12MA_List<T>* pList, Item* pItem)
@@ -342,24 +389,133 @@ internal unsafe struct D3D12MA_List<T> : IDisposable
             m_pList = pList;
             m_pItem = pItem;
         }
+
+        // T& operator*() const;
+        // T* operator->() const;
+        // 
+        // iterator& operator++();
+        // iterator& operator--();
+        // iterator operator ++(int);
+        // iterator operator --(int);
+        // 
+        // bool operator ==(const iterator& rhs) const;
+        // bool operator !=(const iterator& rhs) const;
     }
-#pragma warning restore CS0660, CS0661
 
-    public readonly bool empty() => IsEmpty();
+    public partial struct reverse_iterator
+    {
+        internal D3D12MA_List<T>* m_pList;
 
-    [return: NativeTypeName("size_t")]
-    public readonly nuint size() => GetCount();
+        internal Item* m_pItem;
 
-    public readonly iterator begin() => new iterator(in this, Front());
+        public reverse_iterator([NativeTypeName("const iterator &")] in iterator src)
+        {
+            m_pList = src.m_pList;
+            m_pItem = src.m_pItem;
+        }
 
-    public readonly iterator end() => new iterator(in this, null);
+        internal reverse_iterator(D3D12MA_List<T>* pList, Item* pItem)
+        {
+            m_pList = pList;
+            m_pItem = pItem;
+        }
 
-    public void clear() => Clear();
+        // T& operator*() const;
+        // T* operator->() const;
+        // 
+        // reverse_iterator& operator++();
+        // reverse_iterator& operator--();
+        // reverse_iterator operator ++(int);
+        // reverse_iterator operator --(int);
+        // 
+        // bool operator ==(const reverse_iterator& rhs) const;
+        // bool operator !=(const reverse_iterator& rhs) const;
+    }
 
-    public void push_back([NativeTypeName("const T&")] in T value) => PushBack(in value);
+    public partial struct const_iterator
+    {
+        internal D3D12MA_List<T>* m_pList;
 
-    public void erase(iterator it) => Remove(it.m_pItem);
+        internal Item* m_pItem;
 
-    public iterator insert(iterator it, [NativeTypeName("const T&")] in T value)
-        => new iterator(in this, InsertBefore(it.m_pItem, value));
+        public const_iterator([NativeTypeName("const iterator &")] in iterator src)
+        {
+            m_pList = src.m_pList;
+            m_pItem = src.m_pItem;
+        }
+
+        public const_iterator([NativeTypeName("const reverse_iterator &")] in reverse_iterator src)
+        {
+            m_pList = src.m_pList;
+            m_pItem = src.m_pItem;
+        }
+
+        public const_iterator([NativeTypeName("const const_reverse_iterator &")] in const_reverse_iterator src)
+        {
+            m_pList = src.m_pList;
+            m_pItem = src.m_pItem;
+        }
+
+        internal const_iterator([NativeTypeName("const D3D12MA::List<T> *")] D3D12MA_List<T>* pList, [NativeTypeName("const Item *")] Item* pItem)
+        {
+            m_pList = pList;
+            m_pItem = pItem;
+        }
+
+        // iterator dropConst() const;
+        // const T& operator*() const;
+        // const T* operator->() const;
+        // 
+        // const_iterator& operator++();
+        // const_iterator& operator--();
+        // const_iterator operator ++(int);
+        // const_iterator operator --(int);
+        // 
+        // bool operator ==(const const_iterator& rhs) const;
+        // bool operator !=(const const_iterator& rhs) const;
+
+    }
+
+    public partial struct const_reverse_iterator
+    {
+        internal D3D12MA_List<T>* m_pList;
+
+        internal Item* m_pItem;
+
+        public const_reverse_iterator([NativeTypeName("const iterator &")] in iterator src)
+        {
+            m_pList = src.m_pList;
+            m_pItem = src.m_pItem;
+        }
+
+        public const_reverse_iterator([NativeTypeName("const reverse_iterator &")] in reverse_iterator src)
+        {
+            m_pList = src.m_pList;
+            m_pItem = src.m_pItem;
+        }
+
+        public const_reverse_iterator([NativeTypeName("const const_iterator &")] in const_iterator src)
+        {
+            m_pList = src.m_pList;
+            m_pItem = src.m_pItem;
+        }
+
+        internal const_reverse_iterator([NativeTypeName("const D3D12MA::List<T> *")] D3D12MA_List<T>* pList, [NativeTypeName("const Item *")] Item* pItem)
+        {
+            m_pList = pList;
+            m_pItem = pItem;
+        }
+
+        // reverse_iterator dropConst() const;
+        // const T& operator*() const;
+        // const T* operator->() const;
+        // 
+        // const_reverse_iterator& operator++();
+        // const_reverse_iterator& operator--();
+        // const_reverse_iterator operator ++(int);
+        // const_reverse_iterator operator --(int);
+        // 
+        // bool operator ==(const const_reverse_iterator& rhs) const;
+        // bool operator !=(const const_reverse_iterator& rhs) const;
+    }
 }

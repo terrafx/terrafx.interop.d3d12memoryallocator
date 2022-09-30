@@ -7,34 +7,31 @@ namespace TerraFX.Interop.DirectX;
 
 public static unsafe partial class D3D12MemAlloc
 {
-    private static void* _aligned_malloc([NativeTypeName("size_t")] nuint _Size, [NativeTypeName("size_t")] nuint _Alignment)
+    internal static void* memset(void* s, int c, [NativeTypeName("size_t")] nuint n)
     {
-        return NativeMemory.AlignedAlloc(_Size, _Alignment);
+        Unsafe.InitBlock(s, (byte)(c), (uint)(n));
+        return s;
     }
 
-    private static void _aligned_free(void* _Block)
+    internal static void* memcpy(void* s1, [NativeTypeName("const void *")] void* s2, [NativeTypeName("size_t")] nuint n)
     {
-        NativeMemory.AlignedFree(_Block);
+        Unsafe.CopyBlock(s1, s2, (uint)(n));
+        return s1;
     }
 
-    private static void* memset(void* _Dst, int _Val, [NativeTypeName("size_t")] nuint _Size)
+    internal static void* memmove(void* s1, [NativeTypeName("const void *")] void* s2, [NativeTypeName("size_t")] nuint n)
     {
-        Unsafe.InitBlock(_Dst, (byte)_Val, (uint)_Size);
-        return _Dst;
+        Unsafe.CopyBlock(s1, s2, (uint)(n));
+        return s1;
     }
 
-    internal static void* memcpy(void* _Dst, [NativeTypeName("void const*")] void* _Src, [NativeTypeName("size_t")] nuint _Size)
+    [return: NativeTypeName("size_t")]
+    internal static nuint wcslen([NativeTypeName("const wchar_t *")] ushort* s)
     {
-        Unsafe.CopyBlock(_Dst, _Src, (uint)_Size);
-        return _Dst;
+        return (uint)(MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)(s)).Length);
     }
 
-    internal static nuint wcslen([NativeTypeName("wchar_t const*")] ushort* @_String)
-    {
-        return (uint)MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)@_String).Length;
-    }
-
-    [DllImport("libc", CallingConvention = CallingConvention.Cdecl, EntryPoint = "?get_new_handler@std@@YAP6AXXZXZ", ExactSpelling = true)]
+    [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, EntryPoint = "?get_new_handler@std@@YAP6AXXZXZ", ExactSpelling = true)]
     [return: NativeTypeName("std::new_handler")]
     private static extern delegate* unmanaged[Cdecl]<void> win32_std_get_new_handler();
 }

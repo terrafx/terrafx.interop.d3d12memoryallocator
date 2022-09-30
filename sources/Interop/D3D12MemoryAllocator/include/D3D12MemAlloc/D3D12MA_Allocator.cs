@@ -1,405 +1,422 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v2.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using TerraFX.Interop.Windows;
-using static TerraFX.Interop.Windows.Windows;
-using static TerraFX.Interop.Windows.E;
-using static TerraFX.Interop.DirectX.D3D12;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
-using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
+using static TerraFX.Interop.DirectX.DXGI_MEMORY_SEGMENT_GROUP;
+using static TerraFX.Interop.Windows.E;
+using static TerraFX.Interop.Windows.Windows;
 
 namespace TerraFX.Interop.DirectX;
 
-/// <summary>
-/// Represents main object of this library initialized for particular <see cref="ID3D12Device"/>.
-/// <para>
-/// Fill structure <see cref="D3D12MA_ALLOCATOR_DESC"/> and call function <see cref="D3D12MA_CreateAllocator"/> to create it.
-/// Call method <see cref="Release"/> to destroy it.
-/// </para>
-/// <para>
-/// It is recommended to create just one object of this type per <see cref="ID3D12Device"/> object,
-/// right after Direct3D 12 is initialized and keep it alive until before Direct3D device is destroyed.
-/// </para>
-/// </summary>
-public unsafe partial struct D3D12MA_Allocator : IDisposable, IUnknown.Interface
+/// <summary>Represents main object of this library initialized for particular <see cref="ID3D12Device" />.</summary>
+/// <remarks>
+///   <para>Fill structure <see cref="D3D12MA_ALLOCATOR_DESC" /> and call function <see cref="D3D12MA_CreateAllocator" /> to create it. Call method <see cref="Release()" /> to destroy it.</para>
+///   <para>It is recommended to create just one object of this type per <see cref="ID3D12Device" /> object, right after Direct3D 12 is initialized and keep it alive until before Direct3D device is destroyed.</para>
+/// </remarks>
+[NativeTypeName("class D3D12MA::Allocator : D3D12MA::IUnknownImpl")]
+[NativeInheritance("D3D12MA::IUnknownImpl")]
+public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface
 {
-    private static readonly void** Vtbl = InitVtbl();
+    public D3D12MA_IUnknownImpl Base;
 
-    private static void** InitVtbl()
+    internal D3D12MA_AllocatorPimpl* m_Pimpl;
+
+    public static D3D12MA_Allocator* Create([NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocs, [NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks, [NativeTypeName("const D3D12MA::ALLOCATOR_DESC &")] in D3D12MA_ALLOCATOR_DESC desc)
     {
-        void** lpVtbl = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_Allocator), sizeof(void*) * 4);
-
-        /* QueryInterface */ lpVtbl[0] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, Guid*, void**, int>)&D3D12MA_IUnknownImpl.QueryInterface;
-        /* AddRef         */ lpVtbl[1] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.AddRef;
-        /* Release        */ lpVtbl[2] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)&D3D12MA_IUnknownImpl.Release;
-        /* ReleaseThis    */ lpVtbl[3] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)&ReleaseThis;
-
-        return lpVtbl;
+        D3D12MA_Allocator* result = D3D12MA_NEW<D3D12MA_Allocator>(allocs);
+        result->_ctor(allocationCallbacks, desc);
+        return result;
     }
 
-    /// <inheritdoc/>
-    public HRESULT QueryInterface(Guid* riid, void** ppvObject)
+    private void _ctor()
     {
-        return m_IUnknownImpl.QueryInterface(riid, ppvObject);
+        Base = new D3D12MA_IUnknownImpl {
+            lpVtbl = VtblInstance,
+        };
     }
 
-    /// <inheritdoc/>
+    private void _ctor([NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks, [NativeTypeName("const D3D12MA::ALLOCATOR_DESC &")] in D3D12MA_ALLOCATOR_DESC desc)
+    {
+        _ctor();
+        m_Pimpl = D3D12MA_AllocatorPimpl.Create(allocationCallbacks, allocationCallbacks, desc);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [VtblIndex(0)]
+    public HRESULT QueryInterface([NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
+    {
+        return ((delegate* unmanaged<D3D12MA_Allocator*, Guid*, void**, int>)(Base.lpVtbl[0]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), riid, ppvObject);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [VtblIndex(1)]
+    [return: NativeTypeName("ULONG")]
     public uint AddRef()
     {
-        return m_IUnknownImpl.AddRef();
+        return ((delegate* unmanaged<D3D12MA_Allocator*, uint>)(Base.lpVtbl[1]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
     }
 
-    /// <inheritdoc/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [VtblIndex(2)]
+    [return: NativeTypeName("ULONG")]
     public uint Release()
     {
-        return m_IUnknownImpl.Release();
+        return ((delegate* unmanaged<D3D12MA_Allocator*, uint>)(Base.lpVtbl[2]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
     }
 
-    /// <summary>
-    /// Deletes this object.
-    /// <para>
-    /// This function must be used instead of destructor, which is private.
-    /// There is no reference counting involved.
-    /// </para>
-    /// </summary>
-    private void ReleaseThis()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [VtblIndex(3)]
+    void IDisposable.Dispose()
     {
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-
-        // Copy is needed because otherwise we would call destructor and invalidate the structure with callbacks before using it to free memory.
-        D3D12MA_ALLOCATION_CALLBACKS allocationCallbacksCopy = *GetAllocs();
-        D3D12MA_DELETE(&allocationCallbacksCopy, ref this);
+        ((delegate* unmanaged<D3D12MA_Allocator*, void>)(Base.lpVtbl[3]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
     }
 
-    [UnmanagedCallersOnly]
-    private static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [VtblIndex(4)]
+    void D3D12MA_IUnknownImpl.Interface.ReleaseThis()
     {
-        D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pThis->lpVtbl == Vtbl));
-        ((D3D12MA_Allocator*)pThis)->ReleaseThis();
+        ((delegate* unmanaged<D3D12MA_Allocator*, void>)(Base.lpVtbl[4]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
     }
 
     /// <summary>Returns cached options retrieved from D3D12 device.</summary>
-    /// <returns>The cached options retrieved from D3D12 device.</returns>
-    [return: NativeTypeName("const D3D12_FEATURE_DATA_D3D12_OPTIONS&")]
+    /// <returns></returns>
+    [return: NativeTypeName("const D3D12_FEATURE_DATA_D3D12_OPTIONS &")]
     public readonly D3D12_FEATURE_DATA_D3D12_OPTIONS* GetD3D12Options()
     {
-        return (D3D12_FEATURE_DATA_D3D12_OPTIONS*)Unsafe.AsPointer(ref Unsafe.AsRef(in m_D3D12Options));
+        return (D3D12_FEATURE_DATA_D3D12_OPTIONS*)(Unsafe.AsPointer(ref Unsafe.AsRef(in m_Pimpl->GetD3D12Options())));
     }
 
-    /// <summary>
-    /// Returns true if <see cref="D3D12_FEATURE_DATA_ARCHITECTURE1.UMA"/> was found to be true.
-    /// <para>
-    /// For more information about how to use it, see articles in Microsoft Docs:
-    /// <see href="https://docs.microsoft.com/en-us/windows/win32/direct3d12/default-texture-mapping"/>
-    /// <see href="https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_feature_data_architecture"/>
-    /// <see href="https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-getcustomheapproperties"/>
-    /// </para>
-    /// </summary>
-    /// <returns>Whether <see cref="D3D12_FEATURE_DATA_ARCHITECTURE1.UMA"/> was found to be true.</returns>
-    [return: NativeTypeName("BOOL")]
-    public readonly int IsUMA()
+    /// <summary>Returns true if `D3D12_FEATURE_DATA_ARCHITECTURE1::UMA` was found to be true.</summary>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>For more information about how to use it, see articles in Microsoft Docs articles:</para>
+    ///   <list type="bullet">
+    ///     <item>
+    ///       <description>"UMA Optimizations: CPU Accessible Textures and Standard Swizzle"</description>
+    ///     </item>
+    ///     <item>
+    ///       <description><see cref="D3D12_FEATURE_DATA_ARCHITECTURE" /> structure (d3d12.h)"</description>
+    ///     </item>
+    ///     <item>
+    ///       <description><see cref="ID3D12Device.GetCustomHeapProperties" /> method (d3d12.h)"</description>
+    ///     </item>
+    ///   </list>
+    /// </remarks>
+    public readonly BOOL IsUMA()
     {
-        return m_D3D12Architecture.UMA;
+        return m_Pimpl->IsUMA();
     }
 
-    /// <summary>
-    /// Returns true if <see cref="D3D12_FEATURE_DATA_ARCHITECTURE1.CacheCoherentUMA"/> was found to be true.
-    /// <para>
-    /// For more information about how to use it, see articles in Microsoft Docs:
-    /// <see href="https://docs.microsoft.com/en-us/windows/win32/direct3d12/default-texture-mapping"/>
-    /// <see href="https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_feature_data_architecture"/>
-    /// <see href="https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-getcustomheapproperties"/>
-    /// </para>
-    /// </summary>
-    /// <returns>Whether <see cref="D3D12_FEATURE_DATA_ARCHITECTURE1.CacheCoherentUMA"/> was found to be true.</returns>
-    [return: NativeTypeName("BOOL")]
-    public readonly int IsCacheCoherentUMA()
+    /// <summary>Returns true if `D3D12_FEATURE_DATA_ARCHITECTURE1::CacheCoherentUMA` was found to be true.</summary>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>For more information about how to use it, see articles in Microsoft Docs articles:</para>
+    ///   <list type="bullet">
+    ///     <item>
+    ///       <description>"UMA Optimizations: CPU Accessible Textures and Standard Swizzle"</description>
+    ///     </item>
+    ///     <item>
+    ///       <description><see cref="D3D12_FEATURE_DATA_ARCHITECTURE" /> structure (d3d12.h)"</description>
+    ///     </item>
+    ///     <item>
+    ///       <description><see cref="ID3D12Device.GetCustomHeapProperties" /> method (d3d12.h)"</description>
+    ///     </item>
+    ///   </list>
+    /// </remarks>
+    public readonly BOOL IsCacheCoherentUMA()
     {
-        return m_D3D12Architecture.CacheCoherentUMA;
+        return m_Pimpl->IsCacheCoherentUMA();
     }
 
-    /// <summary>
-    /// Allocates memory and creates a D3D12 resource (buffer or texture). This is the main allocation function.
-    /// <para>
-    /// The function is similar to <see cref="ID3D12Device.CreateCommittedResource"/>, but it may
-    /// really call <see cref="ID3D12Device.CreatePlacedResource"/> to assign part of a larger,
-    /// existing memory heap to the new resource, which is the main purpose of this whole library.
-    /// </para>
-    /// <para>
-    /// If <paramref name="ppvResource"/> is null, you receive only <paramref name="ppAllocation"/> object from this function.
-    /// It holds pointer to <see cref="ID3D12Resource"/> that can be queried using function <see cref="D3D12MA_Allocation.GetResource"/>.
-    /// Reference count of the resource object is 1. It is automatically destroyed when you destroy the allocation object.
-    /// </para>
-    /// <para>
-    /// If <paramref name="ppvResource"/> is not null, you receive pointer to the resource next to allocation object. Reference count of the resource object is
-    /// then increased by calling <see cref="IUnknown.QueryInterface"/>, so you need to manually <see cref="IUnknown.Release"/> it along with the allocation.
-    /// </para>
-    /// </summary>
+    /// <summary>Returns total amount of memory of specific segment group, in bytes.</summary>
+    /// <param name="memorySegmentGroup">Use <see cref="DXGI_MEMORY_SEGMENT_GROUP_LOCAL" /> or <see cref="DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL" />.</param>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>This information is taken from <see cref="DXGI_ADAPTER_DESC" />. It is not recommended to use this number. You should preferably call <see cref="GetBudget" /> and limit memory usage to <see cref="D3D12MA_Budget.BudgetBytes" /> instead.</para>
+    ///   <list type="bullet">
+    ///     <item>
+    ///       <description>
+    ///         <para>When <c>IsUMA() == FALSE</c> (discrete graphics card):</para>
+    ///         <list type="bullet">
+    ///           <item>
+    ///             <description><c>GetMemoryCapacity(DXGI_MEMORY_SEGMENT_GROUP_LOCAL)</c> returns the size of the video memory.</description>
+    ///           </item>
+    ///           <item>
+    ///             <description><c>GetMemoryCapacity(DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL)</c> returns the size of the system memory available for D3D12 resources.</description>
+    ///           </item>
+    ///         </list>
+    ///       </description>
+    ///     </item>
+    ///     <item>
+    ///       <description>
+    ///         <para>When <c>IsUMA() == TRUE</c> (integrated graphics chip):</para>
+    ///         <list type="bullet">
+    ///           <item>
+    ///             <description><c>GetMemoryCapacity(DXGI_MEMORY_SEGMENT_GROUP_LOCAL)</c> returns the size of the shared memory available for all D3D12 resources. All memory is considered "local".</description>
+    ///           </item>
+    ///           <item>
+    ///             <description><c>GetMemoryCapacity(DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL)</c> is not applicable and returns 0.</description>
+    ///           </item>
+    ///         </list>
+    ///       </description>
+    ///     </item>
+    ///   </list>
+    /// </remarks>
+    [return: NativeTypeName("UINT64")]
+    public readonly ulong GetMemoryCapacity([NativeTypeName("UINT")] uint memorySegmentGroup)
+    {
+        return m_Pimpl->GetMemoryCapacity(memorySegmentGroup);
+    }
+
+    /// <summary>Allocates memory and creates a D3D12 resource (buffer or texture). This is the main allocation function.</summary>
     /// <param name="pAllocDesc">Parameters of the allocation.</param>
     /// <param name="pResourceDesc">Description of created resource.</param>
     /// <param name="InitialResourceState">Initial resource state.</param>
     /// <param name="pOptimizedClearValue">Optional. Either null or optimized clear value.</param>
     /// <param name="ppAllocation">Filled with pointer to new allocation object created.</param>
-    /// <param name="riidResource">IID of a resource to be returned via <paramref name="ppvResource"/>.</param>
+    /// <param name="riidResource">IID of a resource to be returned via `ppvResource`.</param>
     /// <param name="ppvResource">Optional. If not null, filled with pointer to new resouce created.</param>
+    /// <returns></returns>
     /// <remarks>
-    /// This function creates a new resource. Sub-allocation of parts of one large buffer,
-    /// although recommended as a good practice, is out of scope of this library and could be implemented
-    /// by the user as a higher-level logic on top of it, e.g. using the virtual_allocator feature.
+    ///   <para>The function is similar to <see cref="ID3D12Device.CreateCommittedResource" />, but it may really call <see cref="ID3D12Device.CreatePlacedResource" /> to assign part of a larger, existing memory heap to the new resource, which is the main purpose of this whole library.</para>
+    ///   <para>If <paramref name="ppvResource" /> is null, you receive only <paramref name="ppAllocation" /> object from this function. It holds pointer to <see cref="ID3D12Resource" /> that can be queried using function <see cref="D3D12MA_Allocation.GetResource" />. Reference count of the resource object is 1. It is automatically destroyed when you destroy the allocation object.</para>
+    ///   <para>If <paramref name="ppvResource" /> is not null, you receive pointer to the resource next to allocation object. Reference count of the resource object is then increased by calling <see cref="ID3D12Resource.QueryInterface" />, so you need to manually <see cref="ID3D12Resource.Release" /> it along with the allocation.</para>
+    ///   <para>NOTE: This function creates a new resource. Sub-allocation of parts of one large buffer, although recommended as a good practice, is out of scope of this library and could be implemented by the user as a higher-level logic on top of it, e.g. using the virtual_allocator feature.</para>
     /// </remarks>
-    [return: NativeTypeName("HRESULT")]
-    public int CreateResource([NativeTypeName("const ALLOCATION_DESC*")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC*")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    public HRESULT CreateResource([NativeTypeName("const D3D12MA::ALLOCATION_DESC *")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC *")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
     {
         if ((pAllocDesc == null) || (pResourceDesc == null) || (ppAllocation == null))
         {
-            D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreateResource."
+            D3D12MA_FAIL("Invalid arguments passed to D3D12MA_Allocator.CreateResource.");
             return E_INVALIDARG;
         }
 
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-        return CreateResourcePimpl(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        return m_Pimpl->CreateResource(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
     }
 
-    /// <summary>
-    /// Similar to <see cref="CreateResource"/>, but supports additional parameter <paramref name="pProtectedSession"/>.
-    /// <para>If <paramref name="pProtectedSession"/> is not null, current implementation always creates the resource as committed using <see cref="ID3D12Device4.CreateCommittedResource1"/>.</para>
-    /// <para>To work correctly, <see cref="ID3D12Device4"/> interface must be available in the current system. Otherwise, <see cref="E_NOINTERFACE"/></para>
-    /// </summary>
-    [return: NativeTypeName("HRESULT")]
-    public int CreateResource1([NativeTypeName("const ALLOCATION_DESC*")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC*")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
-    {
-        if ((pAllocDesc == null) || (pResourceDesc == null) || (ppAllocation == null))
-        {
-            D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreateResource1."
-            return E_INVALIDARG;
-        }
-
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-        return CreateResource1Pimpl(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
-    }
-
-    /// <summary>
-    /// Similar to <see cref="CreateResource1"/>, but supports new structure <see cref="D3D12_RESOURCE_DESC1"/>.
-    /// <para>It internally uses <see cref="ID3D12Device8.CreateCommittedResource2"/> or <see cref="ID3D12Device8.CreatePlacedResource1"/>.</para>
-    /// <para>To work correctly, <see cref="ID3D12Device8"/> interface must be available in the current system. Otherwise, <see cref="E_NOINTERFACE"/> is returned.</para>
-    /// </summary>
+    /// <summary>Similar to Allocator::CreateResource, but supports new structure <see cref="D3D12_RESOURCE_DESC1" />.</summary>
     /// <param name="pAllocDesc"></param>
     /// <param name="pResourceDesc"></param>
     /// <param name="InitialResourceState"></param>
     /// <param name="pOptimizedClearValue"></param>
-    /// <param name="pProtectedSession"></param>
     /// <param name="ppAllocation"></param>
     /// <param name="riidResource"></param>
     /// <param name="ppvResource"></param>
-    [return: NativeTypeName("HRESULT")]
-    public int CreateResource2([NativeTypeName("const ALLOCATION_DESC*")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC1*")] D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>It internally uses <see cref="ID3D12Device8.CreateCommittedResource2" /> or <see cref="ID3D12Device8.CreatePlacedResource1"/>.</para>
+    ///   <para>To work correctly, <see cref="ID3D12Device8" />interface must be available in the current system. Otherwise, <see cref="E_NOINTERFACE" /> is returned.</para>
+    /// </remarks>
+    public HRESULT CreateResource2([NativeTypeName("const D3D12MA::ALLOCATION_DESC *")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC1 *")] D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
     {
         if ((pAllocDesc == null) || (pResourceDesc == null) || (ppAllocation == null))
         {
-            D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreateResource2."
+            D3D12MA_FAIL("Invalid arguments passed to D3D12MA_Allocator.CreateResource2.");
             return E_INVALIDARG;
         }
 
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-        return CreateResource2Pimpl(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, pProtectedSession, ppAllocation, riidResource, ppvResource);
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        return m_Pimpl->CreateResource2(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
     }
 
-    /// <summary>
-    /// Allocates memory without creating any resource placed in it.
-    /// <para>This function is similar to <see cref="ID3D12Device.CreateHeap"/>, but it may really assign part of a larger, existing heap to the allocation.</para>
-    /// </summary>
-    /// <param name="pAllocDesc">
-    /// <c>pAllocDesc->heapFlags</c> should contain one of these values, depending on type of resources you are going to create in this memory:
-    /// <see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS"/>,
-    /// <see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES"/>,
-    /// <see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES"/>.
-    /// Except if you validate that <c>ResourceHeapTier = 2</c> - then <c>heapFlags</c>
-    /// may be <see cref="D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES"/> <c>= 0</c>.
-    /// Additional flags in <c>heapFlags</c> are allowed as well.
-    /// </param>
-    /// <param name="pAllocInfo"><c>pAllocInfo->SizeInBytes</c> must be multiply of 64KB.</param>
-    /// <param name="ppAllocation"><c>pAllocInfo->Alignment</c> must be one of the legal values as described in documentation of <see cref="D3D12_HEAP_DESC"/>.</param>
-    /// <remarks>If you use <see cref="D3D12MA_ALLOCATION_FLAG_COMMITTED"/> you will get a separate memory block - a heap that always has offset 0.</remarks>
-    [return: NativeTypeName("HRESULT")]
-    public int AllocateMemory([NativeTypeName("const ALLOCATION_DESC*")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO*")] D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo, D3D12MA_Allocation** ppAllocation)
+    /// <summary>Allocates memory without creating any resource placed in it.</summary>
+    /// <param name="pAllocDesc"></param>
+    /// <param name="pAllocInfo"></param>
+    /// <param name="ppAllocation"></param>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>This function is similar to <see cref="ID3D12Device.CreateHeap" />, but it may really assign part of a larger, existing heap to the allocation.</para>
+    ///   <para><c>pAllocDesc->heapFlags</c> should contain one of these values, depending on type of resources you are going to create in this memory:</para>
+    ///   <list type="bullet">
+    ///     <item>
+    ///       <description><see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS" /></description>
+    ///     </item>
+    ///     <item>
+    ///       <description><see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES" /></description>
+    ///     </item>
+    ///     <item>
+    ///       <description><see cref="D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES" /></description>
+    ///     </item>
+    ///   </list>
+    ///   <para>Except if you validate that <c>ResourceHeapTier = 2</c> - then <c>heapFlags</c> may be <see cref="D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES" />. Additional flags in <c>heapFlags</c> are allowed as well.</para>
+    ///   <para><c>pAllocInfo->SizeInBytes</c> must be multiply of 64KB. <c>pAllocInfo->Alignment</c> must be one of the legal values as described in documentation of <see cref="D3D12_HEAP_DESC" />.</para>
+    ///   <para>If you use <see cref="D3D12MA_ALLOCATION_FLAG_COMMITTED" /> you will get a separate memory block - a heap that always has offset 0.</para>
+    /// </remarks>
+    public HRESULT AllocateMemory([NativeTypeName("const D3D12MA::ALLOCATION_DESC *")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO *")] D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo, D3D12MA_Allocation** ppAllocation)
     {
-        if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
+        if (!D3D12MA_ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
         {
-            D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::AllocateMemory."
+            D3D12MA_FAIL("Invalid arguments passed to D3D12MA_Allocator.AllocateMemory.");
             return E_INVALIDARG;
         }
 
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-        return AllocateMemoryPimpl(pAllocDesc, pAllocInfo, ppAllocation);
-    }
-
-    /// <summary>
-    /// Similar to <see cref="AllocateMemory"/>, but supports additional parameter <paramref name="pProtectedSession"/>.
-    /// <para>If <paramref name="pProtectedSession"/> is not null, current implementation always creates separate heap using <see cref="ID3D12Device4.CreateHeap1"/>.</para>
-    /// <para>To work correctly, <see cref="ID3D12Device4"/> interface must be available in the current system. Otherwise, <see cref="E_NOINTERFACE"/> is returned.</para>
-    /// </summary>
-    [return: NativeTypeName("HRESULT")]
-    public int AllocateMemory1([NativeTypeName("const ALLOCATION_DESC*")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO*")] D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo, ID3D12ProtectedResourceSession* pProtectedSession, D3D12MA_Allocation** ppAllocation)
-    {
-        if (!ValidateAllocateMemoryParameters(pAllocDesc, pAllocInfo, ppAllocation))
-        {
-            D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::AllocateMemory1."
-            return E_INVALIDARG;
-        }
-
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-        return AllocateMemory1Pimpl(pAllocDesc, pAllocInfo, pProtectedSession, ppAllocation);
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        return m_Pimpl->AllocateMemory(pAllocDesc, pAllocInfo, ppAllocation);
     }
 
     /// <summary>Creates a new resource in place of an existing allocation. This is useful for memory aliasing.</summary>
-    /// <param name="pAllocation">
-    /// Existing allocation indicating the memory where the new resource should be created.
-    /// It can be created using <see cref="CreateResource"/> and already have a resource bound to it,
-    /// or can be a raw memory allocated with <see cref="AllocateMemory"/>.
-    /// It must not be created as committed so that <see cref="ID3D12Heap"/> is available and not implicit.
-    /// </param>
-    /// <param name="AllocationLocalOffset">
-    /// Additional offset in bytes to be applied when allocating the resource.
-    /// Local from the start of <paramref name="pAllocation"/>, not the beginning of the whole <see cref="ID3D12Heap"/>!
-    /// If the new resource should start from the beginning of the <paramref name="pAllocation"/> it should be 0.
-    /// </param>
+    /// <param name="pAllocation">Existing allocation indicating the memory where the new resource should be created. It can be created using <see cref="CreateResource" /> and already have a resource bound to it, or can be a raw memory allocated with <see cref="AllocateMemory" />. It must not be created as committed so that <see cref="ID3D12Heap" /> is available and not implicit.</param>
+    /// <param name="AllocationLocalOffset">Additional offset in bytes to be applied when allocating the resource. Local from the start of <paramref name="pAllocation" />, not the beginning of the whole <see cref="ID3D12Heap" />! If the new resource should start from the beginning of the `pAllocation` it should be 0.</param>
     /// <param name="pResourceDesc">Description of the new resource to be created.</param>
     /// <param name="InitialResourceState"></param>
     /// <param name="pOptimizedClearValue"></param>
     /// <param name="riidResource"></param>
-    /// <param name="ppvResource">
-    /// Returns pointer to the new resource.
-    /// The resource is not bound with <paramref name="pAllocation"/>.
-    /// This pointer must not be null - you must get the resource pointer and `Release` it when no longer needed.
-    /// </param>
-    /// <remarks>
-    /// Memory requirements of the new resource are checked for validation.
-    /// If its size exceeds the end of <paramref name="pAllocation"/> or required alignment is not fulfilled
-    /// considering <c>pAllocation->GetOffset() + AllocationLocalOffset</c>, the function
-    /// returns <see cref="E_INVALIDARG"/>.
-    /// </remarks>
-    [return: NativeTypeName("HRESULT")]
-    public int CreateAliasingResource(D3D12MA_Allocation* pAllocation, [NativeTypeName("UINT64")] ulong AllocationLocalOffset, [NativeTypeName("const D3D12_RESOURCE_DESC*")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE*")] D3D12_CLEAR_VALUE* pOptimizedClearValue, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    /// <param name="ppvResource">Returns pointer to the new resource. The resource is not bound with <paramref name="pAllocation" />. This pointer must not be null - you must get the resource pointer and <see cref="ID3D12Resource.Release" /> it when no longer needed.</param>
+    /// <returns></returns>
+    /// <remarks>Memory requirements of the new resource are checked for validation. If its size exceeds the end of <paramref name="pAllocation" /> or required alignment is not fulfilled considering <c>pAllocation->GetOffset() + AllocationLocalOffset</c>, the function returns <see cref="E_INVALIDARG" />.</remarks>
+    public HRESULT CreateAliasingResource(D3D12MA_Allocation* pAllocation, [NativeTypeName("UINT64")] ulong AllocationLocalOffset, [NativeTypeName("const D3D12_RESOURCE_DESC *")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
     {
-        if ((pAllocation == null ) || (pResourceDesc == null) || (ppvResource == null))
+        if ((pAllocation == null) || (pResourceDesc == null) || (ppvResource == null))
         {
-            D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreateAliasingResource."
+            D3D12MA_FAIL("Invalid arguments passed to D3D12MA_Allocator.CreateAliasingResource.");
             return E_INVALIDARG;
         }
 
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-        return CreateAliasingResourcePimpl(pAllocation, AllocationLocalOffset, pResourceDesc, InitialResourceState, pOptimizedClearValue, riidResource, ppvResource);
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        return m_Pimpl->CreateAliasingResource(pAllocation, AllocationLocalOffset, pResourceDesc, InitialResourceState, pOptimizedClearValue, riidResource, ppvResource);
     }
 
     /// <summary>Creates custom pool.</summary>
-    [return: NativeTypeName("HRESULT")]
-    public int CreatePool([NativeTypeName("const POOL_DESC*")] D3D12MA_POOL_DESC* pPoolDesc, D3D12MA_Pool** ppPool)
+    /// <param name="pPoolDesc"></param>
+    /// <param name="ppPool"></param>
+    /// <returns></returns>
+    public HRESULT CreatePool([NativeTypeName("const D3D12MA::POOL_DESC *")] D3D12MA_POOL_DESC* pPoolDesc, D3D12MA_Pool** ppPool)
     {
-        if ((pPoolDesc == null) || (ppPool == null) ||
-            ((pPoolDesc->MaxBlockCount > 0) && (pPoolDesc->MaxBlockCount < pPoolDesc->MinBlockCount)) ||
-            ((pPoolDesc->MinAllocationAlignment > 0) && !IsPow2(pPoolDesc->MinAllocationAlignment)))
+        if ((pPoolDesc == null) || (ppPool == null) || ((pPoolDesc->MaxBlockCount > 0) && (pPoolDesc->MaxBlockCount < pPoolDesc->MinBlockCount)) || ((pPoolDesc->MinAllocationAlignment > 0) && !D3D12MA_IsPow2(pPoolDesc->MinAllocationAlignment)))
         {
-            D3D12MA_ASSERT(false); // "Invalid arguments passed to Allocator::CreatePool."
+            D3D12MA_FAIL("Invalid arguments passed to D3D12MA_Allocator.CreatePool.");
             return E_INVALIDARG;
         }
 
-        if (!HeapFlagsFulfillResourceHeapTier(pPoolDesc->HeapFlags))
+        if (!m_Pimpl->HeapFlagsFulfillResourceHeapTier(pPoolDesc->HeapFlags))
         {
-            D3D12MA_ASSERT(false); // "Invalid pPoolDesc->HeapFlags passed to Allocator::CreatePool. Did you forget to handle ResourceHeapTier=1?"
+            D3D12MA_FAIL("Invalid pPoolDesc->HeapFlags passed to D3D12MA_Allocator.CreatePool. Did you forget to handle ResourceHeapTier=1?");
             return E_INVALIDARG;
         }
 
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        *ppPool = D3D12MA_Pool.Create(m_Pimpl->GetAllocs(), (D3D12MA_Allocator*)(Unsafe.AsPointer(ref this)), *pPoolDesc);
 
-        *ppPool = D3D12MA_NEW<D3D12MA_Pool>(GetAllocs());
-        D3D12MA_Pool._ctor(ref **ppPool, ref this, pPoolDesc);
-
-        HRESULT hr = (*ppPool)->Init();
+        HRESULT hr = (*ppPool)->m_Pimpl->Init();
 
         if (SUCCEEDED(hr))
         {
-            RegisterPool(*ppPool, pPoolDesc->HeapProperties.Type);
+            m_Pimpl->RegisterPool(*ppPool, pPoolDesc->HeapProperties.Type);
         }
         else
         {
-            D3D12MA_DELETE(GetAllocs(), *ppPool);
+            D3D12MA_DELETE(m_Pimpl->GetAllocs(), *ppPool);
             *ppPool = null;
         }
-
         return hr;
     }
 
-    /// <summary>
-    /// Sets the index of the current frame.
-    /// <para>This function is used to set the frame index in the allocator when a new game frame begins.</para>
-    /// </summary>
+    /// <summary>Sets the index of the current frame.</summary>
+    /// <param name="frameIndex"></param>
+    /// <remarks>This function is used to set the frame index in the allocator when a new game frame begins.</remarks>
     public void SetCurrentFrameIndex([NativeTypeName("UINT")] uint frameIndex)
     {
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-        SetCurrentFrameIndexPimpl(frameIndex);
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        m_Pimpl->SetCurrentFrameIndex(frameIndex);
     }
 
-    /// <summary>Retrieves statistics from the current state of the allocator.</summary>
-    public void CalculateStats(D3D12MA_Stats* pStats)
-    {
-        D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (pStats != null));
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-        CalculateStatsPimpl(pStats);
-    }
-
-    /// <summary>Retrieves information about current memory budget.</summary>
-    /// <param name="pGpuBudget">Optional, can be null.</param>
-    /// <param name="pCpuBudget">Optional, can be null.</param>
+    /// <summary>Retrieves information about current memory usage and budget.</summary>
+    /// <param name="pLocalBudget">Optional, can be null.</param>
+    /// <param name="pNonLocalBudget">Optional, can be null.</param>
     /// <remarks>
-    /// This function is called "get" not "calculate" because it is very fast, suitable to be called
-    /// every frame or every allocation.For more detailed statistics use <see cref="CalculateStats"/>.
-    /// <para>Note that when using allocator from multiple threads, returned information may immediately become outdated.</para>
+    ///   <list type="bullet">
+    ///     <item>
+    ///       <description>
+    ///         <para>When <c>IsUMA() == FALSE</c> (discrete graphics card):</para>
+    ///         <list type="bullet">
+    ///           <item>
+    ///             <description><paramref name="pLocalBudget"/> returns the budget of the video memory.</description>
+    ///           </item>
+    ///           <item>
+    ///             <description><paramref name="pNonLocalBudget" /> returns the budget of the system memory available for D3D12 resources.</description>
+    ///           </item>
+    ///         </list>
+    ///       </description>
+    ///     </item>
+    ///     <item>
+    ///       <description>
+    ///         <para>When <c>IsUMA() == TRUE</c> (integrated graphics chip):</para>
+    ///         <list type="bullet">
+    ///           <item>
+    ///             <description><paramref name="pLocalBudget" /> returns the budget of the shared memory available for all D3D12 resources. All memory is considered "local".</description>
+    ///           </item>
+    ///           <item>
+    ///             <description><paramref name="pNonLocalBudget" /> is not applicable and returns zeros.</description>
+    ///           </item>
+    ///         </list>
+    ///       </description>
+    ///     </item>
+    ///   </list>
+    ///   <para>This function is called "get" not "calculate" because it is very fast, suitable to be called every frame or every allocation.For more detailed statistics use <see cref="CalculateStatistics" />.</para>
+    ///   <para>Note that when using allocator from multiple threads, returned information may immediately become outdated.</para>
     /// </remarks>
-    public void GetBudget(D3D12MA_Budget* pGpuBudget, D3D12MA_Budget* pCpuBudget)
+    public void GetBudget(D3D12MA_Budget* pLocalBudget, D3D12MA_Budget* pNonLocalBudget)
     {
-        if ((pGpuBudget == null) && (pCpuBudget == null))
+        if ((pLocalBudget == null) && (pNonLocalBudget == null))
         {
             return;
         }
 
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-        GetBudgetPimpl(pGpuBudget, pCpuBudget);
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        m_Pimpl->GetBudget(pLocalBudget, pNonLocalBudget);
+    }
+
+    /// <summary>Retrieves statistics from current state of the allocator.</summary>
+    /// <param name="pStats"></param>
+    /// <remarks>
+    ///   <para>This function is called "calculate" not "get" because it has to traverse all internal data structures, so it may be quite slow. Use it for debugging purposes. For faster but more brief statistics suitable to be called every frame or every allocation, use <see cref="GetBudget" />.</para>
+    ///   <para>Note that when using allocator from multiple threads, returned information may immediately become outdated.</para>
+    /// </remarks>
+    public void CalculateStatistics(D3D12MA_TotalStatistics* pStats)
+    {
+        D3D12MA_ASSERT(pStats != null);
+
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        m_Pimpl->CalculateStatistics(out *pStats);
     }
 
     /// <summary>Builds and returns statistics as a string in JSON format.</summary>
-    /// <param name="ppStatsString">Must be freed using <see cref="FreeStatsString"/>.</param>
-    /// <param name="DetailedMap"><see langword="true"/> to include full list of allocations (can make the string quite long), <see langword="false"/> to only return statistics.</param>
-    public void BuildStatsString([NativeTypeName("WCHAR**")] ushort** ppStatsString, [NativeTypeName("BOOL")] int DetailedMap)
+    /// <param name="ppStatsString">Must be freed using <see cref="FreeStatsString" />.</param>
+    /// <param name="DetailedMap"><see cref="TRUE" /> to include full list of allocations (can make the string quite long), <see cref="FALSE" /> to only return statistics.</param>
+    public readonly void BuildStatsString([NativeTypeName("WCHAR **")] ushort** ppStatsString, BOOL DetailedMap)
     {
-        D3D12MA_ASSERT((D3D12MA_DEBUG_LEVEL > 0) && (ppStatsString != null));
-        using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-        BuildStatsStringPimpl(ppStatsString, DetailedMap);
+        D3D12MA_ASSERT(ppStatsString != null);
+
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        m_Pimpl->BuildStatsString(ppStatsString, DetailedMap);
     }
 
-    /// <summary>Frees memory of a string returned from <see cref="BuildStatsString"/>.</summary>
-    public void FreeStatsString([NativeTypeName("WCHAR*")] ushort* pStatsString)
+    /// <summary>Frees memory of a string returned from Allocator::BuildStatsString.</summary>
+    /// <param name="pStatsString"></param>
+    public readonly void FreeStatsString([NativeTypeName("WCHAR *")] ushort* pStatsString)
     {
         if (pStatsString != null)
         {
-            using var debugGlobalMutexLock = D3D12MA_DEBUG_GLOBAL_MUTEX_LOCK();
-            FreeStatsStringPimpl(pStatsString);
+            using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+            m_Pimpl->FreeStatsString(pStatsString);
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static bool ValidateAllocateMemoryParameters(D3D12MA_ALLOCATION_DESC* pAllocDesc, D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo, D3D12MA_Allocation** ppAllocation)
+    /// <summary>Begins defragmentation process of the default pools.</summary>
+    /// <param name="pDesc">Structure filled with parameters of defragmentation.</param>
+    /// <param name="ppContext">Context object that will manage defragmentation.</param>
+    /// <remarks>For more information about defragmentation, see documentation chapter: Defragmentation.</remarks>
+    public void BeginDefragmentation([NativeTypeName("const D3D12MA::DEFRAGMENTATION_DESC *")] D3D12MA_DEFRAGMENTATION_DESC* pDesc, D3D12MA_DefragmentationContext** ppContext)
     {
-        return (pAllocDesc != null)
-            && (pAllocInfo != null)
-            && (ppAllocation != null)
-            && ((pAllocInfo->Alignment == 0) || (pAllocInfo->Alignment == D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT) || (pAllocInfo->Alignment == D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT))
-            && (pAllocInfo->SizeInBytes != 0)
-            && ((pAllocInfo->SizeInBytes % (64UL * 1024)) == 0);
+        D3D12MA_ASSERT((pDesc != null) && (ppContext != null));
+        *ppContext = D3D12MA_DefragmentationContext.Create(m_Pimpl->GetAllocs(), m_Pimpl, *pDesc, null);
     }
 }

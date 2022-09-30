@@ -2,7 +2,7 @@
 
 namespace TerraFX.Interop.DirectX;
 
-internal unsafe struct Pointer<T>
+internal unsafe partial struct Pointer<T>
     where T : unmanaged
 {
     public T* Value;
@@ -11,8 +11,4 @@ internal unsafe struct Pointer<T>
     {
         Value = value;
     }
-
-    public static implicit operator Pointer<T>(T* value) => new Pointer<T>(value);
-
-    public static implicit operator T*(Pointer<T> value) => value.Value;
 }
