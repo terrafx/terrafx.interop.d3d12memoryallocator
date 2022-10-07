@@ -8,19 +8,18 @@ on:
 
 jobs:
   windows-x64:
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: windows-latest
     strategy:
       matrix:
         architecture: [ x64 ]
         configuration: [ debug, release ]
-        os: [ windows ]
     steps:
     - uses: actions/checkout@v2
     - run: ./scripts/cibuild.cmd -configuration ${{ matrix.configuration }} -architecture ${{ matrix.architecture }}
       shell: cmd
     - uses: actions/upload-artifact@v2
       with:
-        name: ${{ matrix.os }}_${{ matrix.configuration }}_${{ matrix.architecture }}
+        name: windows_${{ matrix.configuration }}_${{ matrix.architecture }}
         path: |
           ./artifacts/bin/**/*
           ./artifacts/log/**/*
@@ -28,7 +27,7 @@ jobs:
           ./artifacts/tst/**/*
         if-no-files-found: error
   windows-x86:
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: windows-latest
     strategy:
       matrix:
         architecture: [ x86 ]
@@ -40,47 +39,7 @@ jobs:
       shell: cmd
     - uses: actions/upload-artifact@v2
       with:
-        name: ${{ matrix.os }}_${{ matrix.configuration }}_x86
-        path: |
-          ./artifacts/bin/**/*
-          ./artifacts/log/**/*
-          ./artifacts/pkg/**/*
-          ./artifacts/tst/**/*
-        if-no-files-found: error
-  linux-x64:
-    runs-on: ${{ matrix.os }}-latest
-    strategy:
-      matrix:
-        architecture: [ x64 ]
-        configuration: [ debug, release ]
-        os: [ ubuntu ]
-    steps:
-    - uses: actions/checkout@v2
-    - run: ./scripts/cibuild.sh --configuration ${{ matrix.configuration }} --architecture ${{ matrix.architecture }}
-      shell: bash
-    - uses: actions/upload-artifact@v2
-      with:
-        name: ${{ matrix.os }}_${{ matrix.configuration }}_${{ matrix.architecture }}
-        path: |
-          ./artifacts/bin/**/*
-          ./artifacts/log/**/*
-          ./artifacts/pkg/**/*
-          ./artifacts/tst/**/*
-        if-no-files-found: error
-  macos-x64:
-    runs-on: ${{ matrix.os }}-latest
-    strategy:
-      matrix:
-        architecture: [ x64 ]
-        configuration: [ debug, release ]
-        os: [ macos ]
-    steps:
-    - uses: actions/checkout@v2
-    - run: ./scripts/cibuild.sh --configuration ${{ matrix.configuration }} --architecture ${{ matrix.architecture }}
-      shell: bash
-    - uses: actions/upload-artifact@v2
-      with:
-        name: ${{ matrix.os }}_${{ matrix.configuration }}_${{ matrix.architecture }}
+        name: windows_${{ matrix.configuration }}_x86
         path: |
           ./artifacts/bin/**/*
           ./artifacts/log/**/*
@@ -127,7 +86,7 @@ jobs:
   publish-nightlies-azure:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' }}
-    needs: [ windows-x64, windows-x86, linux-x64, macos-x64, build-nuget-preview ]
+    needs: [ windows-x64, windows-x86, build-nuget-preview ]
     steps:
     - uses: actions/download-artifact@v2
       with:
@@ -143,7 +102,7 @@ jobs:
   publish-nightlies-github:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' }}
-    needs: [ windows-x64, windows-x86, linux-x64, macos-x64, build-nuget-preview ]
+    needs: [ windows-x64, windows-x86, build-nuget-preview ]
     steps:
     - uses: actions/download-artifact@v2
       with:

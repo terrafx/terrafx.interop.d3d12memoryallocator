@@ -1,47 +1,42 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from Tests.cpp in D3D12MemoryAllocator commit 5457bcdaee73ee1f3fe6027bbabf959119f88b3d
+// Ported from Tests.cpp in D3D12MemoryAllocator tag v2.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
 using TerraFX.Interop.Windows;
-using static TerraFX.Interop.Windows.Windows;
 
-namespace TerraFX.Interop.DirectX.UnitTests
+namespace TerraFX.Interop.DirectX.UnitTests;
+
+public unsafe partial struct ResourceWithAllocation : IDisposable
 {
-    internal unsafe struct ResourceWithAllocation : IDisposable
+    public ComPtr<ID3D12Resource> resource;
+
+    public ComPtr<D3D12MA_Allocation> allocation;
+
+    [NativeTypeName("UINT64")]
+    public ulong size;
+
+    [NativeTypeName("UINT")]
+    public uint dataSeed;
+
+    public ResourceWithAllocation()
     {
-        public ComPtr<ID3D12Resource> resource;
+        size = ulong.MaxValue;
+    }
 
-        public ComPtr<D3D12MA_Allocation> allocation;
+    public void Dispose()
+    {
+        resource.Dispose();
+        allocation.Dispose();
+    }
 
-        [NativeTypeName("UINT64")]
-        public ulong size;
+    public void Reset()
+    {
+        _ = resource.Reset();
+        _ = allocation.Reset();
 
-        [NativeTypeName("UINT")]
-        public uint dataSeed;
-
-        public static void _ctor(ref ResourceWithAllocation pThis)
-        {
-            pThis.resource = default;
-            pThis.allocation = default;
-            pThis.size = UINT64_MAX;
-            pThis.dataSeed = 0;
-        }
-
-        public void Reset()
-        {
-            resource.Dispose();
-            allocation.Dispose();
-
-            size = UINT64_MAX;
-            dataSeed = 0;
-        }
-
-        public void Dispose()
-        {
-            resource.Dispose();
-            allocation.Dispose();
-        }
+        size = ulong.MaxValue;
+        dataSeed = 0;
     }
 }

@@ -3,10 +3,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <NoWarn>1591;$(NoWarn)</NoWarn>
+    <NoWarn>$(NoWarn);AD0001;CA2252</NoWarn>
     <RootNamespace>TerraFX.Interop</RootNamespace>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
+    <Compile Remove="other/UnscopedRefAttribute.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="TerraFX.Interop.Windows" />
