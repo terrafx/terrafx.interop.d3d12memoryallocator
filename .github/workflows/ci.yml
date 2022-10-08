@@ -15,10 +15,10 @@ jobs:
         architecture: [ x64 ]
         configuration: [ debug, release ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./scripts/cibuild.cmd -configuration ${{ matrix.configuration }} -architecture ${{ matrix.architecture }}
       shell: cmd
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: windows_${{ matrix.configuration }}_${{ matrix.architecture }}
         path: |
@@ -34,10 +34,10 @@ jobs:
         architecture: [ x86 ]
         configuration: [ debug, release ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./scripts/cibuild.cmd -configuration ${{ matrix.configuration }} -architecture ${{ matrix.architecture }} /p:PlatformTarget=${{ matrix.architecture }}
       shell: cmd
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: windows_${{ matrix.configuration }}_x86
         path: |
@@ -49,13 +49,13 @@ jobs:
   build-nuget-preview:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./scripts/cibuild.cmd -configuration release -architecture x64
       shell: cmd
       env:
         EXCLUDE_RUN_ID_FROM_PACKAGE: true
         EXCLUDE_SUFFIX_FROM_VERSION: false
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: nuget_preview
         path: |
@@ -67,13 +67,13 @@ jobs:
   build-nuget-release:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: ./scripts/cibuild.cmd -configuration release -architecture x64
       shell: cmd
       env:
         EXCLUDE_RUN_ID_FROM_PACKAGE: true
         EXCLUDE_SUFFIX_FROM_VERSION: true
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: nuget_release
         path: |
@@ -91,7 +91,7 @@ jobs:
       with:
         name: windows_release_x64
         path: ./artifacts
-    - uses: actions/setup-dotnet@v1
+    - uses: actions/setup-dotnet@v2
       with:
         dotnet-version: '6.0.x'
         source-url: https://pkgs.terrafx.dev/index.json
@@ -107,7 +107,7 @@ jobs:
       with:
         name: windows_release_x64
         path: ./artifacts
-    - uses: actions/setup-dotnet@v1
+    - uses: actions/setup-dotnet@v2
       with:
         dotnet-version: '6.0.x'
     - run: dotnet nuget push "./artifacts/pkg/Release/*.nupkg" --source https://nuget.pkg.github.com/terrafx/index.json --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
