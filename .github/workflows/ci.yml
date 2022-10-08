@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   windows-x64:
@@ -32,7 +33,6 @@ jobs:
       matrix:
         architecture: [ x86 ]
         configuration: [ debug, release ]
-        os: [ windows ]
     steps:
     - uses: actions/checkout@v2
     - run: ./scripts/cibuild.cmd -configuration ${{ matrix.configuration }} -architecture ${{ matrix.architecture }} /p:PlatformTarget=${{ matrix.architecture }}
