@@ -20,8 +20,10 @@ namespace TerraFX.Interop.DirectX;
 /// </remarks>
 [NativeTypeName("class D3D12MA::Pool : D3D12MA::IUnknownImpl")]
 [NativeInheritance("D3D12MA::IUnknownImpl")]
-public unsafe partial struct D3D12MA_Pool : D3D12MA_IUnknownImpl.Interface
+public unsafe partial struct D3D12MA_Pool : D3D12MA_IUnknownImpl.Interface, INativeGuid
 {
+    static Guid* INativeGuid.NativeGuid => (Guid*)Unsafe.AsPointer(ref Unsafe.AsRef(in IID_NULL));
+
     public D3D12MA_IUnknownImpl Base;
 
     internal D3D12MA_PoolPimpl* m_Pimpl;

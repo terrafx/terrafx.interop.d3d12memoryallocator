@@ -15,8 +15,10 @@ namespace TerraFX.Interop.DirectX;
 /// <remarks>You can create this object using <see cref="D3D12MA_Allocator.BeginDefragmentation" /> (for default pools) or <see cref="D3D12MA_Pool.BeginDefragmentation" /> (for a custom pool).</remarks>
 [NativeTypeName("class D3D12MA::DefragmentationContext : D3D12MA::IUnknownImpl")]
 [NativeInheritance("D3D12MA::IUnknownImpl")]
-public unsafe partial struct D3D12MA_DefragmentationContext : D3D12MA_IUnknownImpl.Interface
+public unsafe partial struct D3D12MA_DefragmentationContext : D3D12MA_IUnknownImpl.Interface, INativeGuid
 {
+    static Guid* INativeGuid.NativeGuid => (Guid*)Unsafe.AsPointer(ref Unsafe.AsRef(in IID_NULL));
+
     public D3D12MA_IUnknownImpl Base;
 
     private D3D12MA_DefragmentationContextPimpl* m_Pimpl;

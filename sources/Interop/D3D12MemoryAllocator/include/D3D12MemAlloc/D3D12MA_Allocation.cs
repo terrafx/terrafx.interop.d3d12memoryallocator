@@ -25,8 +25,10 @@ namespace TerraFX.Interop.DirectX;
 /// </remarks>
 [NativeTypeName("class D3D12MA::Allocation : D3D12MA::IUnknownImpl")]
 [NativeInheritance("D3D12MA::IUnknownImpl")]
-public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
+public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface, INativeGuid
 {
+    static Guid* INativeGuid.NativeGuid => (Guid*)Unsafe.AsPointer(ref Unsafe.AsRef(in IID_NULL));
+
     public D3D12MA_IUnknownImpl Base;
 
     private D3D12MA_AllocatorPimpl* m_Allocator;
