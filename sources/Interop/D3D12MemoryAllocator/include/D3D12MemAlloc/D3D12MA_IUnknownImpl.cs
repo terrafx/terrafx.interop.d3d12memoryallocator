@@ -6,13 +6,16 @@
 using System;
 using System.Runtime.CompilerServices;
 using TerraFX.Interop.Windows;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
 namespace TerraFX.Interop.DirectX;
 
 [NativeTypeName("class D3D12MA::IUnknownImpl : IUnknown")]
 [NativeInheritance("IUnknown")]
-public unsafe partial struct D3D12MA_IUnknownImpl : D3D12MA_IUnknownImpl.Interface
+public unsafe partial struct D3D12MA_IUnknownImpl : D3D12MA_IUnknownImpl.Interface, INativeGuid
 {
+    static Guid* INativeGuid.NativeGuid => (Guid*)Unsafe.AsPointer(ref Unsafe.AsRef(in IID_NULL));
+
     public void** lpVtbl;
 
     [NativeTypeName("std::atomic<UINT>")]

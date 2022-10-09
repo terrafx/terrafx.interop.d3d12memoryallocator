@@ -1,12 +1,40 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace TerraFX.Interop.DirectX;
 
 public static unsafe partial class D3D12MemAlloc
 {
+    // out of memory
+    private const int ENOMEM = 12;
+
+    internal static ref readonly Guid IID_NULL
+    {
+        get
+        {
+            ReadOnlySpan<byte> data = new byte[] {
+                0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00,
+                0x00, 0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00
+            };
+
+            Debug.Assert(data.Length == Unsafe.SizeOf<Guid>());
+            return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
+        }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static unsafe nuint __alignof<T>()
         where T : unmanaged
@@ -21,9 +49,6 @@ public static unsafe partial class D3D12MemAlloc
     {
         return (uint)(sizeof(T));
     }
-
-    // out of memory
-    private const int ENOMEM = 12;
 
     internal static void ZeroMemory(void* dst, [NativeTypeName("size_t")] nuint size)
     {
