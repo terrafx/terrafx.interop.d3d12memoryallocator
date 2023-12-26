@@ -44,7 +44,7 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
     private void* m_pPrivateData;
 
     [NativeTypeName("wchar_t *")]
-    private ushort* m_Name;
+    private char* m_Name;
 
     internal _Anonymous_e__Union Anonymous;
 
@@ -253,15 +253,15 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
     ///   <para>Internal copy of the string is made, so the memory pointed by the argument can be changed of freed immediately after this call.</para>
     ///   <para><paramref name="Name" /> can be null.</para>
     /// </remarks>
-    public void SetName([NativeTypeName("LPCWSTR")] ushort* Name)
+    public void SetName([NativeTypeName("LPCWSTR")] char* Name)
     {
         FreeName();
 
         if (Name != null)
         {
             nuint nameCharCount = wcslen(Name) + 1;
-            m_Name = D3D12MA_NEW_ARRAY<ushort>(m_Allocator->GetAllocs(), nameCharCount);
-            _ = memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
+            m_Name = D3D12MA_NEW_ARRAY<char>(m_Allocator->GetAllocs(), nameCharCount);
+            _ = memcpy(m_Name, Name, nameCharCount * sizeof(char));
         }
     }
 
@@ -272,7 +272,7 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
     ///   <para>If no name was associated with the allocation, returns null.</para>
     /// </remarks>
     [return: NativeTypeName("LPCWSTR")]
-    public readonly ushort* GetName()
+    public readonly char* GetName()
     {
         return m_Name;
     }

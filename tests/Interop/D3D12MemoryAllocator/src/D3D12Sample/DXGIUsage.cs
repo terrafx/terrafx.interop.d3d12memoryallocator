@@ -52,7 +52,7 @@ internal unsafe partial struct DXGIUsage : IDisposable
 
             bool isSoftware = (desc.Flags & (uint)(DXGI_ADAPTER_FLAG_SOFTWARE)) != 0;
             string suffix = isSoftware ? " (SOFTWARE)" : "";
-            _ = wprintf("Adapter {0}: {1}{2}\n", index, MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<ushort, char>(ref desc.Description[0]), 128).ToString(), suffix);
+            _ = wprintf("Adapter {0}: {1}{2}\n", index, ((ReadOnlySpan<char>)(g_AdapterDesc.Description)).ToString(), suffix);
 
             _ = adapter.Reset();
             ++index;
@@ -87,7 +87,7 @@ internal unsafe partial struct DXGIUsage : IDisposable
 
                 fixed (char* pszSrch = GPUSelection.Substring)
                 {
-                    if (StrStrIW(desc.Description, (ushort*)(pszSrch)) != null)
+                    if (StrStrIW(&desc.Description[0], pszSrch) != null)
                     {
                         // Second matching adapter found - error.
                         if (adapter.Get() != null)

@@ -4,6 +4,7 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using TerraFX.Interop.Windows;
@@ -131,8 +132,11 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
     public void Dispose()
     {
-        D3D12MA_SAFE_RELEASE(ref m_Device8);
-        D3D12MA_SAFE_RELEASE(ref m_Device4);
+        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0))
+        {
+            D3D12MA_SAFE_RELEASE(ref m_Device8);
+            D3D12MA_SAFE_RELEASE(ref m_Device4);
+        }
         D3D12MA_SAFE_RELEASE(ref m_Adapter3);
         D3D12MA_SAFE_RELEASE(ref m_Adapter);
         D3D12MA_SAFE_RELEASE(ref m_Device);
@@ -249,8 +253,11 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     {
         _ = desc.pAdapter->QueryInterface(__uuidof<IDXGIAdapter3>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Adapter3));
 
-        _ = m_Device->QueryInterface(__uuidof<ID3D12Device4>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Device4));
-        _ = m_Device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Device8));
+        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0))
+        {
+            _ = m_Device->QueryInterface(__uuidof<ID3D12Device4>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Device4));
+            _ = m_Device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Device8));
+        }
 
         HRESULT hr = m_Adapter->GetDesc(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_AdapterDesc);
 
@@ -804,7 +811,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         }
     }
 
-    public void BuildStatsString([NativeTypeName("WCHAR **")] ushort** ppStatsString, BOOL detailedMap)
+    public void BuildStatsString([NativeTypeName("WCHAR **")] char** ppStatsString, BOOL detailedMap)
     {
         using D3D12MA_StringBuilder sb = new D3D12MA_StringBuilder(GetAllocs());
         {
@@ -826,7 +833,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                     json.WriteString("Direct3D 12");
 
                     json.WriteString("GPU");
-                    json.WriteString((ushort*)(Unsafe.AsPointer(ref m_AdapterDesc.Description[0])));
+                    json.WriteString((char*)(Unsafe.AsPointer(ref m_AdapterDesc.Description[0])));
 
                     json.WriteString("DedicatedVideoMemory");
                     json.WriteNumber(m_AdapterDesc.DedicatedVideoMemory);
@@ -1188,16 +1195,16 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         }
 
         nuint length = sb.GetLength();
-        ushort* result = D3D12MA_AllocateArray<ushort>(GetAllocs(), length + 2);
+        char* result = D3D12MA_AllocateArray<char>(GetAllocs(), length + 2);
 
-        result[0] = 0xFEFF;
-        _ = memcpy(result + 1, sb.GetData(), length * sizeof(ushort));
+        result[0] = (char)(0xFEFF);
+        _ = memcpy(result + 1, sb.GetData(), length * sizeof(char));
 
         result[length + 1] = '\0';
         *ppStatsString = result;
     }
 
-    public void FreeStatsString([NativeTypeName("WCHAR *")] ushort* pStatsString)
+    public void FreeStatsString([NativeTypeName("WCHAR *")] char* pStatsString)
     {
         D3D12MA_ASSERT(pStatsString != null);
         D3D12MA_Free(GetAllocs(), pStatsString);
@@ -1278,6 +1285,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         if (m_Device4 != null)
         {
+            Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
             hr = m_Device4->CreateCommittedResource1((D3D12_HEAP_PROPERTIES*)(Unsafe.AsPointer(ref Unsafe.AsRef(in committedAllocParams.m_HeapProperties))), (committedAllocParams.m_HeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS), pResourceDesc, InitialResourceState, pOptimizedClearValue, committedAllocParams.m_ProtectedSession, __uuidof<ID3D12Resource>(), (void**)(&res));
         }
         else
@@ -1332,6 +1340,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         {
             return E_NOINTERFACE;
         }
+        Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
 
         HRESULT hr;
         ID3D12Resource* res = null;
@@ -1437,6 +1446,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         if (m_Device4 != null)
         {
+            Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
             hr = m_Device4->CreateHeap1(&heapDesc, committedAllocParams.m_ProtectedSession, __uuidof<ID3D12Heap>(), (void**)(&heap));
         }
         else
@@ -1817,6 +1827,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     private readonly D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfoNative([NativeTypeName("const D3D12_RESOURCE_DESC1 &")] in D3D12_RESOURCE_DESC1 resourceDesc)
     {
         D3D12MA_ASSERT(m_Device8 != null);
+        Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
         D3D12_RESOURCE_ALLOCATION_INFO1 info1Unused;
         return m_Device8->GetResourceAllocationInfo2(0, 1, (D3D12_RESOURCE_DESC1*)(Unsafe.AsPointer(ref Unsafe.AsRef(in resourceDesc))), &info1Unused);
     }

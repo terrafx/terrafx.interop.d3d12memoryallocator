@@ -209,7 +209,7 @@ public unsafe partial struct D3D12MA_VirtualBlock : D3D12MA_IUnknownImpl.Interfa
 
     /// <summary>Builds and returns statistics as a string in JSON format, including the list of allocations with their parameters.</summary>
     /// <param name="ppStatsString">Must be freed using <see cref="FreeStatsString" />.</param>
-    public readonly void BuildStatsString([NativeTypeName("WCHAR **")] ushort** ppStatsString)
+    public readonly void BuildStatsString([NativeTypeName("WCHAR **")] char** ppStatsString)
     {
         D3D12MA_ASSERT(ppStatsString != null);
 
@@ -223,9 +223,9 @@ public unsafe partial struct D3D12MA_VirtualBlock : D3D12MA_IUnknownImpl.Interfa
         } // Scope for JsonWriter
 
         nuint length = sb.GetLength();
-        ushort* result = D3D12MA_AllocateArray<ushort>(m_Pimpl->m_AllocationCallbacks, length + 1);
+        char* result = D3D12MA_AllocateArray<char>(m_Pimpl->m_AllocationCallbacks, length + 1);
 
-        _ = memcpy(result, sb.GetData(), length * sizeof(ushort));
+        _ = memcpy(result, sb.GetData(), length * sizeof(char));
 
         result[length] = '\0';
         *ppStatsString = result;
@@ -233,7 +233,7 @@ public unsafe partial struct D3D12MA_VirtualBlock : D3D12MA_IUnknownImpl.Interfa
 
     /// <summary>Frees memory of a string returned from <see cref="BuildStatsString" />.</summary>
     /// <param name="pStatsString"></param>
-    public readonly void FreeStatsString([NativeTypeName("WCHAR *")] ushort* pStatsString)
+    public readonly void FreeStatsString([NativeTypeName("WCHAR *")] char* pStatsString)
     {
         if (pStatsString != null)
         {

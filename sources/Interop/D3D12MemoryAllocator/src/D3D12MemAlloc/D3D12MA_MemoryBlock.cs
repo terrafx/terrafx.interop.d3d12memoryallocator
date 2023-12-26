@@ -4,6 +4,7 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using TerraFX.Interop.Windows;
@@ -94,6 +95,7 @@ internal unsafe partial struct D3D12MA_MemoryBlock : IDisposable
 
         if (device4 != null)
         {
+            Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
             hr = m_Allocator->GetDevice4()->CreateHeap1(&heapDesc, pProtectedSession, __uuidof<ID3D12Heap>(), (void**)(Unsafe.AsPointer(ref m_Heap)));
         }
         else

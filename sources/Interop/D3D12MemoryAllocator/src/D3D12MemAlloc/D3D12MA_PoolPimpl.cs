@@ -23,7 +23,7 @@ internal unsafe partial struct D3D12MA_PoolPimpl : IDisposable
     private D3D12MA_CommittedAllocationList m_CommittedAllocations;
 
     [NativeTypeName("wchar_t *")]
-    private ushort* m_Name;
+    private char* m_Name;
 
     internal D3D12MA_PoolPimpl* m_PrevPool;
 
@@ -80,7 +80,7 @@ internal unsafe partial struct D3D12MA_PoolPimpl : IDisposable
     }
 
     [return: NativeTypeName("LPCWSTR")]
-    public readonly ushort* GetName()
+    public readonly char* GetName()
     {
         return m_Name;
     }
@@ -120,15 +120,15 @@ internal unsafe partial struct D3D12MA_PoolPimpl : IDisposable
         m_CommittedAllocations.AddDetailedStatistics(ref inoutStats);
     }
 
-    public void SetName([NativeTypeName("LPCWSTR")] ushort* Name)
+    public void SetName([NativeTypeName("LPCWSTR")] char* Name)
     {
         FreeName();
 
         if (Name != null)
         {
             nuint nameCharCount = wcslen(Name) + 1;
-            m_Name = D3D12MA_NEW_ARRAY<ushort>(m_Allocator->GetAllocs(), nameCharCount);
-            _ = memcpy(m_Name, Name, nameCharCount * sizeof(ushort));
+            m_Name = D3D12MA_NEW_ARRAY<char>(m_Allocator->GetAllocs(), nameCharCount);
+            _ = memcpy(m_Name, Name, nameCharCount * sizeof(char));
         }
     }
 

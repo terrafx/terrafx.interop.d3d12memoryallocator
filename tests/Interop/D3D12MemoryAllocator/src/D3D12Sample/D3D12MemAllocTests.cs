@@ -95,11 +95,13 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal const D3D_FEATURE_LEVEL MY_D3D_FEATURE_LEVEL = D3D_FEATURE_LEVEL_12_0;
 
+#pragma warning disable CA1802,CA1805
     internal static readonly bool ENABLE_DEBUG_LAYER = true;
 
     internal static readonly bool ENABLE_CPU_ALLOCATION_CALLBACKS = true;
 
     internal static readonly bool ENABLE_CPU_ALLOCATION_CALLBACKS_PRINT = false;
+#pragma warning restore CA1802,CA1805
 
     internal const D3D12MA_ALLOCATOR_FLAGS g_AllocatorFlags = D3D12MA_ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED;
 
@@ -418,7 +420,7 @@ public static unsafe partial class D3D12MemAllocTests
     internal static void PrintAdapterInformation(IDXGIAdapter1* adapter)
     {
         _ = wprintf("DXGI_ADAPTER_DESC1:\n");
-        _ = wprintf("    Description = {0}\n", MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<ushort, char>(ref g_AdapterDesc.Description[0]), 128).ToString());
+        _ = wprintf("    Description = {0}\n", ((ReadOnlySpan<char>)(g_AdapterDesc.Description)).ToString());
         _ = wprintf("    VendorId = 0x{0:X} ({1})\n", g_AdapterDesc.VendorId, VendorIDToStr(g_AdapterDesc.VendorId));
         _ = wprintf("    DeviceId = 0x{0:X}\n", g_AdapterDesc.DeviceId);
         _ = wprintf("    SubSysId = 0x{0:X}\n", g_AdapterDesc.SubSysId);
@@ -702,7 +704,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         fixed (char* pName = "Depth/Stencil Resource Heap")
         {
-            CHECK_HR(g_DepthStencilBuffer.Get()->SetName((ushort*)(pName)));
+            CHECK_HR(g_DepthStencilBuffer.Get()->SetName(pName));
         }
 
         D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = new D3D12_DEPTH_STENCIL_VIEW_DESC {
@@ -850,7 +852,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             fixed (char* pName = "Constant Buffer Upload Resource Heap")
             {
-                _ = g_ConstantBufferUploadHeap[i].Get()->SetName((ushort*)(pName));
+                _ = g_ConstantBufferUploadHeap[i].Get()->SetName(pName);
             }
 
             D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = new D3D12_CONSTANT_BUFFER_VIEW_DESC {
@@ -1025,7 +1027,7 @@ public static unsafe partial class D3D12MemAllocTests
         // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
         fixed (char* pName = "Vertex Buffer Resource Heap")
         {
-            _ = g_VertexBuffer.Get()->SetName((ushort*)(pName));
+            _ = g_VertexBuffer.Get()->SetName(pName);
         }
 
         // create upload heap
@@ -1066,7 +1068,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         fixed (char* pName = "Vertex Buffer Upload Resource Heap")
         {
-            _ = vBufferUploadHeap.Get()->SetName((ushort*)(pName));
+            _ = vBufferUploadHeap.Get()->SetName(pName);
         }
 
         // store vertex buffer in upload heap
@@ -1164,7 +1166,7 @@ public static unsafe partial class D3D12MemAllocTests
         // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
         fixed (char* pName = "Index Buffer Resource Heap")
         {
-            _ = g_IndexBuffer.Get()->SetName((ushort*)(pName));
+            _ = g_IndexBuffer.Get()->SetName(pName);
         }
 
         // create upload heap to upload index buffer
@@ -1203,7 +1205,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         fixed (char* pName = "Index Buffer Upload Resource Heap")
         {
-            CHECK_HR(iBufferUploadHeap.Get()->SetName((ushort*)(pName)));
+            CHECK_HR(iBufferUploadHeap.Get()->SetName(pName));
         }
 
         // store vertex buffer in upload heap
@@ -1280,7 +1282,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             fixed (char* pName = "Constant Buffer Upload Resource Heap")
             {
-                _ = g_CbPerObjectUploadHeaps[i].Get()->SetName((ushort*)(pName));
+                _ = g_CbPerObjectUploadHeaps[i].Get()->SetName(pName);
             }
 
             fixed (Pointer* ppCbPerObjectAddress = &g_CbPerObjectAddress[i])
@@ -1369,7 +1371,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         fixed (char* pName = nameof(g_Texture))
         {
-            _ = g_Texture.Get()->SetName((ushort*)(pName));
+            _ = g_Texture.Get()->SetName(pName);
         }
 
         ulong textureUploadBufferSize;
@@ -1420,7 +1422,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         fixed (char* pName = nameof(textureUpload))
         {
-            _= textureUpload.Get()->SetName((ushort*)(pName));
+            _= textureUpload.Get()->SetName(pName);
         }
 
         fixed (sbyte* pImageData = imageData)
@@ -1796,7 +1798,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             case 'J':
             {
-                ushort* statsString = null;
+                char* statsString = null;
                 g_Allocator.Get()->BuildStatsString(&statsString, TRUE);
 
                 _ = wprintf("{0}\n", new string((char*)(statsString)));
@@ -1900,7 +1902,7 @@ public static unsafe partial class D3D12MemAllocTests
                 hIcon = LoadIcon(HINSTANCE.NULL, IDI_APPLICATION),
                 hInstance = g_Instance,
                 lpfnWndProc = &WndProc,
-                lpszClassName = (ushort*)(pClassName),
+                lpszClassName = pClassName,
             };
         }
 
@@ -1928,8 +1930,8 @@ public static unsafe partial class D3D12MemAllocTests
             {
                 g_Wnd = CreateWindowEx(
                     exStyle,
-                    (ushort*)(pClassName),
-                    (ushort*)(pWindowTitle),
+                    pClassName,
+                    pWindowTitle,
                     style,
                     CW_USEDEFAULT, CW_USEDEFAULT,
                     (rect.right - rect.left),
@@ -1990,7 +1992,7 @@ public static unsafe partial class D3D12MemAllocTests
             {
                 fixed (char* pClassName = CLASS_NAME)
                 {
-                    _ = UnregisterClassW((ushort*)(pClassName), g_Instance);
+                    _ = UnregisterClassW(pClassName, g_Instance);
                 }
             }
         }

@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -52,7 +53,9 @@ public static unsafe partial class D3D12MemAllocTests
     [NativeTypeName("UINT64")]
     internal const ulong MEGABYTE = 1024 * KILOBYTE;
 
+#pragma warning disable CA1802
     internal static readonly CONFIG_TYPE ConfigType = CONFIG_TYPE_AVERAGE;
+#pragma warning restore CA1802
 
     [NativeTypeName("const char *[]")]
     internal static string[] FREE_ORDER_NAMES = {
@@ -84,7 +87,7 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static void CurrentTimeToStr([NativeTypeName("std::string &")] out string @out)
     {
-        @out = DateTime.Now.ToString();
+        @out = DateTime.Now.ToString(CultureInfo.InvariantCulture);
     }
 
     internal static float ToFloatSeconds(TimeSpan d)
@@ -436,9 +439,9 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static void SaveStatsStringToFile([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("const wchar_t *")] string dstFilePath, [Optional, DefaultParameterValue(TRUE)] BOOL detailed)
     {
-        ushort* s = null;
+        char* s = null;
         ctx.allocator->BuildStatsString(&s, detailed);
-        SaveFile(dstFilePath, s, wcslen(s) * sizeof(ushort));
+        SaveFile(dstFilePath, s, wcslen(s) * sizeof(char));
         ctx.allocator->FreeStatsString(s);
     }
 
@@ -498,7 +501,7 @@ public static unsafe partial class D3D12MemAllocTests
             }
 
             // JSON dump
-            ushort* json = null;
+            char* json = null;
             ctx.allocator->BuildStatsString(&json, TRUE);
             // Put breakpoint here to manually inspect json in a debugger.
 
@@ -824,7 +827,7 @@ public static unsafe partial class D3D12MemAllocTests
                                     {
                                         fixed (char* pName = "SHEPURD")
                                         {
-                                            alloc.Get()->SetName((ushort*)(pName));
+                                            alloc.Get()->SetName(pName);
                                         }
                                         break;
                                     }
@@ -835,7 +838,7 @@ public static unsafe partial class D3D12MemAllocTests
 
                                         fixed (char* pName = "JOKER")
                                         {
-                                            alloc.Get()->SetName((ushort*)(pName));
+                                            alloc.Get()->SetName(pName);
                                         }
                                         break;
                                     }
@@ -894,14 +897,14 @@ public static unsafe partial class D3D12MemAllocTests
 
             fixed (char* pName = names[i])
             {
-                resources[i].allocation.Get()->SetName((ushort*)(pName));
+                resources[i].allocation.Get()->SetName(pName);
             }
         }
 
         // Check names.
         for (uint i = 0; i < count; ++i)
         {
-            ushort* allocName = resources[i].allocation.Get()->GetName();
+            char* allocName = resources[i].allocation.Get()->GetName();
 
             if (allocName != null)
             {
@@ -913,7 +916,7 @@ public static unsafe partial class D3D12MemAllocTests
             }
         }
 
-        ushort* jsonString;
+        char* jsonString;
         ctx.allocator->BuildStatsString(&jsonString, TRUE);
 
         CHECK_BOOL(wcsstr(jsonString, "\"Resource\\nFoo\\r\\nBar\"") != null);
@@ -1153,7 +1156,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         fixed (char* pName = NAME)
         {
-            pool.Get()->SetName((ushort*)(pName));
+            pool.Get()->SetName(pName);
         }
 
         CHECK_BOOL(wcscmp(pool.Get()->GetName(), NAME) == 0);
@@ -1282,7 +1285,7 @@ public static unsafe partial class D3D12MemAllocTests
         ));
 
         // JSON dump
-        ushort* json = null;
+        char* json = null;
 
         ctx.allocator->BuildStatsString(&json, TRUE);
         ctx.allocator->FreeStatsString(json);
@@ -2992,7 +2995,7 @@ public static unsafe partial class D3D12MemAllocTests
             D3D12MA_DetailedStatistics poolStats;
             pool.Get()->CalculateStatistics(&poolStats);
 
-            ushort* statsStr = null;
+            char* statsStr = null;
             ctx.allocator->BuildStatsString(&statsStr, FALSE);
 
             // PUT BREAKPOINT HERE TO CHECK.
@@ -3242,7 +3245,7 @@ public static unsafe partial class D3D12MemAllocTests
         }
     }
 
-    [SupportedOSPlatform("windows10.0")]
+    [SupportedOSPlatform("windows10.0.19043.0")]
     internal static void TestDevice4([NativeTypeName("const TestContext &")] in TestContext ctx)
     {
         _ = wprintf("Test ID3D12Device4\n");
@@ -3328,7 +3331,7 @@ public static unsafe partial class D3D12MemAllocTests
         }
     }
 
-    [SupportedOSPlatform("windows10.0")]
+    [SupportedOSPlatform("windows10.0.19043.0")]
     internal static void TestDevice8([NativeTypeName("const TestContext &")] in TestContext ctx)
     {
         _ = wprintf("Test ID3D12Device8\n");
@@ -3453,7 +3456,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         // # Generate JSON dump
 
-        ushort* json = null;
+        char* json = null;
         block.Get()->BuildStatsString(&json);
         {
             ReadOnlySpan<char> str = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)(json));
@@ -3679,7 +3682,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             // Build JSON dump string
             {
-                ushort* json = null;
+                char* json = null;
                 block.Get()->BuildStatsString(&json);
 
                 // put a breakpoint here to debug
@@ -4527,7 +4530,7 @@ public static unsafe partial class D3D12MemAllocTests
                 _ = wprintf("Freed blocks {0}, bytes {1}\n", stats.HeapsFreed, stats.BytesFreed);
                 _ = wprintf("Time: {0:F2} s\n", defragmentDuration);
 
-                SaveStatsStringToFile(ctx, ("FullAfter_" + defragIndex.ToString() + ".json"));
+                SaveStatsStringToFile(ctx, ($"FullAfter_{defragIndex}.json"));
             }
         }
 
@@ -5014,10 +5017,8 @@ public static unsafe partial class D3D12MemAllocTests
         if (benchmark)
         {
             TextWriter file = new StreamWriter("Results.csv");
-            D3D12MA_ASSERT(file != null);
-
             BenchmarkAlgorithms(ctx, file);
-            file?.Close();
+            file.Close();
         }
         else if (D3D12MA_DEBUG_MARGIN != 0)
         {
@@ -5048,8 +5049,12 @@ public static unsafe partial class D3D12MemAllocTests
             TestLinearAllocator(ctx);
             TestLinearAllocatorMultiBlock(ctx);
             ManuallyTestLinearAllocator(ctx);
-            TestDevice4(ctx);
-            TestDevice8(ctx);
+
+            if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0))
+            {
+                TestDevice4(ctx);
+                TestDevice8(ctx);
+            }
         }
     }
 

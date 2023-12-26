@@ -117,7 +117,7 @@ public unsafe partial struct D3D12MA_Pool : D3D12MA_IUnknownImpl.Interface, INat
     ///   <para>Internal copy of the string is made, so the memory pointed by the argument can be changed of freed immediately after this call.</para>
     ///   <para><paramref name="Name" /> can be <c>null</c>.</para>
     /// </remarks>
-    public void SetName([NativeTypeName("LPCWSTR")] ushort* Name)
+    public void SetName([NativeTypeName("LPCWSTR")] char* Name)
     {
         using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
         m_Pimpl->SetName(Name);
@@ -130,7 +130,7 @@ public unsafe partial struct D3D12MA_Pool : D3D12MA_IUnknownImpl.Interface, INat
     ///   <para>If no name was associated with the allocation, returns <c>null</c>.</para>
     /// </remarks>
     [return: NativeTypeName("LPCWSTR")]
-    public readonly ushort* GetName()
+    public readonly char* GetName()
     {
         return m_Pimpl->GetName();
     }

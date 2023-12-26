@@ -1,6 +1,7 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -41,22 +42,22 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static int fprintf(TextWriter stream, string format, object arg0)
     {
-        return fprintf(stream, string.Format(format, arg0));
+        return fprintf(stream, string.Format(CultureInfo.InvariantCulture, format, arg0));
     }
 
     internal static int fprintf(TextWriter stream, string format, object arg0, object arg1)
     {
-        return fprintf(stream, string.Format(format, arg0, arg1));
+        return fprintf(stream, string.Format(CultureInfo.InvariantCulture, format, arg0, arg1));
     }
 
     internal static int fprintf(TextWriter stream, string format, object arg0, object arg1, object arg2)
     {
-        return fprintf(stream, string.Format(format, arg0, arg1, arg2));
+        return fprintf(stream, string.Format(CultureInfo.InvariantCulture, format, arg0, arg1, arg2));
     }
 
     internal static int fprintf(TextWriter stream, string format, params object[] args)
     {
-        return fprintf(stream, string.Format(format, args));
+        return fprintf(stream, string.Format(CultureInfo.InvariantCulture, format, args));
     }
 
     internal static int fwprintf(TextWriter stream, string format)
@@ -67,22 +68,22 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static int fwprintf(TextWriter stream, string format, object arg0)
     {
-        return fwprintf(stream, string.Format(format, arg0));
+        return fwprintf(stream, string.Format(CultureInfo.InvariantCulture, format, arg0));
     }
 
     internal static int fwprintf(TextWriter stream, string format, object arg0, object arg1)
     {
-        return fwprintf(stream, string.Format(format, arg0, arg1));
+        return fwprintf(stream, string.Format(CultureInfo.InvariantCulture, format, arg0, arg1));
     }
 
     internal static int fwprintf(TextWriter stream, string format, object arg0, object arg1, object arg2)
     {
-        return fwprintf(stream, string.Format(format, arg0, arg1, arg2));
+        return fwprintf(stream, string.Format(CultureInfo.InvariantCulture, format, arg0, arg1, arg2));
     }
 
     internal static int fwprintf(TextWriter stream, string format, params object[] args)
     {
-        return fwprintf(stream, string.Format(format, args));
+        return fwprintf(stream, string.Format(CultureInfo.InvariantCulture, format, args));
     }
 
     internal static int memcmp([NativeTypeName("const void *")] void* s1, [NativeTypeName("const void *")] void* s2, [NativeTypeName("size_t")] nuint n)
@@ -99,22 +100,22 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static int printf(string format, object arg0)
     {
-        return printf(string.Format(format, arg0));
+        return printf(string.Format(CultureInfo.InvariantCulture, format, arg0));
     }
 
     internal static int printf(string format, object arg0, object arg1)
     {
-        return printf(string.Format(format, arg0, arg1));
+        return printf(string.Format(CultureInfo.InvariantCulture, format, arg0, arg1));
     }
 
     internal static int printf(string format, object arg0, object arg1, object arg2)
     {
-        return printf(string.Format(format, arg0, arg1, arg2));
+        return printf(string.Format(CultureInfo.InvariantCulture, format, arg0, arg1, arg2));
     }
 
     internal static int printf(string format, params object[] args)
     {
-        return printf(string.Format(format, args));
+        return printf(string.Format(CultureInfo.InvariantCulture, format, args));
     }
 
     internal static int swprintf_s(out string s, string format)
@@ -125,32 +126,32 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static int swprintf_s(out string s, string format, object arg0)
     {
-        return swprintf_s(out s, string.Format(format, arg0));
+        return swprintf_s(out s, string.Format(CultureInfo.InvariantCulture, format, arg0));
     }
 
     internal static int swprintf_s(out string s, string format, object arg0, object arg1)
     {
-        return swprintf_s(out s, string.Format(format, arg0, arg1));
+        return swprintf_s(out s, string.Format(CultureInfo.InvariantCulture, format, arg0, arg1));
     }
 
     internal static int swprintf_s(out string s, string format, object arg0, object arg1, object arg2)
     {
-        return swprintf_s(out s, string.Format(format, arg0, arg1, arg2));
+        return swprintf_s(out s, string.Format(CultureInfo.InvariantCulture, format, arg0, arg1, arg2));
     }
 
     internal static int swprintf_s(out string s, string format, params object[] args)
     {
-        return swprintf_s(out s, string.Format(format, args));
+        return swprintf_s(out s, string.Format(CultureInfo.InvariantCulture, format, args));
     }
 
-    internal static int wcscmp([NativeTypeName("const wchar_t *")] ushort* s1, string? s2)
+    internal static int wcscmp([NativeTypeName("const wchar_t *")] char* s1, string? s2)
     {
         ReadOnlySpan<char> tmp = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)(s1));
         return tmp.CompareTo(s2, StringComparison.Ordinal);
     }
 
     [return: NativeTypeName("wchar_t *")]
-    internal static ushort* wcsstr([NativeTypeName("const wchar_t *")] ushort* s1, string s2)
+    internal static char* wcsstr([NativeTypeName("const wchar_t *")] char* s1, string s2)
     {
         ReadOnlySpan<char> tmp = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)(s1));
         int index = tmp.IndexOf(s2, StringComparison.Ordinal);
@@ -165,22 +166,22 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static int wprintf(string format, object arg0)
     {
-        return wprintf(string.Format(format, arg0));
+        return wprintf(string.Format(CultureInfo.InvariantCulture, format, arg0));
     }
 
     internal static int wprintf(string format, object arg0, object arg1)
     {
-        return wprintf(string.Format(format, arg0, arg1));
+        return wprintf(string.Format(CultureInfo.InvariantCulture, format, arg0, arg1));
     }
 
     internal static int wprintf(string format, object arg0, object arg1, object arg2)
     {
-        return wprintf(string.Format(format, arg0, arg1, arg2));
+        return wprintf(string.Format(CultureInfo.InvariantCulture, format, arg0, arg1, arg2));
     }
 
     internal static int wprintf(string format, object[] args)
     {
-        return wprintf(string.Format(format, args));
+        return wprintf(string.Format(CultureInfo.InvariantCulture, format, args));
     }
 
     [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, EntryPoint = "?get_new_handler@std@@YAP6AXXZXZ", ExactSpelling = true)]

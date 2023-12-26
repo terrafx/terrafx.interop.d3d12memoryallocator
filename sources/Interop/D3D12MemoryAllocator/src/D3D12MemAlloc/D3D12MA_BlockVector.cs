@@ -5,6 +5,7 @@
 
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using TerraFX.Interop.Windows;
@@ -306,6 +307,7 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         {
             return E_NOINTERFACE;
         }
+        Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
 
         HRESULT hr = Allocate(size, alignment, allocDesc, 1, ppAllocation);
 

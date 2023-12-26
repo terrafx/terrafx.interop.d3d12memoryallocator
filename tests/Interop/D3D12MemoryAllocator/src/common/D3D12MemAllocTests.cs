@@ -60,7 +60,7 @@ public static unsafe partial class D3D12MemAllocTests
         if (!expr)
         {
             Debug.Fail(__EXPR__);
-            throw new Exception($"{__FILE__}({__LINE__}): ( {__EXPR__} ) == false");
+            throw new UnreachableException($"{__FILE__}({__LINE__}): ( {__EXPR__} ) == false");
         }
     }
 
@@ -69,7 +69,7 @@ public static unsafe partial class D3D12MemAllocTests
         if (FAILED(expr))
         {
             Debug.Fail(__EXPR__);
-            throw new Exception($"{__FILE__}({__LINE__}): FAILED( {__EXPR__} )");
+            throw new UnreachableException($"{__FILE__}({__LINE__}): FAILED( {__EXPR__} )");
         }
     }
 
@@ -148,17 +148,10 @@ public static unsafe partial class D3D12MemAllocTests
     internal static void SaveFile(string filePath, void* data, nuint dataSize)
     {
         TextWriter f = new StreamWriter(filePath);
+        ReadOnlySpan<char> tmp = new ReadOnlySpan<char>(data, (int)(dataSize / sizeof(char)));
 
-        if (f != null)
-        {
-            ReadOnlySpan<char> tmp = new ReadOnlySpan<char>(data, (int)(dataSize / sizeof(ushort)));
-            f.Write(tmp);
-            f.Close();
-        }
-        else
-        {
-            D3D12MA_FAIL();
-        }
+        f.Write(tmp);
+        f.Close();
     }
 
     // void SetConsoleColor(CONSOLE_COLOR color);

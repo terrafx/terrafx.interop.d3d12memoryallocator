@@ -452,15 +452,15 @@ public static unsafe partial class D3D12MemAlloc
     }
 
     [return: NativeTypeName("WCHAR")]
-    internal static ushort D3D12MA_HexDigitToChar([NativeTypeName("UINT8")] byte digit)
+    internal static char D3D12MA_HexDigitToChar([NativeTypeName("UINT8")] byte digit)
     {
         if (digit < 10)
         {
-            return (ushort)('0' + digit);
+            return (char)('0' + digit);
         }
         else
         {
-            return (ushort)('A' + (digit - 10));
+            return (char)('A' + (digit - 10));
         }
     }
 
