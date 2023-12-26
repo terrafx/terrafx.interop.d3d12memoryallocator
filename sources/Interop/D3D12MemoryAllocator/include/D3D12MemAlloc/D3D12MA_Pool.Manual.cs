@@ -18,26 +18,26 @@ public unsafe partial struct D3D12MA_Pool
     {
         void** lpVtbl = (void**)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_Pool), 5 * sizeof(void*)));
 
-        lpVtbl[0] = (delegate* unmanaged<D3D12MA_Pool*, Guid*, void**, int>)(D3D12MA_IUnknownImpl.VtblInstance[0]);
-        lpVtbl[1] = (delegate* unmanaged<D3D12MA_Pool*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[1]);
-        lpVtbl[2] = (delegate* unmanaged<D3D12MA_Pool*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[2]);
-        lpVtbl[3] = (delegate* unmanaged<D3D12MA_Pool*, void>)(&Dispose);
-        lpVtbl[4] = (delegate* unmanaged<D3D12MA_Pool*, void>)(&ReleaseThis);
+        lpVtbl[0] = (delegate* unmanaged[MemberFunction]<D3D12MA_Pool*, Guid*, void**, int>)(D3D12MA_IUnknownImpl.VtblInstance[0]);
+        lpVtbl[1] = (delegate* unmanaged[MemberFunction]<D3D12MA_Pool*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[1]);
+        lpVtbl[2] = (delegate* unmanaged[MemberFunction]<D3D12MA_Pool*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[2]);
+        lpVtbl[3] = (delegate* unmanaged[MemberFunction]<D3D12MA_Pool*, void>)(&Dispose);
+        lpVtbl[4] = (delegate* unmanaged[MemberFunction]<D3D12MA_Pool*, void>)(&ReleaseThis);
 
         return lpVtbl;
     }
 
     [VtblIndex(3)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Dispose(D3D12MA_Pool* pThis)
     {
         pThis->m_Pimpl->GetAllocator()->UnregisterPool(pThis, pThis->m_Pimpl->GetDesc().HeapProperties.Type);
         D3D12MA_DELETE(pThis->m_Pimpl->GetAllocator()->GetAllocs(), pThis->m_Pimpl);
-        ((delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)(D3D12MA_IUnknownImpl.VtblInstance[3]))(&pThis->Base);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, void>)(D3D12MA_IUnknownImpl.VtblInstance[3]))(&pThis->Base);
     }
 
     [VtblIndex(4)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void ReleaseThis(D3D12MA_Pool* pThis)
     {
         if (pThis == null)

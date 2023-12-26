@@ -18,45 +18,45 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     {
         void** lpVtbl = (void**)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_BlockMetadata_TLSF), 21 * sizeof(void*)));
 
-        lpVtbl[0] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, void>)(&Dispose);
-        lpVtbl[1] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, void>)(&Init);
-        lpVtbl[2] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, byte>)(&Validate);
-        lpVtbl[3] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, nuint>)(&GetAllocationCount);
-        lpVtbl[4] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, nuint>)(&GetFreeRegionsCount);
-        lpVtbl[5] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong>)(&GetSumFreeSize);
-        lpVtbl[6] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(&GetAllocationOffset);
-        lpVtbl[7] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, byte>)(&IsEmpty);
-        lpVtbl[8] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, D3D12MA_VIRTUAL_ALLOCATION_INFO*, void>)(&GetAllocationInfo);
-        lpVtbl[9] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, ulong, byte, uint, D3D12MA_AllocationRequest*, byte>)(&CreateAllocationRequest);
-        lpVtbl[10] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, D3D12MA_AllocationRequest*, ulong, void*, void>)(&Alloc);
-        lpVtbl[11] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, void>)(&Free);
-        lpVtbl[12] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, void>)(&Clear);
-        lpVtbl[13] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong>)(&GetAllocationListBegin);
-        lpVtbl[14] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(&GetNextAllocation);
-        lpVtbl[15] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(&GetNextFreeRegionSize);
-        lpVtbl[16] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, void*>)(&GetAllocationPrivateData);
-        lpVtbl[17] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, void*, void>)(&SetAllocationPrivateData);
-        lpVtbl[18] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, D3D12MA_Statistics*, void>)(&AddStatistics);
-        lpVtbl[19] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, D3D12MA_DetailedStatistics*, void>)(&AddDetailedStatistics);
-        lpVtbl[20] = (delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, D3D12MA_JsonWriter*, void>)(&WriteAllocationInfoToJson);
+        lpVtbl[0] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, void>)(&Dispose);
+        lpVtbl[1] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, void>)(&Init);
+        lpVtbl[2] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, byte>)(&Validate);
+        lpVtbl[3] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, nuint>)(&GetAllocationCount);
+        lpVtbl[4] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, nuint>)(&GetFreeRegionsCount);
+        lpVtbl[5] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong>)(&GetSumFreeSize);
+        lpVtbl[6] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(&GetAllocationOffset);
+        lpVtbl[7] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, byte>)(&IsEmpty);
+        lpVtbl[8] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, D3D12MA_VIRTUAL_ALLOCATION_INFO*, void>)(&GetAllocationInfo);
+        lpVtbl[9] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong, byte, uint, D3D12MA_AllocationRequest*, byte>)(&CreateAllocationRequest);
+        lpVtbl[10] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_AllocationRequest*, ulong, void*, void>)(&Alloc);
+        lpVtbl[11] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, void>)(&Free);
+        lpVtbl[12] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, void>)(&Clear);
+        lpVtbl[13] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong>)(&GetAllocationListBegin);
+        lpVtbl[14] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(&GetNextAllocation);
+        lpVtbl[15] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(&GetNextFreeRegionSize);
+        lpVtbl[16] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, void*>)(&GetAllocationPrivateData);
+        lpVtbl[17] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, void*, void>)(&SetAllocationPrivateData);
+        lpVtbl[18] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_Statistics*, void>)(&AddStatistics);
+        lpVtbl[19] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_DetailedStatistics*, void>)(&AddDetailedStatistics);
+        lpVtbl[20] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_JsonWriter*, void>)(&WriteAllocationInfoToJson);
 
         return lpVtbl;
     }
 
     [VtblIndex(0)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Dispose(D3D12MA_BlockMetadata_TLSF* pThis)
     {
         D3D12MA_DELETE_ARRAY(*pThis->GetAllocs(), pThis->m_FreeList);
         pThis->m_BlockAllocator.Dispose();
-        ((delegate* unmanaged<D3D12MA_BlockMetadata*, void>)(D3D12MA_BlockMetadata.VtblInstance[0]))(&pThis->Base);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, void>)(D3D12MA_BlockMetadata.VtblInstance[0]))(&pThis->Base);
     }
 
     [VtblIndex(1)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Init(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("ulong")] ulong size)
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata*, ulong, void>)(D3D12MA_BlockMetadata.VtblInstance[1]))(&pThis->Base, size);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, ulong, void>)(D3D12MA_BlockMetadata.VtblInstance[1]))(&pThis->Base, size);
 
         pThis->m_NullBlock = pThis->m_BlockAllocator.Alloc();
         pThis->m_NullBlock->size = size;
@@ -89,7 +89,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(2)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static byte Validate(D3D12MA_BlockMetadata_TLSF* pThis)
     {
         D3D12MA_VALIDATE(pThis->GetSumFreeSize() <= pThis->GetSize());
@@ -193,7 +193,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(3)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     [return: NativeTypeName("nuint")]
     internal static nuint GetAllocationCount(D3D12MA_BlockMetadata_TLSF* pThis)
     {
@@ -201,7 +201,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(4)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     [return: NativeTypeName("nuint")]
     internal static nuint GetFreeRegionsCount(D3D12MA_BlockMetadata_TLSF* pThis)
     {
@@ -209,7 +209,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(5)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     [return: NativeTypeName("ulong")]
     internal static ulong GetSumFreeSize(D3D12MA_BlockMetadata_TLSF* pThis)
     {
@@ -217,7 +217,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(6)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     [return: NativeTypeName("ulong")]
     internal static ulong GetAllocationOffset(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle)
     {
@@ -225,14 +225,14 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(7)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static byte IsEmpty(D3D12MA_BlockMetadata_TLSF* pThis)
     {
         return (byte)((pThis->m_NullBlock->offset == 0) ? 1 : 0);
     }
 
     [VtblIndex(8)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void GetAllocationInfo(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle, [NativeTypeName("D3D12MA::VIRTUAL_ALLOCATION_INFO &")] D3D12MA_VIRTUAL_ALLOCATION_INFO* outInfo)
     {
         Block* block = (Block*)allocHandle;
@@ -244,7 +244,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(9)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static byte CreateAllocationRequest(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("ulong")] ulong allocSize, [NativeTypeName("ulong")] ulong allocAlignment, byte upperAddress, [NativeTypeName("uint")] uint strategy, D3D12MA_AllocationRequest* pAllocationRequest)
     {
         D3D12MA_ASSERT(allocSize > 0, "Cannot allocate empty block!");
@@ -447,7 +447,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(10)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Alloc(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("const D3D12MA::AllocationRequest &")] D3D12MA_AllocationRequest* request, [NativeTypeName("ulong")] ulong allocSize, void* PrivateData)
     {
         // Get block and pop it from the free list
@@ -578,7 +578,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(11)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Free(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle)
     {
         Block* block = (Block*)allocHandle;
@@ -622,7 +622,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(12)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Clear(D3D12MA_BlockMetadata_TLSF* pThis)
     {
         pThis->m_AllocCount = 0;
@@ -647,7 +647,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(13)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     [return: NativeTypeName("D3D12MA::AllocHandle")]
     internal static ulong GetAllocationListBegin(D3D12MA_BlockMetadata_TLSF* pThis)
     {
@@ -669,7 +669,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(14)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     [return: NativeTypeName("D3D12MA::AllocHandle")]
     internal static ulong GetNextAllocation(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong prevAlloc)
     {
@@ -687,7 +687,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(15)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     [return: NativeTypeName("ulong")]
     internal static ulong GetNextFreeRegionSize(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong alloc)
     {
@@ -702,7 +702,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(16)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void* GetAllocationPrivateData(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle)
     {
         Block* block = (Block*)allocHandle;
@@ -711,7 +711,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(17)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void SetAllocationPrivateData(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle, void* privateData)
     {
         Block* block = (Block*)allocHandle;
@@ -720,7 +720,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(18)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void AddStatistics(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("D3D12MA::Statistics &")] D3D12MA_Statistics* inoutStats)
     {
         inoutStats->BlockCount++;
@@ -730,7 +730,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(19)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void AddDetailedStatistics(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("D3D12MA::DetailedStatistics &")] D3D12MA_DetailedStatistics* inoutStats)
     {
         inoutStats->Stats.BlockCount++;
@@ -755,7 +755,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     }
 
     [VtblIndex(20)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void WriteAllocationInfoToJson(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("D3D12MA::JsonWriter &")] D3D12MA_JsonWriter* json)
     {
         nuint blockCount = pThis->m_AllocCount + pThis->m_BlocksFreeCount;

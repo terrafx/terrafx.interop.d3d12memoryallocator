@@ -16,8 +16,8 @@ internal unsafe partial struct D3D12MA_BlockMetadata
     {
         void** lpVtbl = (void**)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_BlockMetadata), 21 * sizeof(void*)));
 
-        lpVtbl[0] = (delegate* unmanaged<D3D12MA_BlockMetadata*, void>)(&Dispose);
-        lpVtbl[1] = (delegate* unmanaged<D3D12MA_BlockMetadata*, ulong, void>)(&Init);
+        lpVtbl[0] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, void>)(&Dispose);
+        lpVtbl[1] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, ulong, void>)(&Init);
         lpVtbl[2] = null;
         lpVtbl[3] = null;
         lpVtbl[4] = null;
@@ -42,13 +42,13 @@ internal unsafe partial struct D3D12MA_BlockMetadata
     }
 
     [VtblIndex(0)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Dispose(D3D12MA_BlockMetadata* pThis)
     {
     }
 
     [VtblIndex(1)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Init(D3D12MA_BlockMetadata* pThis, [NativeTypeName("UINT64")] ulong size)
     {
         pThis->m_Size = size;

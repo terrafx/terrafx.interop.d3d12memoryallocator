@@ -101,134 +101,134 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF : D3D12MA_BlockMetadat
     [VtblIndex(0)]
     public void Dispose()
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, void>)(Base.lpVtbl[0]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this));
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, void>)(Base.lpVtbl[0]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this));
     }
 
     [VtblIndex(1)]
     public void Init([NativeTypeName("UINT64")] ulong size)
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, void>)(Base.lpVtbl[1]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this), size);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, void>)(Base.lpVtbl[1]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this), size);
     }
 
     [VtblIndex(2)]
     public readonly bool Validate()
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, byte>)(Base.lpVtbl[2]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this))) != 0;
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, byte>)(Base.lpVtbl[2]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this))) != 0;
     }
 
     [VtblIndex(3)]
     [return: NativeTypeName("size_t")]
     public readonly nuint GetAllocationCount()
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, nuint>)(Base.lpVtbl[3]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, nuint>)(Base.lpVtbl[3]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
     }
 
     [VtblIndex(4)]
     [return: NativeTypeName("size_t")]
     public readonly nuint GetFreeRegionsCount()
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, nuint>)(Base.lpVtbl[4]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, nuint>)(Base.lpVtbl[4]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
     }
 
     [VtblIndex(5)]
     [return: NativeTypeName("UINT64")]
     public readonly ulong GetSumFreeSize()
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong>)(Base.lpVtbl[5]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong>)(Base.lpVtbl[5]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
     }
 
     [VtblIndex(6)]
     [return: NativeTypeName("UINT64")]
     public readonly ulong GetAllocationOffset([NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle)
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(Base.lpVtbl[6]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), allocHandle);
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(Base.lpVtbl[6]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), allocHandle);
     }
 
     [VtblIndex(7)]
     public readonly bool IsEmpty()
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, byte>)(Base.lpVtbl[7]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this))) != 0;
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, byte>)(Base.lpVtbl[7]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this))) != 0;
     }
 
     [VtblIndex(8)]
     public readonly void GetAllocationInfo([NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle, [NativeTypeName("D3D12MA::VIRTUAL_ALLOCATION_INFO &")] D3D12MA_VIRTUAL_ALLOCATION_INFO* outInfo)
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, D3D12MA_VIRTUAL_ALLOCATION_INFO*, void>)(Base.lpVtbl[8]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), allocHandle, outInfo);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, D3D12MA_VIRTUAL_ALLOCATION_INFO*, void>)(Base.lpVtbl[8]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), allocHandle, outInfo);
     }
 
     [VtblIndex(9)]
     public bool CreateAllocationRequest([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, bool upperAddress, [NativeTypeName("UINT32")] uint strategy, D3D12MA_AllocationRequest* pAllocationRequest)
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, ulong, byte, uint, D3D12MA_AllocationRequest*, byte>)(Base.lpVtbl[9]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this), allocSize, allocAlignment, (byte)(upperAddress ? 1 : 0), strategy, pAllocationRequest) != 0;
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong, byte, uint, D3D12MA_AllocationRequest*, byte>)(Base.lpVtbl[9]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this), allocSize, allocAlignment, (byte)(upperAddress ? 1 : 0), strategy, pAllocationRequest) != 0;
     }
 
     [VtblIndex(10)]
     public void Alloc([NativeTypeName("const D3D12MA::AllocationRequest &")] D3D12MA_AllocationRequest* request, [NativeTypeName("UINT64")] ulong allocSize, void* PrivateData)
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, D3D12MA_AllocationRequest*, ulong, void*, void>)(Base.lpVtbl[10]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this), request, allocSize, PrivateData);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_AllocationRequest*, ulong, void*, void>)(Base.lpVtbl[10]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this), request, allocSize, PrivateData);
     }
 
     [VtblIndex(11)]
     public void Free([NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle)
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, void>)(Base.lpVtbl[11]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this), allocHandle);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, void>)(Base.lpVtbl[11]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this), allocHandle);
     }
 
     [VtblIndex(12)]
     public void Clear()
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, void>)(Base.lpVtbl[12]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this));
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, void>)(Base.lpVtbl[12]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this));
     }
 
     [VtblIndex(13)]
     [return: NativeTypeName("D3D12MA::AllocHandle")]
     public readonly ulong GetAllocationListBegin()
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong>)(Base.lpVtbl[13]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong>)(Base.lpVtbl[13]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
     }
 
     [VtblIndex(14)]
     [return: NativeTypeName("D3D12MA::AllocHandle")]
     public readonly ulong GetNextAllocation([NativeTypeName("D3D12MA::AllocHandle")] ulong prevAlloc)
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(Base.lpVtbl[14]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), prevAlloc);
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(Base.lpVtbl[14]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), prevAlloc);
     }
 
     [VtblIndex(15)]
     [return: NativeTypeName("UINT64")]
     public readonly ulong GetNextFreeRegionSize([NativeTypeName("D3D12MA::AllocHandle")] ulong alloc)
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(Base.lpVtbl[15]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), alloc);
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(Base.lpVtbl[15]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), alloc);
     }
 
     [VtblIndex(16)]
     public readonly void* GetAllocationPrivateData([NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle)
     {
-        return ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, void*>)(Base.lpVtbl[16]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), allocHandle);
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, void*>)(Base.lpVtbl[16]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), allocHandle);
     }
 
     [VtblIndex(17)]
     public void SetAllocationPrivateData([NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle, void* privateData)
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, ulong, void*, void>)(Base.lpVtbl[17]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this), allocHandle, privateData);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, void*, void>)(Base.lpVtbl[17]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref this), allocHandle, privateData);
     }
 
     [VtblIndex(18)]
     public readonly void AddStatistics([NativeTypeName("D3D12MA::Statistics &")] D3D12MA_Statistics* inoutStats)
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, D3D12MA_Statistics*, void>)(Base.lpVtbl[18]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), inoutStats);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_Statistics*, void>)(Base.lpVtbl[18]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), inoutStats);
     }
 
     [VtblIndex(19)]
     public readonly void AddDetailedStatistics([NativeTypeName("D3D12MA::DetailedStatistics &")] D3D12MA_DetailedStatistics* inoutStats)
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, D3D12MA_DetailedStatistics*, void>)(Base.lpVtbl[19]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), inoutStats);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_DetailedStatistics*, void>)(Base.lpVtbl[19]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), inoutStats);
     }
 
     [VtblIndex(20)]
     public readonly void WriteAllocationInfoToJson([NativeTypeName("D3D12MA::JsonWriter &")] D3D12MA_JsonWriter* json)
     {
-        ((delegate* unmanaged<D3D12MA_BlockMetadata_TLSF*, D3D12MA_JsonWriter*, void>)(Base.lpVtbl[20]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), json);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_JsonWriter*, void>)(Base.lpVtbl[20]))((D3D12MA_BlockMetadata_TLSF*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), json);
     }
 
     [return: NativeTypeName("UINT64")]

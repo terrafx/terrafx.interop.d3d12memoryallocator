@@ -31,7 +31,7 @@ public unsafe partial struct D3D12MA_IUnknownImpl : D3D12MA_IUnknownImpl.Interfa
     [VtblIndex(0)]
     public HRESULT QueryInterface([NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
     {
-        return ((delegate* unmanaged<D3D12MA_IUnknownImpl*, Guid*, void**, int>)(lpVtbl[0]))((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this), riid, ppvObject);
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, Guid*, void**, int>)(lpVtbl[0]))((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this), riid, ppvObject);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -39,7 +39,7 @@ public unsafe partial struct D3D12MA_IUnknownImpl : D3D12MA_IUnknownImpl.Interfa
     [return: NativeTypeName("ULONG")]
     public uint AddRef()
     {
-        return ((delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)(lpVtbl[1]))((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, uint>)(lpVtbl[1]))((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -47,21 +47,21 @@ public unsafe partial struct D3D12MA_IUnknownImpl : D3D12MA_IUnknownImpl.Interfa
     [return: NativeTypeName("ULONG")]
     public uint Release()
     {
-        return ((delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)(lpVtbl[2]))((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, uint>)(lpVtbl[2]))((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [VtblIndex(3)]
     public void Dispose()
     {
-        ((delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)(lpVtbl[3]))((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, void>)(lpVtbl[3]))((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [VtblIndex(4)]
     void Interface.ReleaseThis()
     {
-        ((delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)(lpVtbl[4]))((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, void>)(lpVtbl[4]))((D3D12MA_IUnknownImpl*)Unsafe.AsPointer(ref this));
     }
 
     public interface Interface : IUnknown.Interface, IDisposable
@@ -74,18 +74,18 @@ public unsafe partial struct D3D12MA_IUnknownImpl : D3D12MA_IUnknownImpl.Interfa
         where TSelf : unmanaged, Interface
     {
         [NativeTypeName("HRESULT (const IID &, void **) __attribute__((stdcall))")]
-        public delegate* unmanaged<TSelf*, Guid*, void**, int> QueryInterface;
+        public delegate* unmanaged[MemberFunction]<TSelf*, Guid*, void**, int> QueryInterface;
 
         [NativeTypeName("ULONG () __attribute__((stdcall))")]
-        public delegate* unmanaged<TSelf*, uint> AddRef;
+        public delegate* unmanaged[MemberFunction]<TSelf*, uint> AddRef;
 
         [NativeTypeName("ULONG () __attribute__((stdcall))")]
-        public delegate* unmanaged<TSelf*, uint> Release;
+        public delegate* unmanaged[MemberFunction]<TSelf*, uint> Release;
 
         [NativeTypeName("void () __attribute__((stdcall))")]
-        public delegate* unmanaged<TSelf*, void> Dispose;
+        public delegate* unmanaged[MemberFunction]<TSelf*, void> Dispose;
 
         [NativeTypeName("void () __attribute__((stdcall))")]
-        public delegate* unmanaged<TSelf*, void> ReleaseThis;
+        public delegate* unmanaged[MemberFunction]<TSelf*, void> ReleaseThis;
     }
 }

@@ -54,7 +54,7 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
     [VtblIndex(0)]
     public HRESULT QueryInterface([NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
     {
-        return ((delegate* unmanaged<D3D12MA_Allocator*, Guid*, void**, int>)(Base.lpVtbl[0]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), riid, ppvObject);
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_Allocator*, Guid*, void**, int>)(Base.lpVtbl[0]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this), riid, ppvObject);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,7 +62,7 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
     [return: NativeTypeName("ULONG")]
     public uint AddRef()
     {
-        return ((delegate* unmanaged<D3D12MA_Allocator*, uint>)(Base.lpVtbl[1]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_Allocator*, uint>)(Base.lpVtbl[1]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -70,21 +70,21 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
     [return: NativeTypeName("ULONG")]
     public uint Release()
     {
-        return ((delegate* unmanaged<D3D12MA_Allocator*, uint>)(Base.lpVtbl[2]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_Allocator*, uint>)(Base.lpVtbl[2]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [VtblIndex(3)]
     void IDisposable.Dispose()
     {
-        ((delegate* unmanaged<D3D12MA_Allocator*, void>)(Base.lpVtbl[3]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_Allocator*, void>)(Base.lpVtbl[3]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [VtblIndex(4)]
     void D3D12MA_IUnknownImpl.Interface.ReleaseThis()
     {
-        ((delegate* unmanaged<D3D12MA_Allocator*, void>)(Base.lpVtbl[4]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_Allocator*, void>)(Base.lpVtbl[4]))((D3D12MA_Allocator*)Unsafe.AsPointer(ref this));
     }
 
     /// <summary>Returns cached options retrieved from D3D12 device.</summary>
