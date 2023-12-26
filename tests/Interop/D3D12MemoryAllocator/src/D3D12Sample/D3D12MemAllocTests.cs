@@ -344,10 +344,10 @@ public static unsafe partial class D3D12MemAllocTests
         // if the current g_Fences value is still less than "g_FenceValues", then we know the GPU has not finished executing
         // the command queue since it has not reached the "g_CommandQueue->Signal(g_Fences, g_FenceValues)" command
 
-        if (g_Fences[frameIndex].Get()->GetCompletedValue() < g_FenceValues[frameIndex])
+        if (g_Fences[(int)(frameIndex)].Get()->GetCompletedValue() < g_FenceValues[(int)(frameIndex)])
         {
             // we have the g_Fences create an event which is signaled once the g_Fences's current value is "g_FenceValues"
-            CHECK_HR(g_Fences[frameIndex].Get()->SetEventOnCompletion(g_FenceValues[frameIndex], g_FenceEvent));
+            CHECK_HR(g_Fences[(int)(frameIndex)].Get()->SetEventOnCompletion(g_FenceValues[(int)(frameIndex)], g_FenceEvent));
 
             // We will wait until the g_Fences has triggered the event that it's current value has reached "g_FenceValues". once it's value
             // has reached "g_FenceValues", we know the command queue has finished executing
@@ -357,8 +357,8 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static void WaitGPUIdle([NativeTypeName("size_t")] nuint frameIndex)
     {
-        g_FenceValues[frameIndex]++;
-        CHECK_HR(g_CommandQueue.Get()->Signal(g_Fences[frameIndex].Get(), g_FenceValues[frameIndex]));
+        g_FenceValues[(int)(frameIndex)]++;
+        CHECK_HR(g_CommandQueue.Get()->Signal(g_Fences[(int)(frameIndex)].Get(), g_FenceValues[(int)(frameIndex)]));
         WaitForFrame(frameIndex);
     }
 
@@ -1078,7 +1078,7 @@ public static unsafe partial class D3D12MemAllocTests
             SlicePitch = (nint)(vBufferSize),   // also the size of our triangle vertex data
         };
 
-        CHECK_HR(g_CommandList.Get()->Reset(g_CommandAllocators[g_FrameIndex].Get(), null));
+        CHECK_HR(g_CommandList.Get()->Reset(g_CommandAllocators[(int)(g_FrameIndex)].Get(), null));
 
         // we are now creating a command with the command list to copy the data from the upload heap to the default heap
         ulong r = UpdateSubresources(g_CommandList.Get(), g_VertexBuffer.Get(), vBufferUploadHeap.Get(), 0, 0, 1, &vertexData);
@@ -1266,8 +1266,8 @@ public static unsafe partial class D3D12MemAllocTests
         {
             // create resource for cube 1
 
-            fixed (Pointer<D3D12MA_Allocation>* ppCbPerObjectUploadHeapAllocation = &g_CbPerObjectUploadHeapAllocations[i])
-            fixed (ComPtr<ID3D12Resource>* ppCbPerObjectUploadHeap = &g_CbPerObjectUploadHeaps[i])
+            fixed (Pointer<D3D12MA_Allocation>* ppCbPerObjectUploadHeapAllocation = &g_CbPerObjectUploadHeapAllocations[(int)(i)])
+            fixed (ComPtr<ID3D12Resource>* ppCbPerObjectUploadHeap = &g_CbPerObjectUploadHeaps[(int)(i)])
             {
                 CHECK_HR(g_Allocator.Get()->CreateResource(
                     &cbPerObjectUploadAllocDesc,
@@ -1282,12 +1282,12 @@ public static unsafe partial class D3D12MemAllocTests
 
             fixed (char* pName = "Constant Buffer Upload Resource Heap")
             {
-                _ = g_CbPerObjectUploadHeaps[i].Get()->SetName(pName);
+                _ = g_CbPerObjectUploadHeaps[(int)(i)].Get()->SetName(pName);
             }
 
-            fixed (Pointer* ppCbPerObjectAddress = &g_CbPerObjectAddress[i])
+            fixed (Pointer* ppCbPerObjectAddress = &g_CbPerObjectAddress[(int)(i)])
             {
-                CHECK_HR(g_CbPerObjectUploadHeaps[i].Get()->Map(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE))), (void**)(ppCbPerObjectAddress)));
+                CHECK_HR(g_CbPerObjectUploadHeaps[(int)(i)].Get()->Map(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE))), (void**)(ppCbPerObjectAddress)));
             }
         }
 
@@ -1457,7 +1457,7 @@ public static unsafe partial class D3D12MemAllocTests
         for (nuint i = 0; i < FRAME_BUFFER_COUNT; ++i)
         {
             D3D12_CPU_DESCRIPTOR_HANDLE descHandle = new D3D12_CPU_DESCRIPTOR_HANDLE {
-                ptr = g_MainDescriptorHeap[i].Get()->GetCPUDescriptorHandleForHeapStart().ptr + g_Device.Get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
+                ptr = g_MainDescriptorHeap[(int)(i)].Get()->GetCPUDescriptorHandleForHeapStart().ptr + g_Device.Get()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
             };
             g_Device.Get()->CreateShaderResourceView(g_Texture.Get(), &srvDesc, descHandle);
         }
@@ -1491,7 +1491,7 @@ public static unsafe partial class D3D12MemAllocTests
             ConstantBuffer0_PS cb;
             cb.Color = new vec4(f, f, f, 1.0f);
 
-            _ = memcpy(g_ConstantBufferAddress[g_FrameIndex].Value, &cb, __sizeof<ConstantBuffer0_PS>());
+            _ = memcpy(g_ConstantBufferAddress[(int)(g_FrameIndex)].Value, &cb, __sizeof<ConstantBuffer0_PS>());
         }
 
         {
@@ -1516,13 +1516,13 @@ public static unsafe partial class D3D12MemAllocTests
             mat4 worldViewProjection = cube1World * viewProjection;
 
             cb.WorldViewProj = worldViewProjection.Transposed();
-            _= memcpy(g_CbPerObjectAddress[g_FrameIndex].Value, &cb, __sizeof<ConstantBuffer1_VS>());
+            _= memcpy(g_CbPerObjectAddress[(int)(g_FrameIndex)].Value, &cb, __sizeof<ConstantBuffer1_VS>());
 
             mat4 cube2World = mat4.Scaling(0.5f) * mat4.RotationX(g_Time * 2.0f) * mat4.Translation(new vec3(-1.2f, 0.0f, 0.0f)) * cube1World;
             worldViewProjection = cube2World * viewProjection;
 
             cb.WorldViewProj = worldViewProjection.Transposed();
-            _ = memcpy((byte*)(g_CbPerObjectAddress[g_FrameIndex].Value) + ConstantBufferPerObjectAlignedSize, &cb, __sizeof<ConstantBuffer1_VS>());
+            _ = memcpy((byte*)(g_CbPerObjectAddress[(int)(g_FrameIndex)].Value) + ConstantBufferPerObjectAlignedSize, &cb, __sizeof<ConstantBuffer1_VS>());
         }
     }
 
@@ -1538,11 +1538,11 @@ public static unsafe partial class D3D12MemAllocTests
         WaitForFrame(g_FrameIndex);
 
         // increment g_FenceValues for next frame
-        g_FenceValues[g_FrameIndex]++;
+        g_FenceValues[(int)(g_FrameIndex)]++;
 
         // we can only reset an allocator once the gpu is done with it
         // resetting an allocator frees the memory that the command list was stored in
-        CHECK_HR(g_CommandAllocators[g_FrameIndex].Get()->Reset());
+        CHECK_HR(g_CommandAllocators[(int)(g_FrameIndex)].Get()->Reset());
 
         // reset the command list. by resetting the command list we are putting it into
         // a recording state so we can start recording commands into the command allocator.
@@ -1554,7 +1554,7 @@ public static unsafe partial class D3D12MemAllocTests
         // but in this tutorial we are only clearing the rtv, and do not actually need
         // anything but an initial default pipeline, which is what we get by setting
         // the second parameter to NULL
-        CHECK_HR(g_CommandList.Get()->Reset(g_CommandAllocators[g_FrameIndex].Get(), null));
+        CHECK_HR(g_CommandList.Get()->Reset(g_CommandAllocators[(int)(g_FrameIndex)].Get(), null));
 
         // here we start recording commands into the g_CommandList (which all the commands will be stored in the g_CommandAllocators)
 
@@ -1563,7 +1563,7 @@ public static unsafe partial class D3D12MemAllocTests
             Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION
         };
 
-        presentToRenderTargetBarrier.Transition.pResource = g_RenderTargets[g_FrameIndex].Get();
+        presentToRenderTargetBarrier.Transition.pResource = g_RenderTargets[(int)(g_FrameIndex)].Get();
         presentToRenderTargetBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
         presentToRenderTargetBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
         presentToRenderTargetBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
@@ -1592,12 +1592,12 @@ public static unsafe partial class D3D12MemAllocTests
 
         const int _countof_descriptorHeaps = 1;
         ID3D12DescriptorHeap** descriptorHeaps = stackalloc ID3D12DescriptorHeap*[_countof_descriptorHeaps] {
-            g_MainDescriptorHeap[g_FrameIndex].Get()
+            g_MainDescriptorHeap[(int)(g_FrameIndex)].Get()
         };
         g_CommandList.Get()->SetDescriptorHeaps(_countof_descriptorHeaps, descriptorHeaps);
 
-        g_CommandList.Get()->SetGraphicsRootDescriptorTable(0, g_MainDescriptorHeap[g_FrameIndex].Get()->GetGPUDescriptorHandleForHeapStart());
-        g_CommandList.Get()->SetGraphicsRootDescriptorTable(2, g_MainDescriptorHeap[g_FrameIndex].Get()->GetGPUDescriptorHandleForHeapStart());
+        g_CommandList.Get()->SetGraphicsRootDescriptorTable(0, g_MainDescriptorHeap[(int)(g_FrameIndex)].Get()->GetGPUDescriptorHandleForHeapStart());
+        g_CommandList.Get()->SetGraphicsRootDescriptorTable(2, g_MainDescriptorHeap[(int)(g_FrameIndex)].Get()->GetGPUDescriptorHandleForHeapStart());
 
         D3D12_VIEWPORT viewport = new D3D12_VIEWPORT {
             TopLeftX = 0.0f,
@@ -1635,10 +1635,10 @@ public static unsafe partial class D3D12MemAllocTests
             g_CommandList.Get()->IASetIndexBuffer(pIndexBufferView);
         }
 
-        g_CommandList.Get()->SetGraphicsRootConstantBufferView(1, g_CbPerObjectUploadHeaps[g_FrameIndex].Get()->GetGPUVirtualAddress());
+        g_CommandList.Get()->SetGraphicsRootConstantBufferView(1, g_CbPerObjectUploadHeaps[(int)(g_FrameIndex)].Get()->GetGPUVirtualAddress());
         g_CommandList.Get()->DrawIndexedInstanced(g_CubeIndexCount, 1, 0, 0, 0);
 
-        g_CommandList.Get()->SetGraphicsRootConstantBufferView(1, g_CbPerObjectUploadHeaps[g_FrameIndex].Get()->GetGPUVirtualAddress() + ConstantBufferPerObjectAlignedSize);
+        g_CommandList.Get()->SetGraphicsRootConstantBufferView(1, g_CbPerObjectUploadHeaps[(int)(g_FrameIndex)].Get()->GetGPUVirtualAddress() + ConstantBufferPerObjectAlignedSize);
         g_CommandList.Get()->DrawIndexedInstanced(g_CubeIndexCount, 1, 0, 0, 0);
 
         // transition the "g_FrameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
@@ -1647,7 +1647,7 @@ public static unsafe partial class D3D12MemAllocTests
             Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
         };
 
-        renderTargetToPresentBarrier.Transition.pResource = g_RenderTargets[g_FrameIndex].Get();
+        renderTargetToPresentBarrier.Transition.pResource = g_RenderTargets[(int)(g_FrameIndex)].Get();
         renderTargetToPresentBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
         renderTargetToPresentBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
         renderTargetToPresentBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
@@ -1670,7 +1670,7 @@ public static unsafe partial class D3D12MemAllocTests
         // this command goes in at the end of our command queue. we will know when our command queue 
         // has finished because the g_Fences value will be set to "g_FenceValues" from the GPU since the command
         // queue is being executed on the GPU
-        CHECK_HR(g_CommandQueue.Get()->Signal(g_Fences[g_FrameIndex].Get(), g_FenceValues[g_FrameIndex]));
+        CHECK_HR(g_CommandQueue.Get()->Signal(g_Fences[(int)(g_FrameIndex)].Get(), g_FenceValues[(int)(g_FrameIndex)]));
 
         // present the current backbuffer
         CHECK_HR(g_SwapChain.Get()->Present(PRESENT_SYNC_INTERVAL, 0));
@@ -1683,7 +1683,7 @@ public static unsafe partial class D3D12MemAllocTests
         for (nuint i = 0; i < FRAME_BUFFER_COUNT; ++i)
         {
             WaitForFrame(i);
-            CHECK_HR(g_CommandQueue.Get()->Wait(g_Fences[i].Get(), g_FenceValues[i]));
+            CHECK_HR(g_CommandQueue.Get()->Wait(g_Fences[(int)(i)].Get(), g_FenceValues[(int)(i)]));
         }
 
         // get swapchain out of full screen before exiting
@@ -1722,16 +1722,16 @@ public static unsafe partial class D3D12MemAllocTests
 
         for (nuint i = FRAME_BUFFER_COUNT; i-- != 0;)
         {
-            _ = g_CbPerObjectUploadHeaps[i].Reset();
+            _ = g_CbPerObjectUploadHeaps[(int)(i)].Reset();
 
-            _ = g_CbPerObjectUploadHeapAllocations[i].Value->Release();
-            g_CbPerObjectUploadHeapAllocations[i].Value = null;
+            _ = g_CbPerObjectUploadHeapAllocations[(int)(i)].Value->Release();
+            g_CbPerObjectUploadHeapAllocations[(int)(i)].Value = null;
 
-            _ = g_MainDescriptorHeap[i].Reset();
-            _ = g_ConstantBufferUploadHeap[i].Reset();
+            _ = g_MainDescriptorHeap[(int)(i)].Reset();
+            _ = g_ConstantBufferUploadHeap[(int)(i)].Reset();
 
-            _ = g_ConstantBufferUploadAllocation[i].Value->Release();
-            g_ConstantBufferUploadAllocation[i].Value = null;
+            _ = g_ConstantBufferUploadAllocation[(int)(i)].Value->Release();
+            g_ConstantBufferUploadAllocation[(int)(i)].Value = null;
         }
 
         _ = g_DepthStencilDescriptorHeap.Reset();
@@ -1744,9 +1744,9 @@ public static unsafe partial class D3D12MemAllocTests
 
         for (nuint i = FRAME_BUFFER_COUNT; i-- != 0;)
         {
-            _ = g_RenderTargets[i].Reset();
-            _ = g_CommandAllocators[i].Reset();
-            _ = g_Fences[i].Reset();
+            _ = g_RenderTargets[(int)(i)].Reset();
+            _ = g_CommandAllocators[(int)(i)].Reset();
+            _ = g_Fences[(int)(i)].Reset();
         }
 
         _ = g_Allocator.Reset();
@@ -1856,7 +1856,7 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static ID3D12GraphicsCommandList* BeginCommandList()
     {
-        CHECK_HR(g_CommandList.Get()->Reset(g_CommandAllocators[g_FrameIndex].Get(), null));
+        CHECK_HR(g_CommandList.Get()->Reset(g_CommandAllocators[(int)(g_FrameIndex)].Get(), null));
         return g_CommandList.Get();
     }
 
@@ -2046,345 +2046,70 @@ public static unsafe partial class D3D12MemAllocTests
     }
 
 #pragma warning disable CS0649
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_RenderTargets_e__FixedBuffer
     {
         public ComPtr<ID3D12Resource> e0;
-        public ComPtr<ID3D12Resource> e1;
-        public ComPtr<ID3D12Resource> e2;
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12Resource> this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12Resource> this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<ComPtr<ID3D12Resource>> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_CommandAllocators_e__FixedBuffer
     {
         public ComPtr<ID3D12CommandAllocator> e0;
-        public ComPtr<ID3D12CommandAllocator> e1;
-        public ComPtr<ID3D12CommandAllocator> e2;
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12CommandAllocator> this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12CommandAllocator> this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<ComPtr<ID3D12CommandAllocator>> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_Fences_e__FixedBuffer
     {
         public ComPtr<ID3D12Fence> e0;
-        public ComPtr<ID3D12Fence> e1;
-        public ComPtr<ID3D12Fence> e2;
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12Fence> this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12Fence> this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<ComPtr<ID3D12Fence>> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_FenceValues_e__FixedBuffer
     {
         public ulong e0;
-        public ulong e1;
-        public ulong e2;
-
-        [UnscopedRef]
-        public ref ulong this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref ulong this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<ulong> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_CbPerObjectUploadHeapAllocations_e__FixedBuffer
     {
         public Pointer<D3D12MA_Allocation> e0;
-        public Pointer<D3D12MA_Allocation> e1;
-        public Pointer<D3D12MA_Allocation> e2;
-
-        [UnscopedRef]
-        public ref Pointer<D3D12MA_Allocation> this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref Pointer<D3D12MA_Allocation> this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<Pointer<D3D12MA_Allocation>> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_CbPerObjectUploadHeaps_e__FixedBuffer
     {
         public ComPtr<ID3D12Resource> e0;
-        public ComPtr<ID3D12Resource> e1;
-        public ComPtr<ID3D12Resource> e2;
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12Resource> this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12Resource> this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<ComPtr<ID3D12Resource>> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_CbPerObjectAddress_e__FixedBuffer
     {
         public Pointer e0;
-        public Pointer e1;
-        public Pointer e2;
-
-        [UnscopedRef]
-        public ref Pointer this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref Pointer this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<Pointer> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_MainDescriptorHeap_e__FixedBuffer
     {
         public ComPtr<ID3D12DescriptorHeap> e0;
-        public ComPtr<ID3D12DescriptorHeap> e1;
-        public ComPtr<ID3D12DescriptorHeap> e2;
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12DescriptorHeap> this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12DescriptorHeap> this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<ComPtr<ID3D12DescriptorHeap>> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_ConstantBufferUploadHeap_e__FixedBuffer
     {
         public ComPtr<ID3D12Resource> e0;
-        public ComPtr<ID3D12Resource> e1;
-        public ComPtr<ID3D12Resource> e2;
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12Resource> this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref ComPtr<ID3D12Resource> this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<ComPtr<ID3D12Resource>> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_ConstantBufferUploadAllocation_e__FixedBuffer
     {
         public Pointer<D3D12MA_Allocation> e0;
-        public Pointer<D3D12MA_Allocation> e1;
-        public Pointer<D3D12MA_Allocation> e2;
-
-        [UnscopedRef]
-        public ref Pointer<D3D12MA_Allocation> this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref Pointer<D3D12MA_Allocation> this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<Pointer<D3D12MA_Allocation>> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 
+    [InlineArray((int)(FRAME_BUFFER_COUNT))]
     internal partial struct _g_ConstantBufferAddress_e__FixedBuffer
     {
         public Pointer e0;
-        public Pointer e1;
-        public Pointer e2;
-
-        [UnscopedRef]
-        public ref Pointer this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [UnscopedRef]
-        public ref Pointer this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[(int)(index)];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<Pointer> AsSpan() => MemoryMarshal.CreateSpan(ref e0, (int)(FRAME_BUFFER_COUNT));
     }
 #pragma warning restore CS0649
 }

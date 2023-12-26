@@ -55,7 +55,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF : D3D12MA_BlockMetadat
     private byte m_MemoryClasses;
 
     [NativeTypeName("UINT32[MAX_MEMORY_CLASSES")]
-    private fixed uint m_InnerIsFreeBitmap[MAX_MEMORY_CLASSES];
+    private _m_InnerIsFreeBitmap_e__FixedBuffer m_InnerIsFreeBitmap;
 
     [NativeTypeName("UINT32")]
     private uint m_ListsCount;
@@ -554,5 +554,11 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF : D3D12MA_BlockMetadat
             [FieldOffset(0)]
             public void* privateData;
         }
+    }
+
+    [InlineArray(MAX_MEMORY_CLASSES)]
+    internal partial struct _m_InnerIsFreeBitmap_e__FixedBuffer
+    {
+        public uint e0;
     }
 }

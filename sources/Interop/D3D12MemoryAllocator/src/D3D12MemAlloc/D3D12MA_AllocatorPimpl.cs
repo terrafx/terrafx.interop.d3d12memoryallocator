@@ -123,7 +123,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         for (uint i = 0; i < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++i)
         {
-            m_CommittedAllocations[i].Init(m_UseMutex, (D3D12_HEAP_TYPE)((uint)(D3D12_HEAP_TYPE_DEFAULT) + i), null); // pool
+            m_CommittedAllocations[(int)(i)].Init(m_UseMutex, (D3D12_HEAP_TYPE)((uint)(D3D12_HEAP_TYPE_DEFAULT) + i), null); // pool
         }
 
         _ = m_Device->AddRef();
@@ -143,12 +143,12 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         for (uint i = D3D12MA_DEFAULT_POOL_MAX_COUNT; i-- != 0;)
         {
-            D3D12MA_DELETE(GetAllocs(), m_BlockVectors[i].Value);
+            D3D12MA_DELETE(GetAllocs(), m_BlockVectors[(int)(i)].Value);
         }
 
         for (uint i = D3D12MA_HEAP_TYPE_COUNT; i-- != 0;)
         {
-            if (!m_Pools[i].IsEmpty())
+            if (!m_Pools[(int)(i)].IsEmpty())
             {
                 D3D12MA_FAIL("Unfreed pools found!");
             }
@@ -299,7 +299,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             }
 
             D3D12MA_BlockVector* blockVector = D3D12MA_BlockVector.Create(GetAllocs(), (D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)), heapProps, heapFlags, m_PreferredBlockSize, 0, nuint.MaxValue, false, D3D12MA_DEBUG_ALIGNMENT, 0, m_MsaaAlwaysCommitted, null);
-            m_BlockVectors[i] = new Pointer<D3D12MA_BlockVector>(blockVector);
+            m_BlockVectors[(int)(i)] = new Pointer<D3D12MA_BlockVector>(blockVector);
 
             // No need to call m_pBlockVectors[i]->CreateMinBlocks here, becase minBlockCount is 0.
         }
@@ -662,7 +662,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             // DEFAULT, UPLOAD, READBACK.
             for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapTypeIndex)
             {
-                D3D12MA_BlockVector* pBlockVector = m_BlockVectors[heapTypeIndex].Value;
+                D3D12MA_BlockVector* pBlockVector = m_BlockVectors[(int)(heapTypeIndex)].Value;
                 D3D12MA_ASSERT(pBlockVector != null);
                 pBlockVector->AddDetailedStatistics(ref outStats.HeapType[(int)(heapTypeIndex)]);
             }
@@ -674,7 +674,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             {
                 for (nuint heapSubType = 0; heapSubType < 3; ++heapSubType)
                 {
-                    D3D12MA_BlockVector* pBlockVector = m_BlockVectors[(heapTypeIndex * 3) + heapSubType].Value;
+                    D3D12MA_BlockVector* pBlockVector = m_BlockVectors[(int)((heapTypeIndex * 3) + heapSubType)].Value;
                     D3D12MA_ASSERT(pBlockVector != null);
                     pBlockVector->AddDetailedStatistics(ref outStats.HeapType[(int)(heapTypeIndex)]);
                 }
@@ -691,8 +691,8 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_HEAP_TYPE_COUNT; ++heapTypeIndex)
         {
-            using D3D12MA_MutexLockRead @lock = new D3D12MA_MutexLockRead(ref m_PoolsMutex[heapTypeIndex], m_UseMutex);
-            ref D3D12MA_IntrusiveLinkedList<D3D12MA_PoolListItemTraits, D3D12MA_PoolPimpl> poolList = ref m_Pools[heapTypeIndex];
+            using D3D12MA_MutexLockRead @lock = new D3D12MA_MutexLockRead(ref m_PoolsMutex[(int)(heapTypeIndex)], m_UseMutex);
+            ref D3D12MA_IntrusiveLinkedList<D3D12MA_PoolListItemTraits, D3D12MA_PoolPimpl> poolList = ref m_Pools[(int)(heapTypeIndex)];
 
             for (D3D12MA_PoolPimpl* pool = poolList.Front(); pool != null; pool = D3D12MA_IntrusiveLinkedList<D3D12MA_PoolListItemTraits, D3D12MA_PoolPimpl>.GetNext(pool))
             {
@@ -717,7 +717,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         for (uint heapTypeIndex = 0; heapTypeIndex < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapTypeIndex)
         {
             D3D12MA_ClearDetailedStatistics(out tmpStats);
-            m_CommittedAllocations[heapTypeIndex].AddDetailedStatistics(ref tmpStats);
+            m_CommittedAllocations[(int)(heapTypeIndex)].AddDetailedStatistics(ref tmpStats);
 
             D3D12MA_AddDetailedStatistics(ref outStats.HeapType[(int)(heapTypeIndex)], tmpStats);
             D3D12MA_AddDetailedStatistics(ref outStats.MemorySegmentGroup[(int)(StandardHeapTypeToMemorySegmentGroup(D3D12MA_IndexToHeapType(heapTypeIndex)))], tmpStats);
@@ -1143,7 +1143,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                                 json.EndString(D3D12MA_HeapSubTypeName[heapSubType]);
 
                                 json.BeginObject();
-                                writeHeapInfo(ref Unsafe.AsRef(in json), m_BlockVectors[(uint)(heapType + heapSubType)].Value, (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[heapType])), false);
+                                writeHeapInfo(ref Unsafe.AsRef(in json), m_BlockVectors[(int)(heapType + heapSubType)].Value, (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[heapType])), false);
                                 json.EndObject();
                             }
                         }
@@ -1508,14 +1508,14 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
             outCommittedAllocationParams.m_HeapProperties = D3D12MA_StandardHeapTypeToHeapProperties(allocDesc.HeapType);
             outCommittedAllocationParams.m_HeapFlags = allocDesc.ExtraHeapFlags;
-            outCommittedAllocationParams.m_List = (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[D3D12MA_HeapTypeToIndex(allocDesc.HeapType)]));
+            outCommittedAllocationParams.m_List = (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[(int)(D3D12MA_HeapTypeToIndex(allocDesc.HeapType))]));
 
             D3D12MA_ResourceClass resourceClass = (resDesc != null) ? D3D12MA_ResourceDescToResourceClass(*resDesc) : D3D12MA_HeapFlagsToResourceClass(allocDesc.ExtraHeapFlags);
             uint defaultPoolIndex = CalcDefaultPoolIndex(allocDesc, resourceClass);
 
             if (defaultPoolIndex != uint.MaxValue)
             {
-                outBlockVector = m_BlockVectors[defaultPoolIndex].Value;
+                outBlockVector = m_BlockVectors[(int)(defaultPoolIndex)].Value;
                 ulong preferredBlockSize = outBlockVector->GetPreferredBlockSize();
 
                 if (allocSize > preferredBlockSize)
@@ -1595,14 +1595,14 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
             outCommittedAllocationParams.m_HeapProperties = D3D12MA_StandardHeapTypeToHeapProperties(allocDesc.HeapType);
             outCommittedAllocationParams.m_HeapFlags = allocDesc.ExtraHeapFlags;
-            outCommittedAllocationParams.m_List = (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[D3D12MA_HeapTypeToIndex(allocDesc.HeapType)]));
+            outCommittedAllocationParams.m_List = (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[(int)(D3D12MA_HeapTypeToIndex(allocDesc.HeapType))]));
 
             D3D12MA_ResourceClass resourceClass = (resDesc != null) ? D3D12MA_ResourceDescToResourceClass(*resDesc) : D3D12MA_HeapFlagsToResourceClass(allocDesc.ExtraHeapFlags);
             uint defaultPoolIndex = CalcDefaultPoolIndex(allocDesc, resourceClass);
 
             if (defaultPoolIndex != uint.MaxValue)
             {
-                outBlockVector = m_BlockVectors[defaultPoolIndex].Value;
+                outBlockVector = m_BlockVectors[(int)(defaultPoolIndex)].Value;
                 ulong preferredBlockSize = outBlockVector->GetPreferredBlockSize();
 
                 if (allocSize > preferredBlockSize)
@@ -1787,8 +1787,8 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     {
         uint heapTypeIndex = D3D12MA_HeapTypeToIndex(heapType);
 
-        using D3D12MA_MutexLockWrite @lock = new D3D12MA_MutexLockWrite(ref m_PoolsMutex[heapTypeIndex], m_UseMutex);
-        m_Pools[heapTypeIndex].PushBack(pool->m_Pimpl);
+        using D3D12MA_MutexLockWrite @lock = new D3D12MA_MutexLockWrite(ref m_PoolsMutex[(int)(heapTypeIndex)], m_UseMutex);
+        m_Pools[(int)(heapTypeIndex)].PushBack(pool->m_Pimpl);
     }
 
     // Unregisters Pool object from m_Pools.
@@ -1796,8 +1796,8 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     {
         uint heapTypeIndex = D3D12MA_HeapTypeToIndex(heapType);
 
-        using D3D12MA_MutexLockWrite @lock = new D3D12MA_MutexLockWrite(ref m_PoolsMutex[heapTypeIndex], m_UseMutex);
-        m_Pools[heapTypeIndex].Remove(pool->m_Pimpl);
+        using D3D12MA_MutexLockWrite @lock = new D3D12MA_MutexLockWrite(ref m_PoolsMutex[(int)(heapTypeIndex)], m_UseMutex);
+        m_Pools[(int)(heapTypeIndex)].Remove(pool->m_Pimpl);
     }
 
     private HRESULT UpdateD3D12Budget()
@@ -1938,113 +1938,42 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         json.EndObject();
     }
 
+    [InlineArray((int)(D3D12MA_HEAP_TYPE_COUNT))]
     private partial struct _m_PoolsMutex_e__FixedBuffer
     {
         public D3D12MA_RW_MUTEX e0;
-        public D3D12MA_RW_MUTEX e1;
-        public D3D12MA_RW_MUTEX e2;
-        public D3D12MA_RW_MUTEX e3;
-
-        public _m_PoolsMutex_e__FixedBuffer()
-        {
-            e0 = new D3D12MA_RW_MUTEX();
-            e1 = new D3D12MA_RW_MUTEX();
-            e2 = new D3D12MA_RW_MUTEX();
-            e3 = new D3D12MA_RW_MUTEX();
-        }
-
-        [UnscopedRef]
-        public ref D3D12MA_RW_MUTEX this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                D3D12MA_ASSERT(index < D3D12MA_HEAP_TYPE_COUNT);
-                return ref Unsafe.Add(ref e0, index);
-            }
-        }
     }
 
+    [InlineArray((int)(D3D12MA_HEAP_TYPE_COUNT))]
     private partial struct _m_Pools_e__FixedBuffer : IDisposable
     {
         public D3D12MA_IntrusiveLinkedList<D3D12MA_PoolListItemTraits, D3D12MA_PoolPimpl> e0;
-        public D3D12MA_IntrusiveLinkedList<D3D12MA_PoolListItemTraits, D3D12MA_PoolPimpl> e1;
-        public D3D12MA_IntrusiveLinkedList<D3D12MA_PoolListItemTraits, D3D12MA_PoolPimpl> e2;
-        public D3D12MA_IntrusiveLinkedList<D3D12MA_PoolListItemTraits, D3D12MA_PoolPimpl> e3;
 
         public void Dispose()
         {
-            e0.Dispose();
-            e1.Dispose();
-            e2.Dispose();
-            e3.Dispose();
-        }
-
-        [UnscopedRef]
-        public ref D3D12MA_IntrusiveLinkedList<D3D12MA_PoolListItemTraits, D3D12MA_PoolPimpl> this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                D3D12MA_ASSERT(index < D3D12MA_HEAP_TYPE_COUNT);
-                return ref Unsafe.Add(ref e0, index);
-            }
+            this[0].Dispose();
+            this[1].Dispose();
+            this[2].Dispose();
+            this[3].Dispose();
         }
     }
 
+    [InlineArray((int)(D3D12MA_DEFAULT_POOL_MAX_COUNT))]
     private partial struct _m_BlockVectors_e__FixedBuffer
     {
         public Pointer<D3D12MA_BlockVector> e0;
-        public Pointer<D3D12MA_BlockVector> e1;
-        public Pointer<D3D12MA_BlockVector> e2;
-        public Pointer<D3D12MA_BlockVector> e3;
-        public Pointer<D3D12MA_BlockVector> e4;
-        public Pointer<D3D12MA_BlockVector> e5;
-        public Pointer<D3D12MA_BlockVector> e6;
-        public Pointer<D3D12MA_BlockVector> e7;
-        public Pointer<D3D12MA_BlockVector> e8;
-
-        [UnscopedRef]
-        public ref Pointer<D3D12MA_BlockVector> this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                D3D12MA_ASSERT(index < D3D12MA_DEFAULT_POOL_MAX_COUNT);
-                return ref Unsafe.Add(ref e0, index);
-            }
-        }
     }
 
+    [InlineArray((int)(D3D12MA_STANDARD_HEAP_TYPE_COUNT))]
     private partial struct _m_CommittedAllocations_e__FixedBuffer
     {
         public D3D12MA_CommittedAllocationList e0;
-        public D3D12MA_CommittedAllocationList e1;
-        public D3D12MA_CommittedAllocationList e2;
-
-        public _m_CommittedAllocations_e__FixedBuffer()
-        {
-            e0 = new D3D12MA_CommittedAllocationList();
-            e1 = new D3D12MA_CommittedAllocationList();
-            e2 = new D3D12MA_CommittedAllocationList();
-        }
 
         public void Dispose()
         {
-            e0.Dispose();
-            e1.Dispose();
-            e2.Dispose();
-        }
-
-        [UnscopedRef]
-        public ref D3D12MA_CommittedAllocationList this[nuint index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                D3D12MA_ASSERT(index < D3D12MA_STANDARD_HEAP_TYPE_COUNT);
-                return ref Unsafe.Add(ref e0, index);
-            }
+            this[0].Dispose();
+            this[1].Dispose();
+            this[2].Dispose();
         }
     }
 }

@@ -1582,9 +1582,9 @@ public static unsafe partial class D3D12MemAllocTests
 
             // Make sure it is accounted only in CUSTOM heap not any of the standard heaps.
 
-            CHECK_BOOL(memcmp(&globalStatsCurr.HeapType.e0, &globalStatsBeg.HeapType.e0, __sizeof<D3D12MA_DetailedStatistics>()) == 0);
-            CHECK_BOOL(memcmp(&globalStatsCurr.HeapType.e1, &globalStatsBeg.HeapType.e1, __sizeof<D3D12MA_DetailedStatistics>()) == 0);
-            CHECK_BOOL(memcmp(&globalStatsCurr.HeapType.e2, &globalStatsBeg.HeapType.e2, __sizeof<D3D12MA_DetailedStatistics>()) == 0);
+            CHECK_BOOL(memcmp(&globalStatsCurr.HeapType[0], &globalStatsBeg.HeapType[0], __sizeof<D3D12MA_DetailedStatistics>()) == 0);
+            CHECK_BOOL(memcmp(&globalStatsCurr.HeapType[1], &globalStatsBeg.HeapType[1], __sizeof<D3D12MA_DetailedStatistics>()) == 0);
+            CHECK_BOOL(memcmp(&globalStatsCurr.HeapType[2], &globalStatsBeg.HeapType[2], __sizeof<D3D12MA_DetailedStatistics>()) == 0);
 
             CHECK_BOOL(globalStatsCurr.HeapType[3].Stats.AllocationCount == globalStatsBeg.HeapType[3].Stats.AllocationCount + 1);
             CHECK_BOOL(globalStatsCurr.HeapType[3].Stats.BlockCount == globalStatsBeg.HeapType[3].Stats.BlockCount + 1);

@@ -82,7 +82,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
         }
 
         pThis->m_MemoryClasses = (byte)(memoryClass + 2);
-        _ = memset(pThis->m_InnerIsFreeBitmap, 0, MAX_MEMORY_CLASSES * sizeof(uint));
+        _ = memset(&pThis->m_InnerIsFreeBitmap[0], 0, MAX_MEMORY_CLASSES * sizeof(uint));
 
         pThis->m_FreeList = D3D12MA_NEW_ARRAY<Pointer<Block>>(*pThis->GetAllocs(), pThis->m_ListsCount);
         _ = memset(pThis->m_FreeList, 0, pThis->m_ListsCount * __sizeof<Pointer<Block>>());
@@ -643,7 +643,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
         }
 
         _ = memset(pThis->m_FreeList, 0, pThis->m_ListsCount * __sizeof<Pointer<Block>>());
-        _ = memset(pThis->m_InnerIsFreeBitmap, 0, (uint)(pThis->m_MemoryClasses) * sizeof(uint));
+        _ = memset(&pThis->m_InnerIsFreeBitmap[0], 0, (uint)(pThis->m_MemoryClasses) * sizeof(uint));
     }
 
     [VtblIndex(13)]

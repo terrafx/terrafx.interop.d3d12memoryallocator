@@ -85,45 +85,15 @@ public partial struct D3D12MA_TotalStatistics
     /// <summary>Total statistics from all memory allocated from D3D12.</summary>
     public D3D12MA_DetailedStatistics Total;
 
+    [InlineArray(4)]
     public partial struct _HeapType_e__FixedBuffer
     {
         public D3D12MA_DetailedStatistics e0;
-        public D3D12MA_DetailedStatistics e1;
-        public D3D12MA_DetailedStatistics e2;
-        public D3D12MA_DetailedStatistics e3;
-
-        [UnscopedRef]
-        public ref D3D12MA_DetailedStatistics this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<D3D12MA_DetailedStatistics> AsSpan() => MemoryMarshal.CreateSpan(ref e0, 4);
     }
 
+    [InlineArray(2)]
     public partial struct _MemorySegmentGroup_e__FixedBuffer
     {
         public D3D12MA_DetailedStatistics e0;
-        public D3D12MA_DetailedStatistics e1;
-
-        [UnscopedRef]
-        public ref D3D12MA_DetailedStatistics this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return ref AsSpan()[index];
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [UnscopedRef]
-        public Span<D3D12MA_DetailedStatistics> AsSpan() => MemoryMarshal.CreateSpan(ref e0, 2);
     }
 }
