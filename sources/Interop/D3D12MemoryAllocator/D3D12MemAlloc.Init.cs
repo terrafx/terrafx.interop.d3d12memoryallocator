@@ -7,13 +7,13 @@ namespace TerraFX.Interop.DirectX;
 
 public static unsafe partial class D3D12MemAlloc
 {
-#pragma warning disable CA1802
+#pragma warning disable CA1802,CA1805
 #if DEBUG
     private static readonly bool IsDebug = true;
 #else
     private static readonly bool IsDebug = false;
 #endif
-#pragma warning restore CA1802
+#pragma warning restore CA1802,CA1805
 
     /// <summary>Define this macro to 0 to disable usage of DXGI 1.4 (needed for <see cref="IDXGIAdapter3"/> and query for memory budget).</summary>
     public static readonly uint D3D12MA_DXGI_1_4 = get_app_context_data(nameof(D3D12MA_DXGI_1_4), 1);
