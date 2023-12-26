@@ -47,7 +47,7 @@ public unsafe partial struct D3D12MA_DefragmentationContext : D3D12MA_IUnknownIm
     [VtblIndex(0)]
     public HRESULT QueryInterface([NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
     {
-        return ((delegate* unmanaged<D3D12MA_DefragmentationContext*, Guid*, void**, int>)(Base.lpVtbl[0]))((D3D12MA_DefragmentationContext*)Unsafe.AsPointer(ref this), riid, ppvObject);
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_DefragmentationContext*, Guid*, void**, int>)(Base.lpVtbl[0]))((D3D12MA_DefragmentationContext*)Unsafe.AsPointer(ref this), riid, ppvObject);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -55,7 +55,7 @@ public unsafe partial struct D3D12MA_DefragmentationContext : D3D12MA_IUnknownIm
     [return: NativeTypeName("ULONG")]
     public uint AddRef()
     {
-        return ((delegate* unmanaged<D3D12MA_DefragmentationContext*, uint>)(Base.lpVtbl[1]))((D3D12MA_DefragmentationContext*)Unsafe.AsPointer(ref this));
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_DefragmentationContext*, uint>)(Base.lpVtbl[1]))((D3D12MA_DefragmentationContext*)Unsafe.AsPointer(ref this));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -63,21 +63,21 @@ public unsafe partial struct D3D12MA_DefragmentationContext : D3D12MA_IUnknownIm
     [return: NativeTypeName("ULONG")]
     public uint Release()
     {
-        return ((delegate* unmanaged<D3D12MA_DefragmentationContext*, uint>)(Base.lpVtbl[2]))((D3D12MA_DefragmentationContext*)Unsafe.AsPointer(ref this));
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_DefragmentationContext*, uint>)(Base.lpVtbl[2]))((D3D12MA_DefragmentationContext*)Unsafe.AsPointer(ref this));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [VtblIndex(3)]
     void IDisposable.Dispose()
     {
-        ((delegate* unmanaged<D3D12MA_DefragmentationContext*, void>)(Base.lpVtbl[3]))((D3D12MA_DefragmentationContext*)Unsafe.AsPointer(ref this));
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_DefragmentationContext*, void>)(Base.lpVtbl[3]))((D3D12MA_DefragmentationContext*)Unsafe.AsPointer(ref this));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [VtblIndex(4)]
     void D3D12MA_IUnknownImpl.Interface.ReleaseThis()
     {
-        ((delegate* unmanaged<D3D12MA_DefragmentationContext*, void>)(Base.lpVtbl[4]))((D3D12MA_DefragmentationContext*)Unsafe.AsPointer(ref this));
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_DefragmentationContext*, void>)(Base.lpVtbl[4]))((D3D12MA_DefragmentationContext*)Unsafe.AsPointer(ref this));
     }
 
     /// <summary>Starts single defragmentation pass.</summary>

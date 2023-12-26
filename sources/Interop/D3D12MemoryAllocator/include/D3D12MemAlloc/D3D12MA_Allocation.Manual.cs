@@ -19,17 +19,17 @@ public unsafe partial struct D3D12MA_Allocation
     {
         void** lpVtbl = (void**)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_Allocation), 5 * sizeof(void*)));
 
-        lpVtbl[0] = (delegate* unmanaged<D3D12MA_Allocation*, Guid*, void**, int>)(D3D12MA_IUnknownImpl.VtblInstance[0]);
-        lpVtbl[1] = (delegate* unmanaged<D3D12MA_Allocation*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[1]);
-        lpVtbl[2] = (delegate* unmanaged<D3D12MA_Allocation*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[2]);
-        lpVtbl[3] = (delegate* unmanaged<D3D12MA_Allocation*, void>)(D3D12MA_IUnknownImpl.VtblInstance[3]);
-        lpVtbl[4] = (delegate* unmanaged<D3D12MA_Allocation*, void>)(&ReleaseThis);
+        lpVtbl[0] = (delegate* unmanaged[MemberFunction]<D3D12MA_Allocation*, Guid*, void**, int>)(D3D12MA_IUnknownImpl.VtblInstance[0]);
+        lpVtbl[1] = (delegate* unmanaged[MemberFunction]<D3D12MA_Allocation*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[1]);
+        lpVtbl[2] = (delegate* unmanaged[MemberFunction]<D3D12MA_Allocation*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[2]);
+        lpVtbl[3] = (delegate* unmanaged[MemberFunction]<D3D12MA_Allocation*, void>)(D3D12MA_IUnknownImpl.VtblInstance[3]);
+        lpVtbl[4] = (delegate* unmanaged[MemberFunction]<D3D12MA_Allocation*, void>)(&ReleaseThis);
 
         return lpVtbl;
     }
 
     [VtblIndex(4)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void ReleaseThis(D3D12MA_Allocation* pThis)
     {
         if (pThis == null)

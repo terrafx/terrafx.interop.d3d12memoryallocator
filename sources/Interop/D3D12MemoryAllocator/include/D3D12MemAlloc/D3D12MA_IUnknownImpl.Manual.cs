@@ -22,17 +22,17 @@ public unsafe partial struct D3D12MA_IUnknownImpl
     {
         void** lpVtbl = (void**)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_IUnknownImpl), 5 * sizeof(void*)));
 
-        lpVtbl[0] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, Guid*, void**, int>)(&QueryInterface);
-        lpVtbl[1] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)(&AddRef);
-        lpVtbl[2] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, uint>)(&Release);
-        lpVtbl[3] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)(&Dispose);
-        lpVtbl[4] = (delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)(&ReleaseThis);
+        lpVtbl[0] = (delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, Guid*, void**, int>)(&QueryInterface);
+        lpVtbl[1] = (delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, uint>)(&AddRef);
+        lpVtbl[2] = (delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, uint>)(&Release);
+        lpVtbl[3] = (delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, void>)(&Dispose);
+        lpVtbl[4] = (delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, void>)(&ReleaseThis);
 
         return lpVtbl;
     }
 
     [VtblIndex(0)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static int QueryInterface(D3D12MA_IUnknownImpl* pThis, [NativeTypeName("REFIID")] Guid* riid, void** ppvObject)
     {
         if (ppvObject == null)
@@ -52,7 +52,7 @@ public unsafe partial struct D3D12MA_IUnknownImpl
     }
 
     [VtblIndex(1)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     [return: NativeTypeName("ULONG")]
     internal static uint AddRef(D3D12MA_IUnknownImpl* pThis)
     {
@@ -60,7 +60,7 @@ public unsafe partial struct D3D12MA_IUnknownImpl
     }
 
     [VtblIndex(2)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     [return: NativeTypeName("ULONG")]
     internal static uint Release(D3D12MA_IUnknownImpl* pThis)
     {
@@ -69,19 +69,19 @@ public unsafe partial struct D3D12MA_IUnknownImpl
 
         if (newRefCount == 0)
         {
-            ((delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)(pThis->lpVtbl[4]))(pThis);
+            ((delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, void>)(pThis->lpVtbl[4]))(pThis);
         }
         return newRefCount;
     }
 
     [VtblIndex(3)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Dispose(D3D12MA_IUnknownImpl* pThis)
     {
     }
 
     [VtblIndex(4)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void ReleaseThis(D3D12MA_IUnknownImpl* pThis)
     {
         pThis->Dispose();

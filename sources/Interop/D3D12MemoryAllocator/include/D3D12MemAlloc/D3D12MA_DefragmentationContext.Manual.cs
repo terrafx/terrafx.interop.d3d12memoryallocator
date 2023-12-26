@@ -18,25 +18,25 @@ public unsafe partial struct D3D12MA_DefragmentationContext
     {
         void** lpVtbl = (void**)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_DefragmentationContext), 5 * sizeof(void*)));
 
-        lpVtbl[0] = (delegate* unmanaged<D3D12MA_DefragmentationContext*, Guid*, void**, int>)(D3D12MA_IUnknownImpl.VtblInstance[0]);
-        lpVtbl[1] = (delegate* unmanaged<D3D12MA_DefragmentationContext*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[1]);
-        lpVtbl[2] = (delegate* unmanaged<D3D12MA_DefragmentationContext*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[2]);
-        lpVtbl[3] = (delegate* unmanaged<D3D12MA_DefragmentationContext*, void>)(&Dispose);
-        lpVtbl[4] = (delegate* unmanaged<D3D12MA_DefragmentationContext*, void>)(&ReleaseThis);
+        lpVtbl[0] = (delegate* unmanaged[MemberFunction]<D3D12MA_DefragmentationContext*, Guid*, void**, int>)(D3D12MA_IUnknownImpl.VtblInstance[0]);
+        lpVtbl[1] = (delegate* unmanaged[MemberFunction]<D3D12MA_DefragmentationContext*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[1]);
+        lpVtbl[2] = (delegate* unmanaged[MemberFunction]<D3D12MA_DefragmentationContext*, uint>)(D3D12MA_IUnknownImpl.VtblInstance[2]);
+        lpVtbl[3] = (delegate* unmanaged[MemberFunction]<D3D12MA_DefragmentationContext*, void>)(&Dispose);
+        lpVtbl[4] = (delegate* unmanaged[MemberFunction]<D3D12MA_DefragmentationContext*, void>)(&ReleaseThis);
 
         return lpVtbl;
     }
 
     [VtblIndex(3)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Dispose(D3D12MA_DefragmentationContext* pThis)
     {
         D3D12MA_DELETE(pThis->m_Pimpl->GetAllocs(), pThis->m_Pimpl);
-        ((delegate* unmanaged<D3D12MA_IUnknownImpl*, void>)(D3D12MA_IUnknownImpl.VtblInstance[3]))(&pThis->Base);
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_IUnknownImpl*, void>)(D3D12MA_IUnknownImpl.VtblInstance[3]))(&pThis->Base);
     }
 
     [VtblIndex(4)]
-    [UnmanagedCallersOnly]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void ReleaseThis(D3D12MA_DefragmentationContext* pThis)
     {
         if (pThis == null)

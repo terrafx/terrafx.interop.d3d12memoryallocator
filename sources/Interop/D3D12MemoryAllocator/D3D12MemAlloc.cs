@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
+[assembly: DisableRuntimeMarshalling]
 
 namespace TerraFX.Interop.DirectX;
 

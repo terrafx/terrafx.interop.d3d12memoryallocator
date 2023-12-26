@@ -15,16 +15,16 @@ namespace TerraFX.Interop.DirectX;
 internal unsafe partial struct D3D12MA_CurrentBudgetData
 {
     [NativeTypeName("D3D12MA_ATOMIC_UINT32[DXGI_MEMORY_SEGMENT_GROUP_COUNT]")]
-    private fixed uint m_BlockCount[(int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT)];
+    private _m_BlockCount_e__FixedBuffer m_BlockCount;
 
     [NativeTypeName("D3D12MA_ATOMIC_UINT32[DXGI_MEMORY_SEGMENT_GROUP_COUNT]")]
-    private fixed uint m_AllocationCount[(int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT)];
+    private _m_AllocationCount_e__FixedBuffer m_AllocationCount;
 
     [NativeTypeName("D3D12MA_ATOMIC_UINT64[DXGI_MEMORY_SEGMENT_GROUP_COUNT]")]
-    private fixed ulong m_BlockBytes[(int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT)];
+    private _m_BlockBytes_e__FixedBuffer m_BlockBytes;
 
     [NativeTypeName("D3D12MA_ATOMIC_UINT64[DXGI_MEMORY_SEGMENT_GROUP_COUNT]")]
-    private fixed ulong m_AllocationBytes[(int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT)];
+    private _m_AllocationBytes_e__FixedBuffer m_AllocationBytes;
 
     [NativeTypeName("D3D12MA_ATOMIC_UINT32")]
     private volatile uint m_OperationsSinceBudgetFetch;
@@ -32,13 +32,13 @@ internal unsafe partial struct D3D12MA_CurrentBudgetData
     private D3D12MA_RW_MUTEX m_BudgetMutex;
 
     [NativeTypeName("UINT64[DXGI_MEMORY_SEGMENT_GROUP_COUNT]")]
-    private fixed ulong m_D3D12Usage[(int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT)];
+    private _m_D3D12Usage_e__FixedBuffer m_D3D12Usage;
 
     [NativeTypeName("UINT64[DXGI_MEMORY_SEGMENT_GROUP_COUNT]")]
-    private fixed ulong m_D3D12Budget[(int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT)];
+    private _m_D3D12Budget_e__FixedBuffer m_D3D12Budget;
 
     [NativeTypeName("UINT64[DXGI_MEMORY_SEGMENT_GROUP_COUNT]")]
-    private fixed ulong m_BlockBytesAtD3D12Fetch[(int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT)];
+    private _m_BlockBytesAtD3D12Fetch_e__FixedBuffer m_BlockBytesAtD3D12Fetch;
 
     public D3D12MA_CurrentBudgetData()
     {
@@ -52,11 +52,11 @@ internal unsafe partial struct D3D12MA_CurrentBudgetData
 
     public readonly void GetStatistics([NativeTypeName("D3D12MA::Statistics &")] out D3D12MA_Statistics outStats, [NativeTypeName("UINT")] uint group)
     {
-        outStats.BlockCount = Volatile.Read(ref Unsafe.AsRef(in m_BlockCount[group]));
-        outStats.AllocationCount = Volatile.Read(ref Unsafe.AsRef(in m_AllocationCount[group]));
+        outStats.BlockCount = Volatile.Read(ref Unsafe.AsRef(in m_BlockCount[(int)(group)]));
+        outStats.AllocationCount = Volatile.Read(ref Unsafe.AsRef(in m_AllocationCount[(int)(group)]));
 
-        outStats.BlockBytes = Volatile.Read(ref Unsafe.AsRef(in m_BlockBytes[group]));
-        outStats.AllocationBytes = Volatile.Read(ref Unsafe.AsRef(in m_AllocationBytes[group]));
+        outStats.BlockBytes = Volatile.Read(ref Unsafe.AsRef(in m_BlockBytes[(int)(group)]));
+        outStats.AllocationBytes = Volatile.Read(ref Unsafe.AsRef(in m_AllocationBytes[(int)(group)]));
     }
 
     public void GetBudget(bool useMutex, [NativeTypeName("UINT64 *")] ulong* outLocalUsage, [NativeTypeName("UINT64 *")] ulong* outLocalBudget, [NativeTypeName("UINT64 *")] ulong* outNonLocalUsage, [NativeTypeName("UINT64 *")] ulong* outNonLocalBudget)
@@ -65,28 +65,28 @@ internal unsafe partial struct D3D12MA_CurrentBudgetData
 
         if (outLocalUsage != null)
         {
-            ulong D3D12Usage = m_D3D12Usage[DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY];
-            ulong blockBytes = Volatile.Read(ref m_BlockBytes[DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY]);
-            ulong blockBytesAtD3D12Fetch = m_BlockBytesAtD3D12Fetch[DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY];
+            ulong D3D12Usage = m_D3D12Usage[(int)(DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY)];
+            ulong blockBytes = Volatile.Read(ref m_BlockBytes[(int)(DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY)]);
+            ulong blockBytesAtD3D12Fetch = m_BlockBytesAtD3D12Fetch[(int)(DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY)];
             *outLocalUsage = ((D3D12Usage + blockBytes) > blockBytesAtD3D12Fetch) ? (D3D12Usage + blockBytes - blockBytesAtD3D12Fetch) : 0;
         }
 
         if (outLocalBudget != null)
         {
-            *outLocalBudget = m_D3D12Budget[DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY];
+            *outLocalBudget = m_D3D12Budget[(int)(DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY)];
         }
 
         if (outNonLocalUsage != null)
         {
-            ulong D3D12Usage = m_D3D12Usage[DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY];
-            ulong blockBytes = Volatile.Read(ref m_BlockBytes[DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY]);
-            ulong blockBytesAtD3D12Fetch = m_BlockBytesAtD3D12Fetch[DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY];
+            ulong D3D12Usage = m_D3D12Usage[(int)(DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY)];
+            ulong blockBytes = Volatile.Read(ref m_BlockBytes[(int)(DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY)]);
+            ulong blockBytesAtD3D12Fetch = m_BlockBytesAtD3D12Fetch[(int)(DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY)];
             *outNonLocalUsage = ((D3D12Usage + blockBytes) > blockBytesAtD3D12Fetch) ? (D3D12Usage + blockBytes - blockBytesAtD3D12Fetch) : 0;
         }
 
         if (outNonLocalBudget != null)
         {
-            *outNonLocalBudget = m_D3D12Budget[DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY];
+            *outNonLocalBudget = m_D3D12Budget[(int)(DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY)];
         }
     }
 
@@ -131,35 +131,77 @@ internal unsafe partial struct D3D12MA_CurrentBudgetData
 
     public void AddAllocation([NativeTypeName("UINT")] uint group, [NativeTypeName("UINT64")] ulong allocationBytes)
     {
-        _ = Interlocked.Increment(ref m_AllocationCount[group]);
-        _ = Interlocked.Add(ref m_AllocationBytes[group], allocationBytes);
+        _ = Interlocked.Increment(ref m_AllocationCount[(int)(group)]);
+        _ = Interlocked.Add(ref m_AllocationBytes[(int)(group)], allocationBytes);
         _ = Interlocked.Increment(ref m_OperationsSinceBudgetFetch);
     }
 
     public void RemoveAllocation([NativeTypeName("UINT")] uint group, [NativeTypeName("UINT64")] ulong allocationBytes)
     {
-        D3D12MA_ASSERT(Volatile.Read(ref m_AllocationBytes[group]) >= allocationBytes);
-        D3D12MA_ASSERT(Volatile.Read(ref m_AllocationCount[group]) > 0);
+        D3D12MA_ASSERT(Volatile.Read(ref m_AllocationBytes[(int)(group)]) >= allocationBytes);
+        D3D12MA_ASSERT(Volatile.Read(ref m_AllocationCount[(int)(group)]) > 0);
 
-        _ = Interlocked.Add(ref m_AllocationBytes[group], unchecked(0 - allocationBytes));
-        _ = Interlocked.Decrement(ref m_AllocationCount[group]);
+        _ = Interlocked.Add(ref m_AllocationBytes[(int)(group)], unchecked(0 - allocationBytes));
+        _ = Interlocked.Decrement(ref m_AllocationCount[(int)(group)]);
         _ = Interlocked.Increment(ref m_OperationsSinceBudgetFetch);
     }
 
     public void AddBlock([NativeTypeName("UINT")] uint group, [NativeTypeName("UINT64")] ulong blockBytes)
     {
-        _ = Interlocked.Increment(ref m_BlockCount[group]);
-        _ = Interlocked.Add(ref m_BlockBytes[group], blockBytes);
+        _ = Interlocked.Increment(ref m_BlockCount[(int)(group)]);
+        _ = Interlocked.Add(ref m_BlockBytes[(int)(group)], blockBytes);
         _ = Interlocked.Increment(ref m_OperationsSinceBudgetFetch);
     }
 
     public void RemoveBlock([NativeTypeName("UINT")] uint group, [NativeTypeName("UINT64")] ulong blockBytes)
     {
-        D3D12MA_ASSERT(Volatile.Read(ref m_BlockBytes[group]) >= blockBytes);
-        D3D12MA_ASSERT(Volatile.Read(ref m_BlockCount[group]) > 0);
+        D3D12MA_ASSERT(Volatile.Read(ref m_BlockBytes[(int)(group)]) >= blockBytes);
+        D3D12MA_ASSERT(Volatile.Read(ref m_BlockCount[(int)(group)]) > 0);
 
-        _ = Interlocked.Add(ref m_BlockBytes[group], unchecked(0 - blockBytes));
-        _ = Interlocked.Decrement(ref m_BlockCount[group]);
+        _ = Interlocked.Add(ref m_BlockBytes[(int)(group)], unchecked(0 - blockBytes));
+        _ = Interlocked.Decrement(ref m_BlockCount[(int)(group)]);
         _ = Interlocked.Increment(ref m_OperationsSinceBudgetFetch);
+    }
+
+    [InlineArray((int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT))]
+    public partial struct _m_BlockCount_e__FixedBuffer
+    {
+        public uint e0;
+    }
+
+    [InlineArray((int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT))]
+    public partial struct _m_AllocationCount_e__FixedBuffer
+    {
+        public uint e0;
+    }
+
+    [InlineArray((int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT))]
+    public partial struct _m_BlockBytes_e__FixedBuffer
+    {
+        public ulong e0;
+    }
+
+    [InlineArray((int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT))]
+    public partial struct _m_AllocationBytes_e__FixedBuffer
+    {
+        public ulong e0;
+    }
+
+    [InlineArray((int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT))]
+    public partial struct _m_D3D12Usage_e__FixedBuffer
+    {
+        public ulong e0;
+    }
+
+    [InlineArray((int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT))]
+    public partial struct _m_D3D12Budget_e__FixedBuffer
+    {
+        public ulong e0;
+    }
+
+    [InlineArray((int)(DXGI_MEMORY_SEGMENT_GROUP_COUNT))]
+    public partial struct _m_BlockBytesAtD3D12Fetch_e__FixedBuffer
+    {
+        public ulong e0;
     }
 }
