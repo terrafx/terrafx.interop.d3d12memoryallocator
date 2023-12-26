@@ -26,7 +26,7 @@ public static unsafe partial class D3D12MemAlloc
     }
 
     [return: NativeTypeName("size_t")]
-    internal static nuint wcslen([NativeTypeName("const wchar_t *")] ushort* s)
+    internal static nuint wcslen([NativeTypeName("const wchar_t *")] char* s)
     {
         return (uint)(MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)(s)).Length);
     }

@@ -11,7 +11,7 @@ internal unsafe partial struct D3D12MA_StringBuilder
     {
         fixed (char* pStr = str)
         {
-            Add((ushort*)(pStr));
+            Add(pStr);
         }
     }
 }

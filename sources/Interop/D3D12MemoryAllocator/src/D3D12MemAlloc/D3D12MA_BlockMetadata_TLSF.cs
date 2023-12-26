@@ -263,18 +263,18 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF : D3D12MA_BlockMetadat
         Base.PrintDetailedMap_Allocation(ref json, offset, size, privateData);
     }
 
-    private readonly void PrintDetailedMap_UnusedRange([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json, [NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong size)
+    private static void PrintDetailedMap_UnusedRange([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json, [NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong size)
     {
-        Base.PrintDetailedMap_UnusedRange(ref json, offset, size);
+        D3D12MA_BlockMetadata.PrintDetailedMap_UnusedRange(ref json, offset, size);
     }
 
-    private readonly void PrintDetailedMap_End([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json)
+    private static void PrintDetailedMap_End([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json)
     {
-        Base.PrintDetailedMap_End(ref json);
+        D3D12MA_BlockMetadata.PrintDetailedMap_End(ref json);
     }
 
     [return: NativeTypeName("UINT8")]
-    private readonly byte SizeToMemoryClass([NativeTypeName("UINT64")] ulong size)
+    private static byte SizeToMemoryClass([NativeTypeName("UINT64")] ulong size)
     {
         if (size > SMALL_BUFFER_SIZE)
         {

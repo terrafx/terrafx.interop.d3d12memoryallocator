@@ -11,7 +11,7 @@ internal unsafe partial struct D3D12MA_JsonWriter
     {
         fixed (char* pStr = str)
         {
-            BeginString((ushort*)(pStr));
+            BeginString(pStr);
         }
     }
 
@@ -19,7 +19,7 @@ internal unsafe partial struct D3D12MA_JsonWriter
     {
         fixed (char* pStr = str)
         {
-            ContinueString((ushort*)(pStr));
+            ContinueString(pStr);
         }
     }
 
@@ -27,7 +27,7 @@ internal unsafe partial struct D3D12MA_JsonWriter
     {
         fixed (char* pStr = str)
         {
-            EndString((ushort*)(pStr));
+            EndString(pStr);
         }
     }
 
@@ -35,7 +35,7 @@ internal unsafe partial struct D3D12MA_JsonWriter
     {
         fixed (char* pStr = str)
         {
-            WriteString((ushort*)(pStr));
+            WriteString(pStr);
         }
     }
 }

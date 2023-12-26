@@ -245,7 +245,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
         json.EndObject();
     }
 
-    internal readonly void PrintDetailedMap_UnusedRange([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json, [NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong size)
+    internal static void PrintDetailedMap_UnusedRange([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json, [NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong size)
     {
         json.BeginObject(true);
 
@@ -261,7 +261,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
         json.EndObject();
     }
 
-    internal readonly void PrintDetailedMap_End([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json)
+    internal static void PrintDetailedMap_End([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json)
     {
         json.EndArray();
     }

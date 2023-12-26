@@ -2,8 +2,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
+
+[assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 
 namespace TerraFX.Interop.DirectX.UnitTests;
 

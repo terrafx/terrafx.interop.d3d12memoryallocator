@@ -4,6 +4,7 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Globalization;
 
 namespace TerraFX.Interop.DirectX.UnitTests;
 
@@ -38,7 +39,7 @@ internal partial struct CommandLineParameters
             }
             else if ((args[i].Equals("-i", StringComparison.OrdinalIgnoreCase) || args[i].Equals("--GPUIndex", StringComparison.OrdinalIgnoreCase)) && ((i + 1) < args.Length))
             {
-                m_GPUSelection.Index = uint.Parse(args[i + 1]);
+                m_GPUSelection.Index = uint.Parse(args[i + 1], CultureInfo.InvariantCulture);
                 ++i;
             }
             else if (args[i].Equals("-t", StringComparison.OrdinalIgnoreCase) || args[i].Equals("--Test", StringComparison.OrdinalIgnoreCase))

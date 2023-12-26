@@ -100,7 +100,7 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
 
     // Writes a string value inside "".
     // pStr can contain any UTF-16 characters, including '"', new line etc. - they will be properly escaped.
-    public void WriteString([NativeTypeName("LPCWSTR")] ushort* pStr)
+    public void WriteString([NativeTypeName("LPCWSTR")] char* pStr)
     {
         BeginString(pStr);
         EndString();
@@ -110,7 +110,7 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
     // Call BeginString, ContinueString, ContinueString, ..., EndString instead of
     // WriteString to conveniently build the string content incrementally, made of
     // parts including numbers.
-    public void BeginString([NativeTypeName("LPCWSTR")] ushort* pStr = null)
+    public void BeginString([NativeTypeName("LPCWSTR")] char* pStr = null)
     {
         D3D12MA_ASSERT(!m_InsideString);
         BeginValue(true);
@@ -125,12 +125,12 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
     }
 
     // Posts next part of an open string.
-    public void ContinueString([NativeTypeName("LPCWSTR")] ushort* pStr)
+    public void ContinueString([NativeTypeName("LPCWSTR")] char* pStr)
     {
         D3D12MA_ASSERT(m_InsideString);
         D3D12MA_ASSERT(pStr != null);
 
-        for (ushort* p = pStr; *p != '\0'; ++p)
+        for (char* p = pStr; *p != '\0'; ++p)
         {
             // the strings we encode are assumed to be in UTF-16LE format, the native
             // windows wide character Unicode format. In this encoding Unicode code
@@ -256,7 +256,7 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
     // using "%p" formatting - shown as hexadecimal number, e.g.: 000000081276Ad00
     // void ContinueString_Pointer(const void* ptr);
     // Ends writing a string value by writing '"'.
-    public void EndString([NativeTypeName("LPCWSTR")] ushort* pStr = null)
+    public void EndString([NativeTypeName("LPCWSTR")] char* pStr = null)
     {
         D3D12MA_ASSERT(m_InsideString);
 
@@ -370,7 +370,7 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
             EndString();
         }
 
-        ushort* name = alloc.GetName();
+        char* name = alloc.GetName();
 
         if (name != null)
         {

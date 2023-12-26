@@ -67,7 +67,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
         pThis->m_NullBlock->NextFree() = null;
         pThis->m_NullBlock->PrevFree() = null;
 
-        byte memoryClass = pThis->SizeToMemoryClass(size);
+        byte memoryClass = SizeToMemoryClass(size);
         ushort sli = pThis->SizeToSecondIndex(size, memoryClass);
 
         pThis->m_ListsCount = ((memoryClass == 0u) ? 0u : ((memoryClass - 1u) * (1u << SECOND_LEVEL_INDEX) + sli)) + 1u;
@@ -783,7 +783,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
 
             if (block->IsFree())
             {
-                pThis->PrintDetailedMap_UnusedRange(ref *json, block->offset, block->size);
+                PrintDetailedMap_UnusedRange(ref *json, block->offset, block->size);
             }
             else
             {
@@ -791,6 +791,6 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
             }
         }
 
-        pThis->PrintDetailedMap_End(ref *json);
+        PrintDetailedMap_End(ref *json);
     }
 }

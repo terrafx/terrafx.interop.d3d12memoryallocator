@@ -393,7 +393,7 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
     /// <summary>Builds and returns statistics as a string in JSON format.</summary>
     /// <param name="ppStatsString">Must be freed using <see cref="FreeStatsString" />.</param>
     /// <param name="DetailedMap"><see cref="TRUE" /> to include full list of allocations (can make the string quite long), <see cref="FALSE" /> to only return statistics.</param>
-    public readonly void BuildStatsString([NativeTypeName("WCHAR **")] ushort** ppStatsString, BOOL DetailedMap)
+    public readonly void BuildStatsString([NativeTypeName("WCHAR **")] char** ppStatsString, BOOL DetailedMap)
     {
         D3D12MA_ASSERT(ppStatsString != null);
 
@@ -403,7 +403,7 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
 
     /// <summary>Frees memory of a string returned from Allocator::BuildStatsString.</summary>
     /// <param name="pStatsString"></param>
-    public readonly void FreeStatsString([NativeTypeName("WCHAR *")] ushort* pStatsString)
+    public readonly void FreeStatsString([NativeTypeName("WCHAR *")] char* pStatsString)
     {
         if (pStatsString != null)
         {

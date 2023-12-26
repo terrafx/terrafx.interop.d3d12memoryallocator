@@ -20,7 +20,7 @@
   <!-- Default settings that explicitly differ from the Sdk.props defaults  -->
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AnalysisLevel>preview</AnalysisLevel>
+    <AnalysisLevel>preview-all</AnalysisLevel>
     <BaseIntermediateOutputPath>$(BaseArtifactsPath)obj/$(BaseArtifactsPathSuffix)/</BaseIntermediateOutputPath>
     <DebugType>embedded</DebugType>
     <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
@@ -42,10 +42,12 @@
     <BaseOutputPath>$(BaseArtifactsPath)bin/$(BaseArtifactsPathSuffix)/</BaseOutputPath>
     <Company>TerraFX</Company>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_RUN_ID)' != ''">true</ContinuousIntegrationBuild>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <PackageOutputPath>$(BaseArtifactsPath)pkg/$(Configuration)/</PackageOutputPath>
     <Product>TerraFX.Interop.D3D12MemoryAllocator</Product>
     <RootNamespace>TerraFX.Interop</RootNamespace>
-    <VersionPrefix>2.0.1.4</VersionPrefix>
+    <VersionPrefix>2.0.1.5</VersionPrefix>
     <VersionSuffix Condition="'$(EXCLUDE_SUFFIX_FROM_VERSION)' != 'true'">rc1</VersionSuffix>
     <VersionSuffix Condition="'$(GITHUB_EVENT_NAME)' == 'pull_request'">pr</VersionSuffix>
   </PropertyGroup>
@@ -55,11 +57,11 @@
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)TerraFX.snk</AssemblyOriginatorKeyFile>
     <AssemblyOriginatorPublicKey>002400000c800000940000000602000000240000525341310004000001000100897039f5ff762b25b9ba982c3f5836c34e299279c33df505bf806a07bccdf0e1216e661943f557b954cb18422ed522a5b3174b85385052677f39c4ce19f30a1ddbaa507054bc5943461651f396afc612cd80419c5ee2b5277571ff65f51d14ba99e4e4196de0f393e89850a465f019dbdc365ed5e81bbafe1370f54efd254ba8</AssemblyOriginatorPublicKey>
     <Copyright>Copyright © Tanner Gooding and Contributors</Copyright>
-    <Description>Interop bindings for D3D12MemoryAllocator.</Description>
+    <Description>Interop bindings for Windows.</Description>
     <Features>strict</Features>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <HighEntropyVA>true</HighEntropyVA>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>preview</LangVersion>
     <MinClientVersion>4.3</MinClientVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
     <OverwriteReadOnlyFiles>true</OverwriteReadOnlyFiles>

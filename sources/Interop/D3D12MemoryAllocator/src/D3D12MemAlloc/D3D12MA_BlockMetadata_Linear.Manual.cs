@@ -885,7 +885,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
                     {
                         // There is free space from lastOffset to suballoc.offset.
                         ulong unusedRangeSize = suballoc.offset - lastOffset;
-                        pThis->PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
+                        PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
                     }
 
                     // 2. Process this allocation.
@@ -903,7 +903,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
                     {
                         // There is free space from lastOffset to freeSpace2ndTo1stEnd.
                         ulong unusedRangeSize = freeSpace2ndTo1stEnd - lastOffset;
-                        pThis->PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
+                        PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
                     }
 
                     // End of loop.
@@ -932,7 +932,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
                 {
                     // There is free space from lastOffset to suballoc.offset.
                     ulong unusedRangeSize = suballoc.offset - lastOffset;
-                    pThis->PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
+                    PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
                 }
 
                 // 2. Process this allocation.
@@ -950,7 +950,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
                 {
                     // There is free space from lastOffset to freeSpace1stTo2ndEnd.
                     ulong unusedRangeSize = freeSpace1stTo2ndEnd - lastOffset;
-                    pThis->PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
+                    PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
                 }
 
                 // End of loop.
@@ -980,7 +980,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
                     {
                         // There is free space from lastOffset to suballoc.offset.
                         ulong  unusedRangeSize = suballoc.offset - lastOffset;
-                        pThis->PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
+                        PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
                     }
 
                     // 2. Process this allocation.
@@ -998,7 +998,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
                     {
                         // There is free space from lastOffset to size.
                         ulong  unusedRangeSize = size - lastOffset;
-                        pThis->PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
+                        PrintDetailedMap_UnusedRange(ref *json, lastOffset, unusedRangeSize);
                     }
 
                     // End of loop.
@@ -1007,6 +1007,6 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
             }
         }
 
-        pThis->PrintDetailedMap_End(ref *json);
+        PrintDetailedMap_End(ref *json);
     }
 }
