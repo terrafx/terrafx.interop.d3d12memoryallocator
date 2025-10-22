@@ -32,17 +32,17 @@ internal unsafe partial struct D3D12MA_MUTEX : IDisposable
         m_Mutex = CreateMutex(null, 0, null);
     }
 
-    public void Dispose()
+    public readonly void Dispose()
     {
         _ = CloseHandle(m_Mutex);
     }
 
-    public void Lock()
+    public readonly void Lock()
     {
         _ = WaitForSingleObject(m_Mutex, INFINITE);
     }
 
-    public void Unlock()
+    public readonly void Unlock()
     {
         _ = ReleaseMutex(m_Mutex);
     }

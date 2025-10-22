@@ -52,7 +52,7 @@ internal unsafe partial struct D3D12MA_Vector<T> : IDisposable
         }
     }
 
-    public void Dispose()
+    public readonly void Dispose()
     {
         D3D12MA_Free(*m_AllocationCallbacks, m_pArray);
     }
@@ -74,7 +74,7 @@ internal unsafe partial struct D3D12MA_Vector<T> : IDisposable
         return m_Count;
     }
 
-    public T* data()
+    public readonly T* data()
     {
         return m_pArray;
     }
@@ -85,25 +85,25 @@ internal unsafe partial struct D3D12MA_Vector<T> : IDisposable
     }
 
     [return: NativeTypeName("iterator")]
-    public T* begin()
+    public readonly T* begin()
     {
         return m_pArray;
     }
 
     [return: NativeTypeName("iterator")]
-    public T* end()
+    public readonly T* end()
     {
         return m_pArray + m_Count;
     }
 
     [return: NativeTypeName("iterator")]
-    public T* rend()
+    public readonly T* rend()
     {
         return begin() - 1;
     }
 
     [return: NativeTypeName("iterator")]
-    public T* rbegin()
+    public readonly T* rbegin()
     {
         return end() - 1;
     }

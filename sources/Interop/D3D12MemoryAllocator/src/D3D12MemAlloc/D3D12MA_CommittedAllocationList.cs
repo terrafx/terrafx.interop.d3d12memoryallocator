@@ -30,7 +30,7 @@ internal unsafe partial struct D3D12MA_CommittedAllocationList : IDisposable
         m_Mutex = new D3D12MA_RW_MUTEX();
     }
 
-    public void Dispose()
+    public readonly void Dispose()
     {
         if (!m_AllocationList.IsEmpty())
         {

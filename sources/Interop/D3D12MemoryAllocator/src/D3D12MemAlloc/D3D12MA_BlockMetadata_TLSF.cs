@@ -503,7 +503,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF : D3D12MA_BlockMetadat
             Anonymous = new _Anonymous_e__Union();
         }
 
-        void IDisposable.Dispose()
+        readonly void IDisposable.Dispose()
         {
         }
 

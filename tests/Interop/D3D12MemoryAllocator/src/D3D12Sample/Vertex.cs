@@ -5,15 +5,9 @@
 
 namespace TerraFX.Interop.DirectX.UnitTests;
 
-internal partial struct Vertex
+internal partial struct Vertex(float x, float y, float z, float tx, float ty)
 {
-    public vec3 pos;
+    public vec3 pos = new vec3(x, y, z);
 
-    public vec2 texCoord;
-
-    public Vertex(float x, float y, float z, float tx, float ty)
-    {
-        pos = new vec3(x, y, z);
-        texCoord = new vec2(tx, ty);
-    }
+    public vec2 texCoord = new vec2(tx, ty);
 }

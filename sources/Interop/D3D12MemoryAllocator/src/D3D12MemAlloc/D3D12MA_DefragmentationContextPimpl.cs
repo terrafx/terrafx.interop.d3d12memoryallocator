@@ -160,7 +160,7 @@ internal unsafe partial struct D3D12MA_DefragmentationContextPimpl : IDisposable
         m_Moves.Dispose();
     }
 
-    public void GetStats([NativeTypeName("D3D12MA::DEFRAGMENTATION_STATS &")] out D3D12MA_DEFRAGMENTATION_STATS outStats)
+    public readonly void GetStats([NativeTypeName("D3D12MA::DEFRAGMENTATION_STATS &")] out D3D12MA_DEFRAGMENTATION_STATS outStats)
     {
         outStats = m_GlobalStats;
     }
@@ -803,7 +803,7 @@ internal unsafe partial struct D3D12MA_DefragmentationContextPimpl : IDisposable
         return false;
     }
 
-    private void UpdateVectorStatistics([NativeTypeName("D3D12MA::BlockVector &")] ref D3D12MA_BlockVector vector, [NativeTypeName("D3D12MA::DefragmentationContextPimpl::StateBalanced &")] ref StateBalanced state)
+    private readonly void UpdateVectorStatistics([NativeTypeName("D3D12MA::BlockVector &")] ref D3D12MA_BlockVector vector, [NativeTypeName("D3D12MA::DefragmentationContextPimpl::StateBalanced &")] ref StateBalanced state)
     {
         nuint allocCount = 0;
         nuint freeCount = 0;

@@ -19,7 +19,7 @@ public static unsafe partial class D3D12MemAlloc
     {
         get
         {
-            ReadOnlySpan<byte> data = new byte[] {
+            ReadOnlySpan<byte> data = [
                 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00,
                 0x00, 0x00,
@@ -31,7 +31,7 @@ public static unsafe partial class D3D12MemAlloc
                 0x00,
                 0x00,
                 0x00
-            };
+            ];
 
             Debug.Assert(data.Length == Unsafe.SizeOf<Guid>());
             return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
@@ -107,7 +107,7 @@ public static unsafe partial class D3D12MemAlloc
         }
     }
 
-    private struct AlignOf<T>
+    internal struct AlignOf<T>
         where T : unmanaged
     {
         public byte Origin;

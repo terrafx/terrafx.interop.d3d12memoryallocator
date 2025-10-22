@@ -8,7 +8,7 @@ namespace TerraFX.Interop.DirectX;
 internal struct D3D12MA_SuballocationOffsetGreater
     : D3D12MA_CmpLess<D3D12MA_Suballocation>
 {
-    public int Compare(D3D12MA_Suballocation lhs, D3D12MA_Suballocation rhs)
+    public readonly int Compare(D3D12MA_Suballocation lhs, D3D12MA_Suballocation rhs)
     {
         return lhs.offset.CompareTo(rhs.offset);
     }

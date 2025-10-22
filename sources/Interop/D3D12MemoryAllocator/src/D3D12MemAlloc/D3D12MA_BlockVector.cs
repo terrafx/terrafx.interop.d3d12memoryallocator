@@ -464,7 +464,7 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         }
     }
 
-    internal void SortByFreeSize()
+    internal readonly void SortByFreeSize()
     {
         D3D12MA_SORT(m_Blocks.begin(), m_Blocks.end(), new @cmp());
     }
@@ -636,12 +636,12 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
     private unsafe struct @cmp
         : D3D12MA_CmpLess<Pointer<D3D12MA_NormalBlock>>
     {
-        public int Compare(Pointer<D3D12MA_NormalBlock> lhs, Pointer<D3D12MA_NormalBlock> rhs)
+        public readonly int Compare(Pointer<D3D12MA_NormalBlock> lhs, Pointer<D3D12MA_NormalBlock> rhs)
         {
             return lhs.Value->m_pMetadata->GetSumFreeSize().CompareTo(rhs.Value->m_pMetadata->GetSumFreeSize());
         }
 
-        public bool Invoke(in Pointer<D3D12MA_NormalBlock> lhs, in Pointer<D3D12MA_NormalBlock> rhs)
+        public readonly bool Invoke(in Pointer<D3D12MA_NormalBlock> lhs, in Pointer<D3D12MA_NormalBlock> rhs)
         {
             return lhs.Value->m_pMetadata->GetSumFreeSize() < rhs.Value->m_pMetadata->GetSumFreeSize();
         }

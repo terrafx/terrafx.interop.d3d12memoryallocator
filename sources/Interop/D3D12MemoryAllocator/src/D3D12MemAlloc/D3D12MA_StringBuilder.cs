@@ -18,7 +18,7 @@ internal unsafe partial struct D3D12MA_StringBuilder : IDisposable
         m_Data = new D3D12MA_Vector<char>(allocationCallbacks);
     }
 
-    public void Dispose()
+    public readonly void Dispose()
     {
         m_Data.Dispose();
     }
