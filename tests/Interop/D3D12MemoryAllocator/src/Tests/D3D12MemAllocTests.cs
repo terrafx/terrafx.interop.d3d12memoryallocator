@@ -58,20 +58,20 @@ public static unsafe partial class D3D12MemAllocTests
 #pragma warning restore CA1802
 
     [NativeTypeName("const char *[]")]
-    internal static string[] FREE_ORDER_NAMES = {
+    internal static string[] FREE_ORDER_NAMES = [
         "FORWARD",
         "BACKWARD",
         "RANDOM",
-    };
+    ];
 
     internal const uint TestCommittedResourcesAndJson_count = 4;
 
-    internal static readonly string?[] TestCommittedResourcesAndJson_names = new string?[(int)(TestCommittedResourcesAndJson_count)] {
+    internal static readonly string?[] TestCommittedResourcesAndJson_names = [
         "Resource\nFoo\r\nBar",
         "Resource \"'&<>?#@!&-=_+[]{};:,./\\",
         null,
         "",
-    };
+    ];
 
     [SupportedOSPlatform("windows10.0")]
     public static void Test([NativeTypeName("const TestContext &")] in TestContext ctx, bool benchmark)
@@ -246,8 +246,8 @@ public static unsafe partial class D3D12MemAllocTests
             Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED,
         };
 
-        List<D3D12_RESOURCE_BARRIER> barriers = new List<D3D12_RESOURCE_BARRIER>();
-        List<ComPtr<D3D12MA_Allocation>> uploadAllocs = new List<ComPtr<D3D12MA_Allocation>>();
+        List<D3D12_RESOURCE_BARRIER> barriers = [];
+        List<ComPtr<D3D12MA_Allocation>> uploadAllocs = [];
 
         barriers.Capacity = (int)(allocCount);
         uploadAllocs.Capacity = (int)(allocCount);
@@ -357,8 +357,8 @@ public static unsafe partial class D3D12MemAllocTests
             Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED,
         };
 
-        List<D3D12_RESOURCE_BARRIER> barriers = new List<D3D12_RESOURCE_BARRIER>();
-        List<ComPtr<D3D12MA_Allocation>> downloadAllocs = new List<ComPtr<D3D12MA_Allocation>>();
+        List<D3D12_RESOURCE_BARRIER> barriers = [];
+        List<ComPtr<D3D12MA_Allocation>> downloadAllocs = [];
 
         barriers.Capacity = (int)(allocCount);
         downloadAllocs.Capacity = (int)(allocCount);
@@ -594,8 +594,8 @@ public static unsafe partial class D3D12MemAllocTests
     {
         _ = wprintf("Test JSON\n");
 
-        List<ComPtr<D3D12MA_Pool>> pools = new List<ComPtr<D3D12MA_Pool>>();
-        List<ComPtr<D3D12MA_Allocation>> allocs = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Pool>> pools = [];
+        List<ComPtr<D3D12MA_Allocation>> allocs = [];
 
         D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC();
         D3D12_RESOURCE_DESC resDesc = new D3D12_RESOURCE_DESC {
@@ -1303,7 +1303,7 @@ public static unsafe partial class D3D12MemAllocTests
         using ComPtr<D3D12MA_Pool> pool1 = new ComPtr<D3D12MA_Pool>();
         using ComPtr<D3D12MA_Pool> pool2 = new ComPtr<D3D12MA_Pool>();
 
-        List<ComPtr<D3D12MA_Allocation>> bufs = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Allocation>> bufs = [];
         D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC();
 
         uint totalNewAllocCount = 0;
@@ -1640,7 +1640,7 @@ public static unsafe partial class D3D12MemAllocTests
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
         CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
 
-        List<ComPtr<D3D12MA_Allocation>> allocations = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Allocation>> allocations = [];
 
         D3D12MA_TotalStatistics statsBeg = new D3D12MA_TotalStatistics();
         D3D12MA_DetailedStatistics poolStatInfoBeg = new D3D12MA_DetailedStatistics();
@@ -2437,7 +2437,7 @@ public static unsafe partial class D3D12MemAllocTests
         };
 
         const nuint maxBufCount = 100;
-        List<BufferInfo> buffInfo = new List<BufferInfo>();
+        List<BufferInfo> buffInfo = [];
 
         const ulong bufSizeMin = 16;
         const ulong bufSizeMax = 1024;
@@ -2803,7 +2803,7 @@ public static unsafe partial class D3D12MemAllocTests
             CustomPool = pool.Get(),
         };
 
-        List<BufferInfo> buffInfo = new List<BufferInfo>();
+        List<BufferInfo> buffInfo = [];
 
         // Test one-time free.
         {
@@ -2936,7 +2936,7 @@ public static unsafe partial class D3D12MemAllocTests
             CustomPool = pool.Get(),
         };
 
-        List<BufferInfo> buffInfo = new List<BufferInfo>();
+        List<BufferInfo> buffInfo = [];
         using BufferInfo newBuffInfo = new BufferInfo();
 
         // Test double stack.
@@ -3042,7 +3042,7 @@ public static unsafe partial class D3D12MemAllocTests
             CustomPool = pool.Get(),
         };
 
-        List<ComPtr<D3D12MA_Allocation>> baseAllocations = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Allocation>> baseAllocations = [];
         nuint allocCount = maxBufCapacity / 3;
 
         if (!empty)
@@ -3069,7 +3069,7 @@ public static unsafe partial class D3D12MemAllocTests
         }
 
         // BENCHMARK
-        List<ComPtr<D3D12MA_Allocation>> testAllocations = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Allocation>> testAllocations = [];
 
         TimeSpan allocTotalDuration = TimeSpan.Zero;
         TimeSpan freeTotalDuration = TimeSpan.Zero;
@@ -3545,7 +3545,7 @@ public static unsafe partial class D3D12MemAllocTests
             using ComPtr<D3D12MA_VirtualBlock> block = new ComPtr<D3D12MA_VirtualBlock>();
             CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, (D3D12MA_VirtualBlock**)(&block)));
 
-            List<AllocData> allocations = new List<AllocData>();
+            List<AllocData> allocations = [];
 
             // Make some allocations
             for (nuint i = 0; i < 20; ++i)
@@ -3818,8 +3818,8 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static void ProcessDefragmentationPass([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("D3D12MA::DEFRAGMENTATION_PASS_MOVE_INFO &")] ref D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO stepInfo)
     {
-        List<D3D12_RESOURCE_BARRIER> startBarriers = new List<D3D12_RESOURCE_BARRIER>();
-        List<D3D12_RESOURCE_BARRIER> finalBarriers = new List<D3D12_RESOURCE_BARRIER>();
+        List<D3D12_RESOURCE_BARRIER> startBarriers = [];
+        List<D3D12_RESOURCE_BARRIER> finalBarriers = [];
 
         bool defaultHeap = false;
         for (uint i = 0; i < stepInfo.MoveCount; ++i)
@@ -4021,7 +4021,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         D3D12_RANGE mapRange = new D3D12_RANGE();
         void* mapPtr;
-        List<ComPtr<D3D12MA_Allocation>> allocations = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Allocation>> allocations = [];
 
         // persistentlyMappedOption = 0 - not persistently mapped.
         // persistentlyMappedOption = 1 - persistently mapped.
@@ -4296,7 +4296,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         D3D12MA_DEFRAGMENTATION_DESC defragDesc = new D3D12MA_DEFRAGMENTATION_DESC();
 
-        List<ComPtr<D3D12MA_Allocation>> allocations = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Allocation>> allocations = [];
 
         for (byte i = 0; i < 3; ++i)
         {
@@ -4464,7 +4464,7 @@ public static unsafe partial class D3D12MemAllocTests
     internal static void TestDefragmentationFull([NativeTypeName("const TestContext &")] in TestContext ctx)
     {
         const uint ALLOC_SEED = 20101220;
-        List<ComPtr<D3D12MA_Allocation>> allocations = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Allocation>> allocations = [];
 
         D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
             HeapType = D3D12_HEAP_TYPE_UPLOAD,
@@ -4546,7 +4546,7 @@ public static unsafe partial class D3D12MemAllocTests
         _ = wprintf("Test defragmentation GPU\n");
 
         const uint ALLOC_SEED = 20180314;
-        List<ComPtr<D3D12MA_Allocation>> allocations = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Allocation>> allocations = [];
 
         // Create that many allocations to surely fill 3 new blocks of 256 MB.
         const ulong bufSizeMin = 5ul * 1024 * 1024;
@@ -4640,15 +4640,15 @@ public static unsafe partial class D3D12MemAllocTests
         _ = wprintf("Test defragmentation incremental basic\n");
 
         const uint ALLOC_SEED = 20210918;
-        List<ComPtr<D3D12MA_Allocation>> allocations = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Allocation>> allocations = [];
 
         // Create that many allocations to surely fill 3 new blocks of 256 MB.
 
-        Span<uint> imageSizes = stackalloc uint[3] {
+        Span<uint> imageSizes = [
             256,
             512,
             1024,
-        };
+        ];
 
         const ulong bufSizeMin = 5ul * 1024 * 1024;
         const ulong bufSizeMax = 10ul * 1024 * 1024;
@@ -4798,14 +4798,14 @@ public static unsafe partial class D3D12MemAllocTests
         _ = wprintf("Test defragmentation incremental complex\n");
 
         const uint ALLOC_SEED = 20180112;
-        List<ComPtr<D3D12MA_Allocation>> allocations = new List<ComPtr<D3D12MA_Allocation>>();
+        List<ComPtr<D3D12MA_Allocation>> allocations = [];
 
         // Create that many allocations to surely fill 3 new blocks of 256 MB.
-        Span<uint> imageSizes = stackalloc uint[3] {
+        Span<uint> imageSizes = [
             256,
             512,
             1024,
-        };
+        ];
 
         const ulong bufSizeMin = 5ul * 1024 * 1024;
         const ulong bufSizeMax = 10ul * 1024 * 1024;

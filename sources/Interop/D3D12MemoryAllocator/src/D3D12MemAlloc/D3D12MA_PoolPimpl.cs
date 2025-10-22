@@ -85,7 +85,7 @@ internal unsafe partial struct D3D12MA_PoolPimpl : IDisposable
         return m_Name;
     }
 
-    public D3D12MA_BlockVector* GetBlockVector()
+    public readonly D3D12MA_BlockVector* GetBlockVector()
     {
         return m_BlockVector;
     }

@@ -195,7 +195,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         return m_D3D12Architecture.UMA;
     }
 
-    public BOOL IsCacheCoherentUMA()
+    public readonly BOOL IsCacheCoherentUMA()
     {
         return m_D3D12Architecture.CacheCoherentUMA;
     }
@@ -1204,7 +1204,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         *ppStatsString = result;
     }
 
-    public void FreeStatsString([NativeTypeName("WCHAR *")] char* pStatsString)
+    public readonly void FreeStatsString([NativeTypeName("WCHAR *")] char* pStatsString)
     {
         D3D12MA_ASSERT(pStatsString != null);
         D3D12MA_Free(GetAllocs(), pStatsString);
@@ -1949,7 +1949,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     {
         public D3D12MA_IntrusiveLinkedList<D3D12MA_PoolListItemTraits, D3D12MA_PoolPimpl> e0;
 
-        public void Dispose()
+        public readonly void Dispose()
         {
             this[0].Dispose();
             this[1].Dispose();
@@ -1969,7 +1969,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     {
         public D3D12MA_CommittedAllocationList e0;
 
-        public void Dispose()
+        public readonly void Dispose()
         {
             this[0].Dispose();
             this[1].Dispose();

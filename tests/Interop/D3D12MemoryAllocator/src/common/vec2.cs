@@ -9,17 +9,11 @@ using System.Runtime.CompilerServices;
 
 namespace TerraFX.Interop.DirectX.UnitTests;
 
-public partial struct vec2
+public partial struct vec2(float x, float y)
 {
-    public float x;
+    public float x = x;
 
-    public float y;
-
-    public vec2(float x, float y)
-    {
-        this.x = x;
-        this.y = y;
-    }
+    public float y = y;
 
     [UnscopedRef]
     [NativeTypeName("float &")]

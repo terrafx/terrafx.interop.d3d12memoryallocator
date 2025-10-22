@@ -29,7 +29,7 @@ internal unsafe partial struct D3D12MA_MemoryBlock : IDisposable
     [NativeTypeName("UINT")]
     internal readonly uint m_Id;
 
-    private Pointer<ID3D12Heap> m_Heap;
+    internal Pointer<ID3D12Heap> m_Heap;
 
     // Creates the ID3D12Heap.
     public D3D12MA_MemoryBlock(D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES &")] in D3D12_HEAP_PROPERTIES heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT")] uint id)

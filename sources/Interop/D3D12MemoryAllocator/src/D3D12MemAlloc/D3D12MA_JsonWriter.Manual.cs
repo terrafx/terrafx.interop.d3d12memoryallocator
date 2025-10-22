@@ -15,7 +15,7 @@ internal unsafe partial struct D3D12MA_JsonWriter
         }
     }
 
-    public void ContinueString([NativeTypeName("LPCWSTR")] string str)
+    public readonly void ContinueString([NativeTypeName("LPCWSTR")] string str)
     {
         fixed (char* pStr = str)
         {

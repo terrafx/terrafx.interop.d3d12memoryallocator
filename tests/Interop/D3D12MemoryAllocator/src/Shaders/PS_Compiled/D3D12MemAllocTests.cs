@@ -9,7 +9,7 @@ namespace TerraFX.Interop.DirectX.UnitTests;
 
 public static unsafe partial class D3D12MemAllocTests
 {
-    public static ReadOnlySpan<byte> PS_g_main => new byte[] {
+    public static ReadOnlySpan<byte> PS_g_main => [
          68,  88,  66,  67, 120,  29,
          48, 248, 140,  25,  86, 194,
          52,  40, 230,  77, 247, 113,
@@ -157,5 +157,5 @@ public static unsafe partial class D3D12MemAllocTests
           0,   0,   0,   0,   0,   0,
           0,   0,   0,   0,   0,   0,
           0,   0,   0,   0
-    };
+    ];
 }

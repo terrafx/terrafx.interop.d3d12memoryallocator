@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace TerraFX.Interop.DirectX.UnitTests;
 
-public unsafe partial struct MyUniformRandomNumberGenerator
+public readonly unsafe partial struct MyUniformRandomNumberGenerator
 {
     [NativeTypeName("RandomNumberGenerator &")]
     private readonly RandomNumberGenerator* m_Gen;
@@ -30,7 +30,7 @@ public unsafe partial struct MyUniformRandomNumberGenerator
     }
 
     [return: NativeTypeName("uint32_t")]
-    public uint Invoke()
+    public readonly uint Invoke()
     {
         return m_Gen->Generate();
     }

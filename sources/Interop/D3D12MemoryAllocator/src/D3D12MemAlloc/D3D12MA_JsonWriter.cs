@@ -32,7 +32,7 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
         m_InsideString = false;
     }
 
-    public void Dispose()
+    public readonly void Dispose()
     {
         D3D12MA_ASSERT(!m_InsideString);
         D3D12MA_ASSERT(m_Stack.empty());
@@ -125,7 +125,7 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
     }
 
     // Posts next part of an open string.
-    public void ContinueString([NativeTypeName("LPCWSTR")] char* pStr)
+    public readonly void ContinueString([NativeTypeName("LPCWSTR")] char* pStr)
     {
         D3D12MA_ASSERT(m_InsideString);
         D3D12MA_ASSERT(pStr != null);
@@ -234,19 +234,19 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
     }
 
     // Posts next part of an open string. The number is converted to decimal characters.
-    public void ContinueString([NativeTypeName("UINT")] uint num)
+    public readonly void ContinueString([NativeTypeName("UINT")] uint num)
     {
         D3D12MA_ASSERT(m_InsideString);
         m_SB->AddNumber(num);
     }
 
-    public void ContinueString([NativeTypeName("UINT64")] ulong num)
+    public readonly void ContinueString([NativeTypeName("UINT64")] ulong num)
     {
         D3D12MA_ASSERT(m_InsideString);
         m_SB->AddNumber(num);
     }
 
-    public void ContinueString_Pointer([NativeTypeName("const void *")] void* ptr)
+    public readonly void ContinueString_Pointer([NativeTypeName("const void *")] void* ptr)
     {
         D3D12MA_ASSERT(m_InsideString);
         m_SB->AddPointer(ptr);

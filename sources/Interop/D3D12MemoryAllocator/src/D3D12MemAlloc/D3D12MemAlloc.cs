@@ -37,7 +37,7 @@ public static unsafe partial class D3D12MemAlloc
         D3D12MA_ASSERT_FAIL(assertion, fname, line, func);
     }
 
-    internal static void D3D12MA_ASSERT(bool cond, [CallerArgumentExpression("cond")] string assertion = "", [CallerFilePath] string fname = "", [CallerLineNumber] uint line = 0, [CallerMemberName] string func = "")
+    internal static void D3D12MA_ASSERT(bool cond, [CallerArgumentExpression(nameof(cond))] string assertion = "", [CallerFilePath] string fname = "", [CallerLineNumber] uint line = 0, [CallerMemberName] string func = "")
     {
         if ((D3D12MA_DEBUG_LEVEL > 0) && !cond)
         {
@@ -45,7 +45,7 @@ public static unsafe partial class D3D12MemAlloc
         }
     }
 
-    internal static void D3D12MA_HEAVY_ASSERT(bool cond, [CallerArgumentExpression("cond")] string assertion = "", [CallerFilePath] string fname = "", [CallerLineNumber] uint line = 0, [CallerMemberName] string func = "")
+    internal static void D3D12MA_HEAVY_ASSERT(bool cond, [CallerArgumentExpression(nameof(cond))] string assertion = "", [CallerFilePath] string fname = "", [CallerLineNumber] uint line = 0, [CallerMemberName] string func = "")
     {
         if ((D3D12MA_DEBUG_LEVEL > 1) && !cond)
         {
@@ -65,18 +65,18 @@ public static unsafe partial class D3D12MemAlloc
     [NativeTypeName("UINT")]
     internal const uint D3D12MA_NEW_BLOCK_SIZE_SHIFT_MAX = 3;
 
-    internal static readonly string[] D3D12MA_HeapTypeNames = new string[] {
+    internal static readonly string[] D3D12MA_HeapTypeNames = [
         "DEFAULT",
         "UPLOAD",
         "READBACK",
         "CUSTOM",
-    };
+    ];
 
-    internal static readonly string[] D3D12MA_HeapSubTypeName = new string[] {
+    internal static readonly string[] D3D12MA_HeapSubTypeName = [
         " - Buffers",
         " - Textures",
         " - Textures RT/DS",
-    };
+    ];
 
     internal const D3D12_HEAP_FLAGS D3D12MA_RESOURCE_CLASS_HEAP_FLAGS = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
 

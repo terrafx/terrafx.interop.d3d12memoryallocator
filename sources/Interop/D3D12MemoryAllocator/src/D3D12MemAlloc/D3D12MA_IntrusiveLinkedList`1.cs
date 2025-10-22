@@ -38,7 +38,7 @@ internal unsafe partial struct D3D12MA_IntrusiveLinkedList<ItemTypeTraits, ItemT
         (*src).m_Count = 0;
     }
 
-    public void Dispose()
+    public readonly void Dispose()
     {
         D3D12MA_HEAVY_ASSERT(IsEmpty());
     }
@@ -54,12 +54,12 @@ internal unsafe partial struct D3D12MA_IntrusiveLinkedList<ItemTypeTraits, ItemT
         return m_Count == 0;
     }
 
-    public ItemType* Front()
+    public readonly ItemType* Front()
     {
         return m_Front;
     }
 
-    public ItemType* Back()
+    public readonly ItemType* Back()
     {
         return m_Back;
     }

@@ -34,20 +34,20 @@ public static unsafe partial class D3D12MemAllocTests
         {
             if (Environment.Is64BitProcess)
             {
-                ReadOnlySpan<byte> data = new byte[] {
+                ReadOnlySpan<byte> data = [
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                };
+                ];
 
                 Debug.Assert(data.Length == Unsafe.SizeOf<D3D12_RANGE>());
                 return ref Unsafe.As<byte, D3D12_RANGE>(ref MemoryMarshal.GetReference(data));
             }
             else
             {
-                ReadOnlySpan<byte> data = new byte[] {
+                ReadOnlySpan<byte> data = [
                     0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00,
-                };
+                ];
 
                 Debug.Assert(data.Length == Unsafe.SizeOf<D3D12_RANGE>());
                 return ref Unsafe.As<byte, D3D12_RANGE>(ref MemoryMarshal.GetReference(data));

@@ -57,7 +57,7 @@ internal unsafe partial struct D3D12MA_VirtualBlockPimpl : IDisposable
         m_Metadata->Init(m_Size);
     }
 
-    public void Dispose()
+    public readonly void Dispose()
     {
         D3D12MA_DELETE(m_AllocationCallbacks, m_Metadata);
     }

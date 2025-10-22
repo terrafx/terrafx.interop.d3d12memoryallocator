@@ -20,7 +20,7 @@ internal unsafe partial struct D3D12MA_Suballocation : IDisposable
 
     public D3D12MA_SuballocationType type;
 
-    void IDisposable.Dispose()
+    readonly void IDisposable.Dispose()
     {
     }
 }

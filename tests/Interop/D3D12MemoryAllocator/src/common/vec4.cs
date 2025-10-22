@@ -9,23 +9,15 @@ using System.Runtime.CompilerServices;
 
 namespace TerraFX.Interop.DirectX.UnitTests;
 
-public partial struct vec4
+public partial struct vec4(float x, float y, float z, float w)
 {
-    public float x;
+    public float x = x;
 
-    public float y;
+    public float y = y;
 
-    public float z;
+    public float z = z;
 
-    public float w;
-
-    public vec4(float x, float y, float z, float w)
-    {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.w = w;
-    }
+    public float w = w;
 
     [UnscopedRef]
     [NativeTypeName("float &")]

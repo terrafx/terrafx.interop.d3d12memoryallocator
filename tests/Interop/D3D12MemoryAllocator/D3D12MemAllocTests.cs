@@ -34,7 +34,7 @@ public static unsafe partial class D3D12MemAllocTests
     {
         if (OperatingSystem.IsWindowsVersionAtLeast(10, 0))
         {
-            string[] args = Array.Empty<string>();
+            string[] args = [];
             Assert.That(wmain(args), Is.Zero);
         }
         else
@@ -48,7 +48,7 @@ public static unsafe partial class D3D12MemAllocTests
     {
         if (OperatingSystem.IsWindowsVersionAtLeast(10, 0))
         {
-            string[] args = new string[] { "--Test" };
+            string[] args = ["--Test"];
             Assert.That(wmain(args), Is.Zero);
         }
         else
@@ -63,7 +63,7 @@ public static unsafe partial class D3D12MemAllocTests
     {
         if (OperatingSystem.IsWindowsVersionAtLeast(10, 0))
         {
-            string[] args = new string[] { "--Benchmark" };
+            string[] args = ["--Benchmark"];
             Assert.That(wmain(args), Is.Zero);
         }
         else
