@@ -47,7 +47,7 @@
     <PackageOutputPath>$(BaseArtifactsPath)pkg/$(Configuration)/</PackageOutputPath>
     <Product>TerraFX.Interop.D3D12MemoryAllocator</Product>
     <RootNamespace>TerraFX.Interop</RootNamespace>
-    <VersionPrefix>2.0.1.5</VersionPrefix>
+    <VersionPrefix>2.0.1.6</VersionPrefix>
     <VersionSuffix Condition="'$(EXCLUDE_SUFFIX_FROM_VERSION)' != 'true'">rc1</VersionSuffix>
     <VersionSuffix Condition="'$(GITHUB_EVENT_NAME)' == 'pull_request'">pr</VersionSuffix>
   </PropertyGroup>
