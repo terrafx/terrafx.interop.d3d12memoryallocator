@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System.Runtime.CompilerServices;
@@ -14,7 +14,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata
 
     private static void** InitVtblInstance()
     {
-        void** lpVtbl = (void**)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_BlockMetadata), 21 * sizeof(void*)));
+        void** lpVtbl = (void**)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_BlockMetadata), 22 * sizeof(void*)));
 
         lpVtbl[0] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, void>)(&Dispose);
         lpVtbl[1] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, ulong, void>)(&Init);
@@ -37,6 +37,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata
         lpVtbl[18] = null;
         lpVtbl[19] = null;
         lpVtbl[20] = null;
+        lpVtbl[21] = null;
 
         return lpVtbl;
     }

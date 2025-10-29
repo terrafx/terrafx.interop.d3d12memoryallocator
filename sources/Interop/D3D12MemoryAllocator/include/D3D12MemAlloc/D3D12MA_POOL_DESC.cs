@@ -1,17 +1,21 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_TYPE;
+using static TerraFX.Interop.DirectX.D3D12_RESIDENCY_PRIORITY;
+using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
 namespace TerraFX.Interop.DirectX;
 
 /// <summary>Parameters of created <see cref="D3D12MA_Pool" /> object. To be used with <see cref="D3D12MA_Allocator.CreatePool" />.</summary>
 public unsafe partial struct D3D12MA_POOL_DESC
 {
-    /// <summary>Flags.</summary>
+    /// <summary>Flags for the heap.</summary>
+    /// <remarks>It is recommended to use <see cref="D3D12MA_RECOMMENDED_HEAP_FLAGS" />.</remarks>
     public D3D12MA_POOL_FLAGS Flags;
 
     /// <summary>The parameters of memory heap where allocations of this pool should be placed.</summary>
@@ -33,7 +37,7 @@ public unsafe partial struct D3D12MA_POOL_DESC
     ///     </item>
     ///   </list>
     ///   <para>Except if <c>ResourceHeapTier = 2</c>, then it may be <see cref="D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES" />.</para>
-    ///   <para>You can specify additional flags if needed.</para>
+    ///   <para>It is recommended to also add <see cref="D3D12MA_RECOMMENDED_POOL_FLAGS" />. You can specify additional flags if needed.</para>
     /// </remarks>
     public D3D12_HEAP_FLAGS HeapFlags;
 
@@ -63,4 +67,13 @@ public unsafe partial struct D3D12MA_POOL_DESC
     /// <summary>Additional parameter allowing pool to create resources with passed protected session.</summary>
     /// <remarks>If not null then all the heaps and committed resources will be created with this parameter. Valid only if <see cref="ID3D12Device4" /> interface is present in current Windows SDK!</remarks>
     public ID3D12ProtectedResourceSession* pProtectedSession;
+
+    /// <summary>Residency priority to be set for all allocations made in this pool. Optional.</summary>
+    /// <remarks>
+    ///   <para>Set this parameter to one of the possible enum values e.g. <see cref="D3D12_RESIDENCY_PRIORITY_HIGH" /> to apply specific residency priority to all allocations made in this pool: <see cref="ID3D12Heap" /> memory blocks used to sub-allocate for placed resources, as well as committed resources or heaps created when <see cref="D3D12MA_ALLOCATION_FLAG_COMMITTED" /> is used. This can increase/decrease chance that the memory will be pushed out from VRAM to system RAM when the system runs out of memory, which is invisible to the developer using D3D12 API while it can degrade performance.</para>
+    ///   <para>Priority is set using function <see cref="ID3D12Device1.SetResidencyPriority" />. It is performed only when <see cref="ID3D12Device1" /> interface is defined and successfully obtained. Otherwise, this parameter is ignored.</para>
+    ///   <para>This parameter is optional.If you set it to <c>default(<see cref="D3D12_RESIDENCY_PRIORITY" />)</c>, residency priority will not be set for allocations made in this pool.</para>
+    ///   <para>There is no equivalent parameter for allocations made in default pools. If you want to set residency priority for such allocation, you need to do it manually: allocate with <see cref="D3D12MA_ALLOCATION_FLAG_COMMITTED" /> and call <see cref="ID3D12Device1.SetResidencyPriority" />, passing <see cref="D3D12MA_Allocation.GetResource" />.</para>
+    /// </remarks>
+    public D3D12_RESIDENCY_PRIORITY ResidencyPriority;
 }

@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
@@ -11,7 +11,7 @@ namespace TerraFX.Interop.DirectX;
 /// <summary>Parameters of created <see cref="D3D12MA_Allocation"/> object. To be used with <see cref="D3D12MA_Allocator.CreateResource"/>.</summary>
 public unsafe partial struct D3D12MA_ALLOCATION_DESC
 {
-    /// <summary>Flags.</summary>
+    /// <summary>Flags for the allocation.</summary>
     public D3D12MA_ALLOCATION_FLAGS Flags;
 
     /// <summary>The type of memory heap where the new allocation should be placed.</summary>
@@ -40,7 +40,7 @@ public unsafe partial struct D3D12MA_ALLOCATION_DESC
     public D3D12_HEAP_FLAGS ExtraHeapFlags;
 
     /// <summary>Custom pool to place the new resource in. Optional.</summary>
-    /// <remarks>When not <c>null</c>, the resource will be created inside specified custom pool. It will then never be created as committed.</remarks>
+    /// <remarks>When not <c>null</c>, the resource will be created inside specified custom pool. Members <see cref="HeapType" />, <see cref="ExtraHeapFlags" /> are then ignored.</remarks>
     public D3D12MA_Pool* CustomPool;
 
     /// <summary>Custom general-purpose pointer that will be stored in <see cref="D3D12MA_Allocation" />.</summary>

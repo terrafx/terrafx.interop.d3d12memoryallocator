@@ -94,6 +94,25 @@ public static unsafe partial class D3D12MemAlloc
         }
     }
 
+    private static TEnum get_app_context_data<TEnum>(string name, TEnum defaultValue)
+        where TEnum : struct, Enum
+    {
+        object? data = AppContext.GetData(name);
+
+        if (data is TEnum value)
+        {
+            return value;
+        }
+        else if ((data is string s) && Enum.TryParse(s, out TEnum result))
+        {
+            return result;
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+
     /// <summary>Creates a new <see cref="D3D12MA_MUTEX"/> when <see cref="D3D12MA_DEBUG_GLOBAL_MUTEX"/> is set, otherwise a <see langword="null"/> one.</summary>
     private static D3D12MA_MUTEX* InitDebugGlobalMutex()
     {

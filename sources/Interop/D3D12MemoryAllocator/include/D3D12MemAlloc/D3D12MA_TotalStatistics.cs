@@ -1,12 +1,9 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.DirectX.D3D12_MEMORY_POOL;
 using static TerraFX.Interop.DirectX.DXGI_MEMORY_SEGMENT_GROUP;
@@ -32,9 +29,12 @@ public partial struct D3D12MA_TotalStatistics
     ///     <item>
     ///       <description>3 = <see cref="D3D12_HEAP_TYPE_CUSTOM" /></description>
     ///     </item>
+    ///     <item>
+    ///       <description>4 = <see cref="D3D12_HEAP_TYPE_GPU_UPLOAD" /></description>
+    ///     </item>
     ///   </list>
     /// </summary>
-    [NativeTypeName("D3D12MA::DetailedStatistics[4]")]
+    [NativeTypeName("D3D12MA::DetailedStatistics[5]")]
     public _HeapType_e__FixedBuffer HeapType;
 
     /// <summary>
@@ -56,7 +56,7 @@ public partial struct D3D12MA_TotalStatistics
     ///         <para>When <c>IsUMA() == FALSE</c> (discrete graphics card):</para>
     ///         <list type="bullet">
     ///           <item>
-    ///             <description><see cref="DXGI_MEMORY_SEGMENT_GROUP_LOCAL" /> (index 0) represents GPU memory (resources allocated in <see cref="D3D12_HEAP_TYPE_DEFAULT" /> or <see cref="D3D12_MEMORY_POOL_L1" />).</description>
+    ///             <description><see cref="DXGI_MEMORY_SEGMENT_GROUP_LOCAL" /> (index 0) represents GPU memory (resources allocated in <see cref="D3D12_HEAP_TYPE_DEFAULT" />, <see cref="D3D12_HEAP_TYPE_GPU_UPLOAD" /> or <see cref="D3D12_MEMORY_POOL_L1" />).</description>
     ///           </item>
     ///           <item>
     ///             <description><see cref="DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL" /> (index 1) represents system memory (resources allocated in <see cref="D3D12_HEAP_TYPE_UPLOAD" />, <see cref="D3D12_HEAP_TYPE_READBACK" />, or <see cref="D3D12_MEMORY_POOL_L0" />).</description>
@@ -85,7 +85,7 @@ public partial struct D3D12MA_TotalStatistics
     /// <summary>Total statistics from all memory allocated from D3D12.</summary>
     public D3D12MA_DetailedStatistics Total;
 
-    [InlineArray(4)]
+    [InlineArray(5)]
     public partial struct _HeapType_e__FixedBuffer
     {
         public D3D12MA_DetailedStatistics e0;

@@ -1,9 +1,10 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from Tests.h and Tests.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from Tests.h and Tests.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -12,14 +13,18 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
+using TerraFX.Interop;
+using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12;
+using static TerraFX.Interop.DirectX.D3D12_BARRIER_LAYOUT;
 using static TerraFX.Interop.DirectX.D3D12_CPU_PAGE_PROPERTY;
 using static TerraFX.Interop.DirectX.D3D12_FEATURE;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.DirectX.D3D12_MEMORY_POOL;
 using static TerraFX.Interop.DirectX.D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12_RESIDENCY_PRIORITY;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_BARRIER_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_BARRIER_TYPE;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_DIMENSION;
@@ -35,6 +40,7 @@ using static TerraFX.Interop.DirectX.D3D12MA_VIRTUAL_ALLOCATION_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12MA_VIRTUAL_BLOCK_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 using static TerraFX.Interop.DirectX.DXGI_FORMAT;
+using static TerraFX.Interop.DirectX.DXGI_MEMORY_SEGMENT_GROUP;
 using static TerraFX.Interop.DirectX.UnitTests.CONFIG_TYPE;
 using static TerraFX.Interop.Windows.E;
 using static TerraFX.Interop.Windows.S;
@@ -158,7 +164,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             case (uint)(D3D12MA_DEFRAGMENTATION_FLAG_ALGORITHM_FULL):
             {
-                return "Full";
+                return "Ful";
             }
 
             case 0:
@@ -209,6 +215,11 @@ public static unsafe partial class D3D12MemAllocTests
             },
             Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
             Flags = D3D12_RESOURCE_FLAG_NONE,
+            SamplerFeedbackMipRegion = new D3D12_MIP_REGION {
+                Width = 0,
+                Height = 0,
+                Depth = 0,
+            }
         };
     }
 
@@ -224,7 +235,7 @@ public static unsafe partial class D3D12MemAllocTests
         }
     }
 
-    internal static void FillAllocationsData([NativeTypeName("const ComPtr<D3D12MA::Allocation> *")] ComPtr<D3D12MA_Allocation>* allocs, [NativeTypeName("size_t")] nuint allocCount, [NativeTypeName("UINT")] uint seed)
+    internal static void FillAllocationsData([NativeTypeName("const ComPtr<D3D12MA_Allocation> *")] ComPtr<D3D12MA_Allocation>* allocs, [NativeTypeName("size_t")] nuint allocCount, [NativeTypeName("UINT")] uint seed)
     {
         for (ComPtr<D3D12MA_Allocation>* alloc = allocs; alloc < (allocs + allocCount); alloc++)
         {
@@ -238,13 +249,14 @@ public static unsafe partial class D3D12MemAllocTests
         }
     }
 
-    internal static void FillAllocationsDataGPU([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("const ComPtr<D3D12MA::Allocation> *")] ComPtr<D3D12MA_Allocation>* allocs, [NativeTypeName("size_t")] nuint allocCount, [NativeTypeName("UINT")] uint seed)
+    internal static void FillAllocationsDataGPU([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("const ComPtr<D3D12MA_Allocation> *")] ComPtr<D3D12MA_Allocation>* allocs, [NativeTypeName("size_t")] nuint allocCount, [NativeTypeName("UINT")] uint seed)
     {
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_UPLOAD,
-            ExtraHeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
-            Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+            D3D12_HEAP_TYPE_UPLOAD,
+            D3D12MA_ALLOCATION_FLAG_COMMITTED,
+            null,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS
+        );
 
         List<D3D12_RESOURCE_BARRIER> barriers = [];
         List<ComPtr<D3D12MA_Allocation>> uploadAllocs = [];
@@ -271,7 +283,7 @@ public static unsafe partial class D3D12MemAllocTests
             if (resDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
             {
                 using ComPtr<D3D12MA_Allocation> uploadAlloc = new ComPtr<D3D12MA_Allocation>();
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&uploadAlloc), IID_NULL, null));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, uploadAlloc.GetAddressOf(), IID_NULL, null));
 
                 D3D12_RANGE range = new D3D12_RANGE();
 
@@ -335,7 +347,7 @@ public static unsafe partial class D3D12MemAllocTests
         return true;
     }
 
-    internal static void ValidateAllocationsData([NativeTypeName("const ComPtr<D3D12MA::Allocation> *")] ComPtr<D3D12MA_Allocation>* allocs, [NativeTypeName("size_t")] nuint allocCount, [NativeTypeName("UINT")] uint seed)
+    internal static void ValidateAllocationsData([NativeTypeName("const ComPtr<D3D12MA_Allocation> *")] ComPtr<D3D12MA_Allocation>* allocs, [NativeTypeName("size_t")] nuint allocCount, [NativeTypeName("UINT")] uint seed)
     {
         for (ComPtr<D3D12MA_Allocation>* alloc = allocs; alloc < (allocs + allocCount); alloc++)
         {
@@ -349,13 +361,14 @@ public static unsafe partial class D3D12MemAllocTests
         }
     }
 
-    internal static void ValidateAllocationsDataGPU([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("const ComPtr<D3D12MA::Allocation> *")] ComPtr<D3D12MA_Allocation>* allocs, [NativeTypeName("size_t")] nuint allocCount, [NativeTypeName("UINT")] uint seed)
+    internal static void ValidateAllocationsDataGPU([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("const ComPtr<D3D12MA_Allocation> *")] ComPtr<D3D12MA_Allocation>* allocs, [NativeTypeName("size_t")] nuint allocCount, [NativeTypeName("UINT")] uint seed)
     {
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_READBACK,
-            ExtraHeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
-            Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+            D3D12_HEAP_TYPE_READBACK,
+            D3D12MA_ALLOCATION_FLAG_COMMITTED,
+            null,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS
+        );
 
         List<D3D12_RESOURCE_BARRIER> barriers = [];
         List<ComPtr<D3D12MA_Allocation>> downloadAllocs = [];
@@ -383,7 +396,7 @@ public static unsafe partial class D3D12MemAllocTests
             if (resDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
             {
                 using ComPtr<D3D12MA_Allocation> downloadAlloc = new ComPtr<D3D12MA_Allocation>();
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&downloadAlloc), IID_NULL, null));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, downloadAlloc.GetAddressOf(), IID_NULL, null));
 
                 barrier.Transition.pResource = alloc->Get()->GetResource();
                 barrier.Transition.StateBefore = (D3D12_RESOURCE_STATES)(nuint)(alloc->Get()->GetPrivateData());
@@ -457,8 +470,7 @@ public static unsafe partial class D3D12MemAllocTests
         D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC();
         D3D12_RESOURCE_DESC resDesc = new D3D12_RESOURCE_DESC();
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC();
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
 
         nuint BUF_COUNT = 10;
         ComPtr<D3D12MA_Allocation>* buffers = stackalloc ComPtr<D3D12MA_Allocation>[(int)(BUF_COUNT)];
@@ -487,7 +499,7 @@ public static unsafe partial class D3D12MemAllocTests
             }
 
             using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
             allocDesc.CustomPool = pool.Get();
 
@@ -497,7 +509,7 @@ public static unsafe partial class D3D12MemAllocTests
             {
                 bool isLast = allocIndex == BUF_COUNT - 1;
                 FillResourceDescForBuffer(out resDesc, (ulong)(allocIndex + 1) * 0x10000);
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&buffers[allocIndex]), IID_NULL, null));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, buffers[allocIndex].GetAddressOf(), IID_NULL, null));
             }
 
             // JSON dump
@@ -548,9 +560,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         for (nuint algorithmIndex = 0; algorithmIndex < 2; ++algorithmIndex)
         {
-            D3D12MA_VIRTUAL_BLOCK_DESC blockDesc = new D3D12MA_VIRTUAL_BLOCK_DESC {
-                Size = ALLOCATION_COUNT * MEGABYTE,
-            };
+            D3D12MA_VIRTUAL_BLOCK_DESC blockDesc = new D3D12MA_VIRTUAL_BLOCK_DESC(ALLOCATION_COUNT * MEGABYTE);
 
             switch (algorithmIndex)
             {
@@ -574,15 +584,13 @@ public static unsafe partial class D3D12MemAllocTests
             }
 
             using ComPtr<D3D12MA_VirtualBlock> block = new ComPtr<D3D12MA_VirtualBlock>();
-            CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, (D3D12MA_VirtualBlock**)(&block)));
+            CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, block.GetAddressOf()));
 
             // Fill the entire block
 
             for (nuint i = 0; i < ALLOCATION_COUNT; ++i)
             {
-                D3D12MA_VIRTUAL_ALLOCATION_DESC allocDesc = new D3D12MA_VIRTUAL_ALLOCATION_DESC {
-                    Size = 1 * MEGABYTE,
-                };
+                D3D12MA_VIRTUAL_ALLOCATION_DESC allocDesc = new D3D12MA_VIRTUAL_ALLOCATION_DESC(1 * MEGABYTE, 0);
                 CHECK_HR(block.Get()->Allocate(&allocDesc, &allocs[i], null));
             }
 
@@ -717,7 +725,7 @@ public static unsafe partial class D3D12MemAllocTests
                                     MemoryPoolPreference = memoryPool,
                                 },
                             };
-                            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+                            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
                             allocDesc.CustomPool = pool.Get();
 
@@ -769,7 +777,7 @@ public static unsafe partial class D3D12MemAllocTests
                                             resDesc.DepthOrArraySize = 1;
                                             resDesc.Flags = resFlags;
 
-                                            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, state, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+                                            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, state, null, alloc.GetAddressOf(), IID_NULL, null));
                                             break;
                                         }
 
@@ -780,7 +788,7 @@ public static unsafe partial class D3D12MemAllocTests
                                             resDesc.Height = 512;
                                             resDesc.DepthOrArraySize = 1;
                                             resDesc.Flags = resFlags;
-                                            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, state, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+                                            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, state, null, alloc.GetAddressOf(), IID_NULL, null));
                                             break;
                                         }
 
@@ -791,7 +799,7 @@ public static unsafe partial class D3D12MemAllocTests
                                             resDesc.Height = 256;
                                             resDesc.DepthOrArraySize = 128;
                                             resDesc.Flags = resFlags;
-                                            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, state, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+                                            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, state, null, alloc.GetAddressOf(), IID_NULL, null));
                                             break;
                                         }
                                     }
@@ -802,14 +810,14 @@ public static unsafe partial class D3D12MemAllocTests
                                     {
                                         case 0:
                                         {
-                                            CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &allocInfo, (D3D12MA_Allocation**)(&alloc)));
+                                            CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &allocInfo, alloc.GetAddressOf()));
                                             break;
                                         }
 
                                         case 1:
                                         {
                                             FillResourceDescForBuffer(out resDesc, 1024);
-                                            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, state, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+                                            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, state, null, alloc.GetAddressOf(), IID_NULL, null));
                                             break;
                                         }
                                     }
@@ -870,16 +878,16 @@ public static unsafe partial class D3D12MemAllocTests
 
         ResourceWithAllocation* resources = stackalloc ResourceWithAllocation[(int)(count)];
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_DEFAULT,
-            Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12MA_ALLOCATION_FLAG_COMMITTED
+        );
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resourceDesc, bufSize);
 
         for (uint i = 0; i < count; ++i)
         {
             bool receiveExplicitResource = i < 2;
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&resources[i].allocation), __uuidof<ID3D12Resource>(), (receiveExplicitResource ? (void**)(&resources[i].resource) : null)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, resources[i].allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (receiveExplicitResource ? (void**)(&resources[i].resource) : null)));
 
             if (receiveExplicitResource)
             {
@@ -931,17 +939,93 @@ public static unsafe partial class D3D12MemAllocTests
         }
     }
 
+    internal static void TestSmallBuffers([NativeTypeName("const TestContext &")] in TestContext ctx)
+    {
+        _ = wprintf("Test small buffers\n");
+
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS
+        );
+        using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
+
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
+        FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, 8 * KILOBYTE);
+
+        D3D12_RESOURCE_DESC largeResDesc = resDesc;
+        largeResDesc.Width = 128 * KILOBYTE;
+
+        List<ResourceWithAllocation> resources = new List<ResourceWithAllocation>();
+
+        // A large buffer placed inside the heap to allocate first block.
+        {
+            ResourceWithAllocation resWithAlloc = new ResourceWithAllocation();
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &largeResDesc, D3D12_RESOURCE_STATE_COMMON, null, resWithAlloc.allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resWithAlloc.resource)));
+            CHECK_BOOL((resWithAlloc.allocation.Get() != null) && (resWithAlloc.allocation.Get()->GetResource() != null));
+            CHECK_BOOL(resWithAlloc.allocation.Get()->GetHeap() != null); // Expected to be placed.
+            resources.Add(resWithAlloc);
+        }
+
+        // Test 1: COMMITTED.
+        {
+            ResourceWithAllocation resWithAlloc = new ResourceWithAllocation();
+            allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, resWithAlloc.allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resWithAlloc.resource)));
+            CHECK_BOOL((resWithAlloc.allocation.Get() != null) && (resWithAlloc.allocation.Get()->GetResource() != null));
+            CHECK_BOOL(resWithAlloc.allocation.Get()->GetHeap() == null); // Expected to be committed.
+            resources.Add(resWithAlloc);
+        }
+
+        // Test 2: Default.
+        {
+            ResourceWithAllocation resWithAlloc = new ResourceWithAllocation();
+            allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NONE;
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, resWithAlloc.allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resWithAlloc.resource)));
+            CHECK_BOOL((resWithAlloc.allocation.Get() != null) && (resWithAlloc.allocation.Get()->GetResource() != null));
+
+            // May or may not be committed, depending on the PREFER_SMALL_BUFFERS_COMMITTED and TIGHT_ALIGNMENT settings.
+            bool isCommitted = resWithAlloc.allocation.Get()->GetHeap() == null;
+
+            if (isCommitted)
+            {
+                _ = wprintf("    Small buffer %llu B inside a custom pool was created as committed.\n", resDesc.Width);
+            }
+            else
+            {
+                _ = wprintf("    Small buffer %llu B inside a custom pool was created as placed.\n", resDesc.Width);
+            }
+            resources.Add(resWithAlloc);
+        }
+
+        // Test 3: NEVER_ALLOCATE.
+        {
+            ResourceWithAllocation resWithAlloc = new ResourceWithAllocation();
+            allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE;
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, resWithAlloc.allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resWithAlloc.resource)));
+            CHECK_BOOL((resWithAlloc.allocation.Get() != null) && (resWithAlloc.allocation.Get()->GetResource() != null));
+            CHECK_BOOL(resWithAlloc.allocation.Get()->GetHeap() != null); // Expected to be placed.
+            resources.Add(resWithAlloc);
+        }
+
+        for (int i = 0; i < resources.Count; i++)
+        {
+            resources[i].Dispose();
+        }
+    }
+
     internal static void TestCustomHeapFlags([NativeTypeName("const TestContext &")] in TestContext ctx)
     {
         _ = wprintf("Test custom heap flags\n");
 
         // 1. Just memory heap with custom flags
         {
-            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-                HeapType = D3D12_HEAP_TYPE_DEFAULT,
-                ExtraHeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES |
-                D3D12_HEAP_FLAG_SHARED, // Extra flag.
-            };
+            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+                D3D12_HEAP_TYPE_DEFAULT,
+                D3D12MA_ALLOCATION_FLAG_NONE,
+                null,
+                D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES | D3D12_HEAP_FLAG_SHARED
+            );
 
             D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = new D3D12_RESOURCE_ALLOCATION_INFO {
                 SizeInBytes = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
@@ -949,7 +1033,7 @@ public static unsafe partial class D3D12MemAllocTests
             };
 
             using ResourceWithAllocation res = new ResourceWithAllocation();
-            CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, (D3D12MA_Allocation**)(&res.allocation)));
+            CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, res.allocation.GetAddressOf()));
 
             // Must be created as separate allocation.
             CHECK_BOOL(res.allocation.Get()->GetOffset() == 0);
@@ -973,13 +1057,15 @@ public static unsafe partial class D3D12MemAllocTests
                 Flags = D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER,
             };
 
-            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-                HeapType = D3D12_HEAP_TYPE_DEFAULT,
-                ExtraHeapFlags = D3D12_HEAP_FLAG_SHARED | D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER, // Extra flags.
-            };
+            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+                D3D12_HEAP_TYPE_DEFAULT,
+                D3D12MA_ALLOCATION_FLAG_NONE,
+                null,
+                D3D12_HEAP_FLAG_SHARED | D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER
+            );
 
             using ResourceWithAllocation res = new ResourceWithAllocation();
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, (D3D12MA_Allocation**)(&res.allocation), __uuidof<ID3D12Resource>(), (void**)(&res.resource)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, res.allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res.resource)));
 
             // Must be created as committed.
             CHECK_BOOL(res.allocation.Get()->GetHeap() == null);
@@ -993,18 +1079,16 @@ public static unsafe partial class D3D12MemAllocTests
         bool alwaysCommitted = (ctx.allocatorFlags & D3D12MA_ALLOCATOR_FLAG_ALWAYS_COMMITTED) != 0;
 
         const uint count = 4;
-        const ulong bufSize = 32ul * 1024;
+        const ulong bufSize = 64ul * 1024;
 
         ResourceWithAllocation* resources = stackalloc ResourceWithAllocation[(int)(count)];
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_DEFAULT,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_DEFAULT);
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resourceDesc, bufSize);
 
         for (uint i = 0; i < count; ++i)
         {
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&resources[i].allocation), __uuidof<ID3D12Resource>(), (void**)(&resources[i].resource)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, resources[i].allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resources[i].resource)));
 
             // Make sure it doesn't have implicit heap.
             if (!alwaysCommitted)
@@ -1054,7 +1138,7 @@ public static unsafe partial class D3D12MemAllocTests
         };
 
         using ResourceWithAllocation textureRes = new ResourceWithAllocation();
-        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&textureRes.allocation), __uuidof<ID3D12Resource>(), (void**)(&textureRes.resource)));
+        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, textureRes.allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&textureRes.resource)));
 
         // Additionally create an MSAA render target to see if no error occurs due to bad handling of Resource Tier.
         resourceDesc = new D3D12_RESOURCE_DESC {
@@ -1074,7 +1158,7 @@ public static unsafe partial class D3D12MemAllocTests
         };
 
         using ResourceWithAllocation renderTargetRes = new ResourceWithAllocation();
-        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, null, (D3D12MA_Allocation**)(&renderTargetRes.allocation), __uuidof<ID3D12Resource>(), (void**)(&renderTargetRes.resource)));
+        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, null, renderTargetRes.allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&renderTargetRes.resource)));
 
         for (uint i = 0; i < count; i++)
         {
@@ -1089,9 +1173,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         for (uint i = 0; i < 2; ++i)
         {
-            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-                HeapType = D3D12_HEAP_TYPE_DEFAULT,
-            };
+            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_DEFAULT);
 
             if (i == 1)
             {
@@ -1106,7 +1188,7 @@ public static unsafe partial class D3D12MemAllocTests
                 &resDesc,
                 D3D12_RESOURCE_STATE_COMMON,
                 null,                           // pOptimizedClearValue
-                (D3D12MA_Allocation**)(&alloc),
+                alloc.GetAddressOf(),
                 __uuidof<ID3D12Pageable>(),
                 (void**)(&pageable)
             ));
@@ -1130,15 +1212,17 @@ public static unsafe partial class D3D12MemAllocTests
 
         // # Create pool, 1..2 blocks of 11 MB
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC();
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-        poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
-        poolDesc.BlockSize = 11 * MEGABYTE;
-        poolDesc.MinBlockCount = 1;
-        poolDesc.MaxBlockCount = 2;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+            11 * MEGABYTE,
+            1,
+            2,
+            D3D12_RESIDENCY_PRIORITY_HIGH
+        );
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
         // # Validate stats for empty pool
 
@@ -1163,8 +1247,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         // # Create buffers 2x 5 MB
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            CustomPool = pool.Get(),
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get()) {
             ExtraHeapFlags = unchecked((D3D12_HEAP_FLAGS)(0xCDCDCDCD)), // Should be ignored.
             HeapType = unchecked((D3D12_HEAP_TYPE)(0xCDCDCDCD)),        // Should be ignored.
         };
@@ -1181,7 +1264,7 @@ public static unsafe partial class D3D12MemAllocTests
                 &resDesc,
                 D3D12_RESOURCE_STATE_GENERIC_READ,
                 null,                               // pOptimizedClearValue
-                (D3D12MA_Allocation**)(&allocs[i]),
+                allocs[i].GetAddressOf(),
                 __uuidof<ID3D12Resource>(),         // riidResource
                 null                                // ppvResource
             ));
@@ -1216,7 +1299,7 @@ public static unsafe partial class D3D12MemAllocTests
             HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &resDesc,
                 D3D12_RESOURCE_STATE_GENERIC_READ,
                 null,                               // pOptimizedClearValue
-                (D3D12MA_Allocation**)(&alloc),
+                alloc.GetAddressOf(),
                 __uuidof<ID3D12Resource>(),         // riidResource
                 null                                // ppvResource
             );
@@ -1235,7 +1318,7 @@ public static unsafe partial class D3D12MemAllocTests
                 &resDesc,
                 D3D12_RESOURCE_STATE_GENERIC_READ,
                 null,                               // pOptimizedClearValue
-                (D3D12MA_Allocation**)(&alloc),
+                alloc.GetAddressOf(),
                 __uuidof<ID3D12Resource>(),         // riidResource
                 null                                // ppvResource
             );
@@ -1269,7 +1352,7 @@ public static unsafe partial class D3D12MemAllocTests
             Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
         };
 
-        CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, (D3D12MA_Allocation**)(&allocs[0])));
+        CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &resAllocInfo, allocs[0].GetAddressOf()));
 
         resDesc.Width = 1 * MEGABYTE;
         using ComPtr<ID3D12Resource> res = new ComPtr<ID3D12Resource>();
@@ -1328,26 +1411,28 @@ public static unsafe partial class D3D12MemAllocTests
             }
             else if (poolTypeI == 1)
             {
-                D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC();
+                D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+                    D3D12_HEAP_TYPE_DEFAULT,
+                    D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS
+                );
 
-                poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-                poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
-
-                hr = ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool1));
+                hr = ctx.allocator->CreatePool(&poolDesc, pool1.GetAddressOf());
                 CHECK_HR(hr);
 
                 allocDesc.CustomPool = pool1.Get();
             }
             else if (poolTypeI == 2)
             {
-                D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC();
+                D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+                    D3D12_HEAP_TYPE_DEFAULT,
+                    D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+                    D3D12MA_POOL_FLAG_NONE,
+                    (2 * MEGABYTE) + (MEGABYTE / 2),
+                    0,
+                    1
+                );
 
-                poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-                poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
-                poolDesc.MaxBlockCount = 1;
-                poolDesc.BlockSize = (2 * MEGABYTE) + (MEGABYTE / 2); // 2.5 MB
-
-                hr = ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool2));
+                hr = ctx.allocator->CreatePool(&poolDesc, pool2.GetAddressOf());
                 CHECK_HR(hr);
 
                 allocDesc.CustomPool = pool2.Get();
@@ -1358,7 +1443,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             // Default parameters
             allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NONE;
-            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null);
+            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null);
 
             CHECK_BOOL(SUCCEEDED(hr) && (alloc.Get() != null) && (alloc.Get()->GetResource() != null));
 
@@ -1374,7 +1459,7 @@ public static unsafe partial class D3D12MemAllocTests
             if (poolTypeI != 2)
             {
                 allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
-                hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null);
+                hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null);
 
                 CHECK_BOOL(SUCCEEDED(hr) && (alloc.Get() != null) && (alloc.Get()->GetResource() != null));
                 CHECK_BOOL(alloc.Get()->GetOffset() == 0); // Committed
@@ -1388,7 +1473,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             // NEVER_ALLOCATE #1
             allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE;
-            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null);
+            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null);
 
             CHECK_BOOL(SUCCEEDED(hr) && (alloc.Get() != null) && (alloc.Get()->GetResource() != null));
             CHECK_BOOL(alloc.Get()->GetHeap() == defaultAllocHeap); // Same memory block as default one.
@@ -1401,7 +1486,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             // NEVER_ALLOCATE #2. Should fail in pool2 as it has no space.
             allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE;
-            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null);
+            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null);
 
             if (poolTypeI == 2)
             {
@@ -1470,17 +1555,14 @@ public static unsafe partial class D3D12MemAllocTests
         const nuint BUFFER_COUNT = 4;
         const ulong MIN_ALIGNMENT = 128 * 1024;
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC();
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-        poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
-        poolDesc.MinAllocationAlignment = MIN_ALIGNMENT;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS) {
+            MinAllocationAlignment = MIN_ALIGNMENT
+        };
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            CustomPool = pool.Get(),
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, BUFFER_SIZE);
 
         ComPtr<D3D12MA_Allocation>* allocs = stackalloc ComPtr<D3D12MA_Allocation>[(int)(BUFFER_COUNT)];
@@ -1492,7 +1574,7 @@ public static unsafe partial class D3D12MemAllocTests
                 &resDesc,
                 D3D12_RESOURCE_STATE_GENERIC_READ,
                 null,                               // pOptimizedClearValue
-                (D3D12MA_Allocation**)(&allocs[i]),
+                allocs[i].GetAddressOf(),
                 IID_NULL,                           // riidResource
                 null                                // ppvResource
             ));
@@ -1511,17 +1593,12 @@ public static unsafe partial class D3D12MemAllocTests
 
         const ulong BUFFER_SIZE = 32;
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC();
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-        poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            CustomPool = pool.Get(),
-            Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get(), D3D12MA_ALLOCATION_FLAG_COMMITTED);
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, BUFFER_SIZE);
 
         using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
@@ -1530,7 +1607,7 @@ public static unsafe partial class D3D12MemAllocTests
             &resDesc,
             D3D12_RESOURCE_STATE_COMMON,
             null,                           // pOptimizedClearValue
-            (D3D12MA_Allocation**)(&alloc),
+            alloc.GetAddressOf(),
             IID_NULL,                       // riidResource
             null                            // ppvResource
         ));
@@ -1539,76 +1616,135 @@ public static unsafe partial class D3D12MemAllocTests
         CHECK_BOOL(alloc.Get()->GetOffset() == 0);
     }
 
-    internal static HRESULT TestCustomHeap([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("const D3D12_HEAP_PROPERTIES &")] in D3D12_HEAP_PROPERTIES heapProps)
+    internal static void TestCustomPool_AlwaysCommitted([NativeTypeName("const TestContext &")] in TestContext ctx)
     {
-        D3D12MA_TotalStatistics globalStatsBeg = new D3D12MA_TotalStatistics();
-        ctx.allocator->CalculateStatistics(&globalStatsBeg);
+        _ = wprintf("Test custom pool always committed\n");
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC {
-            HeapProperties = heapProps,
-            HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
-            BlockSize = 10 * MEGABYTE,
-            MinBlockCount = 1,
-            MaxBlockCount = 1,
-        };
+        const ulong BUFFER_SIZE = 256;
 
-        const ulong BUFFER_SIZE = 1 * MEGABYTE;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+            D3D12MA_POOL_FLAG_ALWAYS_COMMITTED
+        );
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-        HRESULT hr = ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
-        if (SUCCEEDED(hr))
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
+        FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, BUFFER_SIZE);
+
+        using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
+        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, alloc.GetAddressOf(), IID_NULL, null));
+        CHECK_BOOL(alloc.Get()->GetHeap() == null);
+        CHECK_BOOL(alloc.Get()->GetResource() != null);
+        CHECK_BOOL(alloc.Get()->GetOffset() == 0);
+
+        D3D12MA_Statistics stats = new D3D12MA_Statistics();
+        pool.Get()->GetStatistics(&stats);
+        CHECK_BOOL(stats.AllocationBytes >= BUFFER_SIZE);
+        CHECK_BOOL(stats.AllocationCount == 1);
+        CHECK_BOOL(stats.BlockBytes >= BUFFER_SIZE);
+        CHECK_BOOL(stats.BlockCount == 1);
+
+        D3D12MA_DetailedStatistics detailedStats = new D3D12MA_DetailedStatistics();
+        pool.Get()->CalculateStatistics(&detailedStats);
+        CHECK_BOOL(detailedStats.Stats == stats);
+        CHECK_BOOL(detailedStats.AllocationSizeMin == stats.AllocationBytes);
+        CHECK_BOOL(detailedStats.AllocationSizeMax == stats.AllocationBytes);
+        CHECK_BOOL(detailedStats.UnusedRangeCount == 0);
+        CHECK_BOOL(detailedStats.UnusedRangeSizeMax == 0);
+    }
+
+    internal static void CheckBudgetBasics([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("const D3D12MA_Budget &")] in D3D12MA_Budget localBudget, [NativeTypeName("const D3D12MA_Budget &")] in D3D12MA_Budget nonLocalBudget)
+    {
+        CHECK_BOOL(localBudget.BudgetBytes > 0);
+        CHECK_BOOL(localBudget.BudgetBytes <= ctx.allocator->GetMemoryCapacity((uint)(DXGI_MEMORY_SEGMENT_GROUP_LOCAL)));
+        CHECK_BOOL(localBudget.Stats.AllocationBytes <= localBudget.Stats.BlockBytes);
+
+        // Discrete graphics card with separate video memory.
+        if (!ctx.allocator->IsUMA())
         {
-            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-                CustomPool = pool.Get(),
-            };
-            FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, BUFFER_SIZE);
-
-            // Pool already allocated a block. We don't expect CreatePlacedResource to fail.
-            using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-
-            CHECK_HR(ctx.allocator->CreateResource(
-                &allocDesc,
-                &resDesc,
-                D3D12_RESOURCE_STATE_COPY_DEST,
-                null,                               // pOptimizedClearValue
-                (D3D12MA_Allocation**)(&alloc),
-                __uuidof<ID3D12Resource>(),         // riidResource
-                null                                // ppvResource
-            ));
-
-            D3D12MA_TotalStatistics globalStatsCurr = new D3D12MA_TotalStatistics();
-            ctx.allocator->CalculateStatistics(&globalStatsCurr);
-
-            // Make sure it is accounted only in CUSTOM heap not any of the standard heaps.
-
-            CHECK_BOOL(memcmp(&globalStatsCurr.HeapType[0], &globalStatsBeg.HeapType[0], __sizeof<D3D12MA_DetailedStatistics>()) == 0);
-            CHECK_BOOL(memcmp(&globalStatsCurr.HeapType[1], &globalStatsBeg.HeapType[1], __sizeof<D3D12MA_DetailedStatistics>()) == 0);
-            CHECK_BOOL(memcmp(&globalStatsCurr.HeapType[2], &globalStatsBeg.HeapType[2], __sizeof<D3D12MA_DetailedStatistics>()) == 0);
-
-            CHECK_BOOL(globalStatsCurr.HeapType[3].Stats.AllocationCount == globalStatsBeg.HeapType[3].Stats.AllocationCount + 1);
-            CHECK_BOOL(globalStatsCurr.HeapType[3].Stats.BlockCount == globalStatsBeg.HeapType[3].Stats.BlockCount + 1);
-            CHECK_BOOL(globalStatsCurr.HeapType[3].Stats.AllocationBytes == globalStatsBeg.HeapType[3].Stats.AllocationBytes + BUFFER_SIZE);
-            CHECK_BOOL(globalStatsCurr.Total.Stats.AllocationCount == globalStatsBeg.Total.Stats.AllocationCount + 1);
-            CHECK_BOOL(globalStatsCurr.Total.Stats.BlockCount == globalStatsBeg.Total.Stats.BlockCount + 1);
-            CHECK_BOOL(globalStatsCurr.Total.Stats.AllocationBytes == globalStatsBeg.Total.Stats.AllocationBytes + BUFFER_SIZE);
-
-            // Map and write some data.
-            if ((heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE) || (heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_BACK))
-            {
-                ID3D12Resource* res = alloc.Get()->GetResource();
-
-                uint* mappedPtr = null;
-                D3D12_RANGE readRange = new D3D12_RANGE();
-
-                CHECK_HR(res->Map(0, &readRange, (void**)&mappedPtr));
-                *mappedPtr = 0xDEADC0DE;
-
-                res->Unmap(0, null);
-            }
+            CHECK_BOOL(nonLocalBudget.BudgetBytes > 0);
+            CHECK_BOOL(nonLocalBudget.BudgetBytes <= ctx.allocator->GetMemoryCapacity((uint)(DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL)));
+            CHECK_BOOL(nonLocalBudget.Stats.AllocationBytes <= nonLocalBudget.Stats.BlockBytes);
         }
+    }
 
-        return hr;
+    internal static D3D12MA_DetailedStatistics GetEmptyDetailedStatistics()
+    {
+        D3D12MA_DetailedStatistics result = new D3D12MA_DetailedStatistics() {
+            AllocationSizeMin = UINT64_MAX,
+            UnusedRangeSizeMin = UINT64_MAX,
+        };
+        return result;
+    }
+
+    internal static void AddDetailedStatistics([NativeTypeName("D3D12MA_DetailedStatistics &")] ref D3D12MA_DetailedStatistics inoutSum, [NativeTypeName("const D3D12MA_DetailedStatistics &")] in D3D12MA_DetailedStatistics stats)
+    {
+        inoutSum.Stats.AllocationBytes += stats.Stats.AllocationBytes;
+        inoutSum.Stats.AllocationCount += stats.Stats.AllocationCount;
+        inoutSum.Stats.BlockBytes += stats.Stats.BlockBytes;
+        inoutSum.Stats.BlockCount += stats.Stats.BlockCount;
+        inoutSum.UnusedRangeCount += stats.UnusedRangeCount;
+        inoutSum.AllocationSizeMax = ulong.Max(inoutSum.AllocationSizeMax, stats.AllocationSizeMax);
+        inoutSum.AllocationSizeMin = ulong.Min(inoutSum.AllocationSizeMin, stats.AllocationSizeMin);
+        inoutSum.UnusedRangeSizeMax = ulong.Max(inoutSum.UnusedRangeSizeMax, stats.UnusedRangeSizeMax);
+        inoutSum.UnusedRangeSizeMin = ulong.Min(inoutSum.UnusedRangeSizeMin, stats.UnusedRangeSizeMin);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool StatisticsEqual([NativeTypeName("const D3D12MA_DetailedStatistics &")] in D3D12MA_DetailedStatistics lhs, [NativeTypeName("const D3D12MA_DetailedStatistics &")] in D3D12MA_DetailedStatistics rhs)
+    {
+        fixed (D3D12MA_DetailedStatistics* pLhs = &lhs)
+        fixed (D3D12MA_DetailedStatistics* pRhs = &rhs)
+        {
+            return memcmp(pLhs, pRhs, (uint)(sizeof(D3D12MA_DetailedStatistics))) == 0;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool StatisticsEqual([NativeTypeName("const D3D12MA_Statistics &")] in D3D12MA_Statistics lhs, [NativeTypeName("const D3D12MA_Statistics &")] in D3D12MA_Statistics rhs)
+    {
+        fixed (D3D12MA_Statistics* pLhs = &lhs)
+        fixed (D3D12MA_Statistics* pRhs = &rhs)
+        {
+            return memcmp(pLhs, pRhs, (uint)(sizeof(D3D12MA_Statistics))) == 0;
+        }
+    }
+
+    internal static void CheckStatistics([NativeTypeName("const D3D12MA_DetailedStatistics &")] in D3D12MA_DetailedStatistics stats)
+    {
+        CHECK_BOOL(stats.Stats.AllocationBytes <= stats.Stats.BlockBytes);
+        if (stats.Stats.AllocationBytes > 0)
+        {
+            CHECK_BOOL(stats.Stats.AllocationCount > 0);
+            CHECK_BOOL(stats.AllocationSizeMin <= stats.AllocationSizeMax);
+        }
+        if (stats.UnusedRangeCount > 0)
+        {
+            CHECK_BOOL(stats.UnusedRangeSizeMax > 0);
+            CHECK_BOOL(stats.UnusedRangeSizeMin <= stats.UnusedRangeSizeMax);
+        }
+    }
+
+    internal static void CheckTotalStatistics([NativeTypeName("const D3D12MA_TotalStatistics &")] in D3D12MA_TotalStatistics stats)
+    {
+        D3D12MA_DetailedStatistics sum = GetEmptyDetailedStatistics();
+
+        for (int i = 0; i < ((ReadOnlySpan<D3D12MA_DetailedStatistics>)(stats.HeapType)).Length; ++i)
+        {
+            AddDetailedStatistics(ref sum, stats.HeapType[i]);
+        }
+        CHECK_BOOL(StatisticsEqual(sum, stats.Total));
+
+        sum = GetEmptyDetailedStatistics();
+
+        for (int i = 0; i < ((ReadOnlySpan<D3D12MA_DetailedStatistics>)(stats.MemorySegmentGroup)).Length; ++i)
+        {
+            AddDetailedStatistics(ref sum, stats.MemorySegmentGroup[i]);
+        }
+        CHECK_BOOL(StatisticsEqual(sum, stats.Total));
     }
 
     internal static void TestCustomHeaps([NativeTypeName("const TestContext &")] in TestContext ctx)
@@ -1619,11 +1755,103 @@ public static unsafe partial class D3D12MemAllocTests
         D3D12_HEAP_PROPERTIES heapProps = new D3D12_HEAP_PROPERTIES {
             Type = D3D12_HEAP_TYPE_CUSTOM,
             CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK,
-            MemoryPoolPreference = D3D12_MEMORY_POOL_L0,            // System memory
+            MemoryPoolPreference = D3D12_MEMORY_POOL_L0,
         };
 
-        HRESULT hr = TestCustomHeap(ctx, heapProps);
-        CHECK_HR(hr);
+        const ulong BUFFER_SIZE = 1 * MEGABYTE;
+        FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, BUFFER_SIZE);
+
+        D3D12MA_Budget localBudgetBeg = new D3D12MA_Budget();
+        D3D12MA_Budget nonLocalBudgetBeg = new D3D12MA_Budget();
+        ctx.allocator->GetBudget(&localBudgetBeg, &nonLocalBudgetBeg);
+        CheckBudgetBasics(ctx, localBudgetBeg, nonLocalBudgetBeg);
+
+        D3D12MA_TotalStatistics globalStatsBeg = new D3D12MA_TotalStatistics();
+        ctx.allocator->CalculateStatistics(&globalStatsBeg);
+        CheckTotalStatistics(globalStatsBeg);
+
+        // Test 0: Custom pool with fixed block size (it must end up as placed).
+        // Test 1: Custom pool, requested committed.
+
+        for (nuint testIndex = 0; testIndex < 2; ++testIndex)
+        {
+            bool requestCommitted = testIndex == 1;
+            D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(heapProps, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
+
+            if (testIndex == 0)
+            {
+                poolDesc.BlockSize = 10 * MEGABYTE;
+                poolDesc.MinBlockCount = 1;
+                poolDesc.MaxBlockCount = 1;
+            }
+
+            using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
+            CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
+
+            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
+
+            if (requestCommitted)
+            {
+                allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
+            }
+
+            using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, alloc.GetAddressOf(), IID_NULL, null));
+
+            bool isCommitted = alloc.Get()->GetHeap() == null;
+            CHECK_BOOL(isCommitted == requestCommitted);
+
+            D3D12MA_Budget localBudgetEnd = new D3D12MA_Budget();
+            D3D12MA_Budget nonLocalBudgetEnd = new D3D12MA_Budget();
+            ctx.allocator->GetBudget(&localBudgetEnd, &nonLocalBudgetEnd);
+            CheckBudgetBasics(ctx, localBudgetEnd, nonLocalBudgetEnd);
+
+            D3D12MA_TotalStatistics globalStatsEnd = new D3D12MA_TotalStatistics();
+            ctx.allocator->CalculateStatistics(&globalStatsEnd);
+            CheckTotalStatistics(globalStatsEnd);
+
+            // Make sure it is accounted only in CUSTOM heap not any of the standard heaps.
+
+            int thisMemSegmentGroupIndex = ctx.allocator->IsUMA() ? 0 : 1;
+            int otherMemSegmentGroupIndex = 1 - thisMemSegmentGroupIndex;
+
+            CHECK_BOOL(globalStatsEnd.Total.Stats.AllocationCount == globalStatsBeg.Total.Stats.AllocationCount + 1);
+            CHECK_BOOL(globalStatsEnd.Total.Stats.BlockCount == globalStatsBeg.Total.Stats.BlockCount + 1);
+            CHECK_BOOL(globalStatsEnd.Total.Stats.AllocationBytes == globalStatsBeg.Total.Stats.AllocationBytes + BUFFER_SIZE);
+
+            CHECK_BOOL(memcmp(&globalStatsEnd.HeapType[0], &globalStatsBeg.HeapType[0], (uint)(sizeof(D3D12MA_DetailedStatistics))) == 0);
+            CHECK_BOOL(memcmp(&globalStatsEnd.HeapType[1], &globalStatsBeg.HeapType[1], (uint)(sizeof(D3D12MA_DetailedStatistics))) == 0);
+            CHECK_BOOL(memcmp(&globalStatsEnd.HeapType[2], &globalStatsBeg.HeapType[2], (uint)(sizeof(D3D12MA_DetailedStatistics))) == 0);
+            CHECK_BOOL(memcmp(&globalStatsEnd.HeapType[4], &globalStatsBeg.HeapType[4], (uint)(sizeof(D3D12MA_DetailedStatistics))) == 0);
+
+            CHECK_BOOL(globalStatsEnd.HeapType[3].Stats.AllocationCount == globalStatsBeg.HeapType[3].Stats.AllocationCount + 1);
+            CHECK_BOOL(globalStatsEnd.HeapType[3].Stats.BlockCount == globalStatsBeg.HeapType[3].Stats.BlockCount + 1);
+            CHECK_BOOL(globalStatsEnd.HeapType[3].Stats.AllocationBytes == globalStatsBeg.HeapType[3].Stats.AllocationBytes + BUFFER_SIZE);
+
+            CHECK_BOOL(globalStatsEnd.MemorySegmentGroup[thisMemSegmentGroupIndex].Stats.AllocationCount == globalStatsBeg.MemorySegmentGroup[thisMemSegmentGroupIndex].Stats.AllocationCount + 1);
+            CHECK_BOOL(globalStatsEnd.MemorySegmentGroup[thisMemSegmentGroupIndex].Stats.BlockCount == globalStatsBeg.MemorySegmentGroup[thisMemSegmentGroupIndex].Stats.BlockCount + 1);
+            CHECK_BOOL(globalStatsEnd.MemorySegmentGroup[thisMemSegmentGroupIndex].Stats.AllocationBytes == globalStatsBeg.MemorySegmentGroup[thisMemSegmentGroupIndex].Stats.AllocationBytes + BUFFER_SIZE);
+
+            CHECK_BOOL(memcmp(&globalStatsEnd.MemorySegmentGroup[otherMemSegmentGroupIndex], &globalStatsBeg.MemorySegmentGroup[otherMemSegmentGroupIndex], (uint)(sizeof(D3D12MA_DetailedStatistics))) == 0);
+
+            ref readonly D3D12MA_Budget thisBudgetBeg = ref (ctx.allocator->IsUMA() ? ref localBudgetBeg : ref nonLocalBudgetBeg);
+            ref readonly D3D12MA_Budget thisBudgetEnd = ref (ctx.allocator->IsUMA() ? ref localBudgetEnd : ref nonLocalBudgetEnd);
+
+            CHECK_BOOL(thisBudgetEnd.Stats.AllocationCount == thisBudgetBeg.Stats.AllocationCount + 1);
+            CHECK_BOOL(thisBudgetEnd.Stats.BlockCount == thisBudgetBeg.Stats.BlockCount + 1);
+            CHECK_BOOL(thisBudgetEnd.Stats.AllocationBytes == thisBudgetBeg.Stats.AllocationBytes + BUFFER_SIZE);
+
+            // Map and write some data.
+            if ((heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE) ||
+                (heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_BACK))
+            {
+                ID3D12Resource* res = alloc.Get()->GetResource();
+                uint* mappedPtr = null;
+                CHECK_HR(res->Map(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE))), (void**)&mappedPtr));
+                *mappedPtr = 0xDEADC0DE;
+                res->Unmap(0, null);
+            }
+        }
     }
 
     internal static void TestStandardCustomCommittedPlaced([NativeTypeName("const TestContext &")] in TestContext ctx)
@@ -1633,12 +1861,10 @@ public static unsafe partial class D3D12MemAllocTests
         const D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
         const ulong bufferSize = 1024;
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC();
-        poolDesc.HeapProperties.Type = heapType;
-        poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(heapType, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
         List<ComPtr<D3D12MA_Allocation>> allocations = [];
 
@@ -1688,7 +1914,7 @@ public static unsafe partial class D3D12MemAllocTests
                     &resDesc,
                     D3D12_RESOURCE_STATE_COMMON,
                     null,                       // pOptimizedClearValue
-                    (D3D12MA_Allocation**)(&allocPtr),
+                    allocPtr.GetAddressOf(),
                     IID_NULL,
                     null
                 );
@@ -1775,14 +2001,16 @@ public static unsafe partial class D3D12MemAllocTests
             SizeInBytes = Math.Max(allocInfo1.SizeInBytes, allocInfo2.SizeInBytes),
         };
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_DEFAULT,
-            ExtraHeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12MA_ALLOCATION_FLAG_NONE,
+            null,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES
+        );
 
         using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
 
-        CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &finalAllocInfo, (D3D12MA_Allocation**)(&alloc)));
+        CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &finalAllocInfo, alloc.GetAddressOf()));
         CHECK_BOOL((alloc.Get() != null) && (alloc.Get()->GetHeap() != null));
 
         using ComPtr<ID3D12Resource> res1 = new ComPtr<ID3D12Resource>();
@@ -1823,13 +2051,13 @@ public static unsafe partial class D3D12MemAllocTests
 
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, 300 * MEGABYTE);
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_UPLOAD,
-            Flags = D3D12MA_ALLOCATION_FLAG_CAN_ALIAS,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+            D3D12_HEAP_TYPE_UPLOAD,
+            D3D12MA_ALLOCATION_FLAG_CAN_ALIAS
+        );
 
         using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, alloc.GetAddressOf(), IID_NULL, null));
         CHECK_BOOL((alloc.Get() != null) && (alloc.Get()->GetHeap() != null));
 
         resDesc.Width = 200 * MEGABYTE;
@@ -1851,19 +2079,19 @@ public static unsafe partial class D3D12MemAllocTests
     {
         _ = wprintf("Test MSAA texture always as committed in pool\n");
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC {
-            HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES,
-        };
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES,
+            D3D12MA_POOL_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED
+        );
 
         poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
         poolDesc.Flags = D3D12MA_POOL_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED;
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            CustomPool = pool.Get(),
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
 
         D3D12_RESOURCE_DESC resDesc = new D3D12_RESOURCE_DESC {
             Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
@@ -1881,7 +2109,7 @@ public static unsafe partial class D3D12MemAllocTests
         };
 
         using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_RENDER_TARGET, null, alloc.GetAddressOf(), IID_NULL, null));
 
         // Committed allocation should not have explicit heap
         CHECK_BOOL(alloc.Get()->GetHeap() == null);
@@ -1896,14 +2124,12 @@ public static unsafe partial class D3D12MemAllocTests
 
         ResourceWithAllocation* resources = stackalloc ResourceWithAllocation[(int)(count)];
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_UPLOAD,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_UPLOAD);
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resourceDesc, bufSize);
 
         for (uint i = 0; i < count; ++i)
         {
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&resources[i].allocation), __uuidof<ID3D12Resource>(), (void**)(&resources[i].resource)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, resources[i].allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resources[i].resource)));
 
             void* mappedPtr = null;
             CHECK_HR(resources[i].resource.Get()->Map(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE))), &mappedPtr));
@@ -1923,110 +2149,256 @@ public static unsafe partial class D3D12MemAllocTests
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static bool StatisticsEqual([NativeTypeName("const D3D12MA::DetailedStatistics &")] in D3D12MA_DetailedStatistics lhs, [NativeTypeName("const D3D12MA::DetailedStatistics &")] in D3D12MA_DetailedStatistics rhs)
-    {
-        return memcmp(Unsafe.AsPointer(ref Unsafe.AsRef(in lhs)), Unsafe.AsPointer(ref Unsafe.AsRef(in rhs)), __sizeof<D3D12MA_DetailedStatistics>()) == 0;
-    }
-
-    internal static void CheckStatistics([NativeTypeName("const D3D12MA::DetailedStatistics &")] in D3D12MA_DetailedStatistics stats)
-    {
-        CHECK_BOOL(stats.Stats.AllocationBytes <= stats.Stats.BlockBytes);
-
-        if (stats.Stats.AllocationBytes > 0)
-        {
-            CHECK_BOOL(stats.Stats.AllocationCount > 0);
-            CHECK_BOOL(stats.AllocationSizeMin <= stats.AllocationSizeMax);
-        }
-
-        if (stats.UnusedRangeCount > 0)
-        {
-            CHECK_BOOL(stats.UnusedRangeSizeMax > 0);
-            CHECK_BOOL(stats.UnusedRangeSizeMin <= stats.UnusedRangeSizeMax);
-        }
-    }
-
     internal static void TestStats([NativeTypeName("const TestContext &")] in TestContext ctx)
     {
         _ = wprintf("Test stats\n");
 
-        D3D12MA_TotalStatistics begStats = new D3D12MA_TotalStatistics();
-        ctx.allocator->CalculateStatistics(&begStats);
+        const ulong BUF_SIZE = 10 * MEGABYTE;
+        const uint BUF_COUNT = 4;
+        const ulong PREALLOCATED_BLOCK_SIZE = BUF_SIZE * (BUF_COUNT + 1);
 
-        const uint count = 10;
-        const ulong bufSize = 64ul * 1024;
+        /*
+        Test 0: ALLOCATION_FLAG_COMMITTED.
+        Test 1: normal allocations.
+        Test 2: allocations in a custom pool.
+        Test 3: allocations in a custom pool, COMMITTED.
+        Test 4: allocations in a custom pool with preallocated memory.
+        */
+        ComPtr<D3D12MA_Allocation>* allocs = stackalloc ComPtr<D3D12MA_Allocation>[(int)(BUF_COUNT)];
 
-        ResourceWithAllocation* resources = stackalloc ResourceWithAllocation[(int)(count)];
-
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_UPLOAD,
-        };
-        FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resourceDesc, bufSize);
-
-        for (uint i = 0; i < count; ++i)
+        for (uint testIndex = 0; testIndex < 5; ++testIndex)
         {
-            if (i == count / 2)
+            bool usePool = testIndex >= 2;
+            bool useCommitted = (testIndex == 0) || (testIndex == 3);
+            bool usePreallocated = testIndex == 4;
+
+            // Get stats "Beg".
+            D3D12MA_Budget localBudgetBeg = new D3D12MA_Budget();
+            D3D12MA_Budget nonLocalBudgetBeg = new D3D12MA_Budget();
+            ctx.allocator->GetBudget(&localBudgetBeg, &nonLocalBudgetBeg);
+            CheckBudgetBasics(ctx, localBudgetBeg, nonLocalBudgetBeg);
+
+            D3D12MA_TotalStatistics statsBeg = new D3D12MA_TotalStatistics();
+            ctx.allocator->CalculateStatistics(&statsBeg);
+            CheckTotalStatistics(statsBeg);
+
+            // Create pool.
+            using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
+            if (usePool)
+            {
+                D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
+                if (usePreallocated)
+                {
+                    poolDesc.BlockSize = PREALLOCATED_BLOCK_SIZE;
+                    poolDesc.MinBlockCount = 1;
+                    poolDesc.MaxBlockCount = 1;
+                }
+                CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
+            }
+
+            // Get pool stats "Beg".
+            D3D12MA_Statistics poolStatsBeg = new D3D12MA_Statistics();
+            D3D12MA_DetailedStatistics detailedPoolStatsBeg = new D3D12MA_DetailedStatistics();
+            if (usePool)
+            {
+                pool.Get()->GetStatistics(&poolStatsBeg);
+                pool.Get()->CalculateStatistics(&detailedPoolStatsBeg);
+                CheckStatistics(detailedPoolStatsBeg);
+            }
+
+            // Create buffers.
+            FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, BUF_SIZE);
+
+            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC();
+            if (usePool)
+            {
+                allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
+            }
+            else
+            {
+                allocDesc = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_DEFAULT);
+            }
+
+            if (useCommitted)
             {
                 allocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_COMMITTED;
             }
 
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&resources[i].allocation), __uuidof<ID3D12Resource>(), (void**)(&resources[i].resource)));
-        }
+            for (uint i = 0; i < BUF_COUNT; ++i)
+            {
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, allocs[i].GetAddressOf(), IID_NULL, null));
+            }
 
-        D3D12MA_TotalStatistics endStats = new D3D12MA_TotalStatistics();
-        ctx.allocator->CalculateStatistics(&endStats);
+            // Get stats "WithBufs".
+            D3D12MA_Budget localBudgetWithBufs = new D3D12MA_Budget();
+            D3D12MA_Budget nonLocalBudgetWithBufs = new D3D12MA_Budget();
+            ctx.allocator->GetBudget(&localBudgetWithBufs, &nonLocalBudgetWithBufs);
+            CheckBudgetBasics(ctx, localBudgetWithBufs, nonLocalBudgetWithBufs);
 
-        CHECK_BOOL(endStats.Total.Stats.BlockCount >= begStats.Total.Stats.BlockCount);
-        CHECK_BOOL(endStats.Total.Stats.AllocationCount == begStats.Total.Stats.AllocationCount + count);
-        CHECK_BOOL(endStats.Total.Stats.AllocationBytes == begStats.Total.Stats.AllocationBytes + (count * bufSize));
-        CHECK_BOOL(endStats.Total.AllocationSizeMin <= bufSize);
-        CHECK_BOOL(endStats.Total.AllocationSizeMax >= bufSize);
+            D3D12MA_TotalStatistics statsWithBufs = new D3D12MA_TotalStatistics();
+            ctx.allocator->CalculateStatistics(&statsWithBufs);
+            CheckTotalStatistics(statsWithBufs);
 
-        CHECK_BOOL(endStats.HeapType[1].Stats.BlockCount >= begStats.HeapType[1].Stats.BlockCount);
-        CHECK_BOOL(endStats.HeapType[1].Stats.AllocationCount >= begStats.HeapType[1].Stats.AllocationCount + count);
-        CHECK_BOOL(endStats.HeapType[1].Stats.AllocationBytes >= begStats.HeapType[1].Stats.AllocationBytes + (count * bufSize));
-        CHECK_BOOL(endStats.HeapType[1].AllocationSizeMin <= bufSize);
-        CHECK_BOOL(endStats.HeapType[1].AllocationSizeMax >= bufSize);
+            D3D12MA_Statistics poolStatsWithBufs = new D3D12MA_Statistics();
+            D3D12MA_DetailedStatistics detailedPoolStatsWithBufs = new D3D12MA_DetailedStatistics();
+            if (usePool)
+            {
+                pool.Get()->GetStatistics(&poolStatsWithBufs);
+                pool.Get()->CalculateStatistics(&detailedPoolStatsWithBufs);
+                CheckStatistics(detailedPoolStatsWithBufs);
+            }
 
-        CHECK_BOOL(StatisticsEqual(begStats.HeapType[0], endStats.HeapType[0]));
-        CHECK_BOOL(StatisticsEqual(begStats.HeapType[2], endStats.HeapType[2]));
+            // Destroy buffers.
+            for (nuint i = BUF_COUNT; i-- != 0;)
+            {
+                allocs[i].Reset();
+            }
 
-        CheckStatistics(endStats.Total);
-        CheckStatistics(endStats.HeapType[0]);
-        CheckStatistics(endStats.HeapType[1]);
-        CheckStatistics(endStats.HeapType[2]);
+            // Get pool stats "End".
+            D3D12MA_Statistics poolStatsEnd = new D3D12MA_Statistics();
+            D3D12MA_DetailedStatistics detailedPoolStatsEnd = new D3D12MA_DetailedStatistics();
+            if (usePool)
+            {
+                pool.Get()->GetStatistics(&poolStatsEnd);
+                pool.Get()->CalculateStatistics(&detailedPoolStatsEnd);
+                CheckStatistics(detailedPoolStatsEnd);
+            }
 
-        D3D12MA_Budget localBudget = new D3D12MA_Budget();
-        D3D12MA_Budget nonLocalBudget = new D3D12MA_Budget();
+            // Destroy the pool.
+            pool.Reset();
 
-        ctx.allocator->GetBudget(&localBudget, &nonLocalBudget);
+            // Get stats "End".
+            D3D12MA_Budget localBudgetEnd = new D3D12MA_Budget();
+            D3D12MA_Budget nonLocalBudgetEnd = new D3D12MA_Budget();
+            ctx.allocator->GetBudget(&localBudgetEnd, &nonLocalBudgetEnd);
+            CheckBudgetBasics(ctx, localBudgetEnd, nonLocalBudgetEnd);
 
-        CHECK_BOOL(localBudget.Stats.AllocationBytes <= localBudget.Stats.BlockBytes);
-        CHECK_BOOL(endStats.HeapType[3].Stats.BlockCount == 0); // No allocation from D3D12_HEAP_TYPE_CUSTOM in this test.
+            D3D12MA_TotalStatistics statsEnd = new D3D12MA_TotalStatistics();
+            ctx.allocator->CalculateStatistics(&statsEnd);
+            CheckTotalStatistics(statsEnd);
 
-        if (!ctx.allocator->IsUMA())
-        {
-            // Discrete GPU
-            CHECK_BOOL(localBudget.Stats.AllocationBytes == endStats.HeapType[0].Stats.AllocationBytes);
-            CHECK_BOOL(localBudget.Stats.BlockBytes == endStats.HeapType[0].Stats.BlockBytes);
+            // CHECK THE STATS: Local.
+            {
+                CHECK_BOOL(localBudgetBeg.Stats.AllocationBytes <= localBudgetEnd.Stats.AllocationBytes);
 
-            CHECK_BOOL(nonLocalBudget.Stats.AllocationBytes <= nonLocalBudget.Stats.BlockBytes);
-            CHECK_BOOL(nonLocalBudget.Stats.AllocationBytes == (endStats.HeapType[1].Stats.AllocationBytes + endStats.HeapType[2].Stats.AllocationBytes));
-            CHECK_BOOL(nonLocalBudget.Stats.BlockBytes == (endStats.HeapType[1].Stats.BlockBytes + endStats.HeapType[2].Stats.BlockBytes));
-        }
-        else
-        {
-            // Integrated GPU - all memory is local
-            CHECK_BOOL(localBudget.Stats.AllocationBytes == (endStats.HeapType[0].Stats.AllocationBytes + endStats.HeapType[1].Stats.AllocationBytes + endStats.HeapType[2].Stats.AllocationBytes));
-            CHECK_BOOL(localBudget.Stats.BlockBytes == (endStats.HeapType[0].Stats.BlockBytes + endStats.HeapType[1].Stats.BlockBytes + endStats.HeapType[2].Stats.BlockBytes));
+                // Budget::UsageBytes.
+                CHECK_BOOL(localBudgetWithBufs.UsageBytes >= localBudgetBeg.UsageBytes);
+                CHECK_BOOL(localBudgetEnd.UsageBytes <= localBudgetWithBufs.UsageBytes);
 
-            CHECK_BOOL(nonLocalBudget.Stats.AllocationBytes == 0);
-            CHECK_BOOL(nonLocalBudget.Stats.BlockBytes == 0);
-        }
+                // Budget - Statistics::AllocationBytes.
+                CHECK_BOOL(localBudgetEnd.Stats.AllocationBytes == localBudgetBeg.Stats.AllocationBytes);
+                CHECK_BOOL(localBudgetWithBufs.Stats.AllocationBytes == localBudgetBeg.Stats.AllocationBytes + BUF_SIZE * BUF_COUNT);
 
-        for (uint i = 0; i < count; i++)
-        {
-            resources[i].Dispose();
+                // Budget - Statistics::BlockBytes.
+                if (usePool)
+                {
+                    CHECK_BOOL(localBudgetEnd.Stats.BlockBytes == localBudgetBeg.Stats.BlockBytes);
+                    CHECK_BOOL(localBudgetWithBufs.Stats.BlockBytes > localBudgetBeg.Stats.BlockBytes);
+                }
+                else
+                {
+                    CHECK_BOOL(localBudgetWithBufs.Stats.BlockBytes >= localBudgetBeg.Stats.BlockBytes);
+                }
+
+                // Budget - Statistics::AllocationCount.
+                CHECK_BOOL(localBudgetEnd.Stats.AllocationCount == localBudgetBeg.Stats.AllocationCount);
+                CHECK_BOOL(localBudgetWithBufs.Stats.AllocationCount == localBudgetBeg.Stats.AllocationCount + BUF_COUNT);
+
+                // Budget - Statistics::BlockCount.
+                if (useCommitted)
+                {
+                    CHECK_BOOL(localBudgetEnd.Stats.BlockCount == localBudgetBeg.Stats.BlockCount);
+                    CHECK_BOOL(localBudgetWithBufs.Stats.BlockCount == localBudgetBeg.Stats.BlockCount + BUF_COUNT);
+                }
+                else if (usePool)
+                {
+                    CHECK_BOOL(localBudgetEnd.Stats.BlockCount == localBudgetBeg.Stats.BlockCount);
+                    if (usePreallocated)
+                    {
+                        CHECK_BOOL(localBudgetWithBufs.Stats.BlockCount == localBudgetBeg.Stats.BlockCount + 1);
+                    }
+                    else
+                    {
+                        CHECK_BOOL(localBudgetWithBufs.Stats.BlockCount > localBudgetBeg.Stats.BlockCount);
+                    }
+                }
+
+                // Compare CalculateStatistics per memory segment group with GetBudget.
+                CHECK_BOOL(StatisticsEqual(statsBeg.MemorySegmentGroup[0].Stats, localBudgetBeg.Stats));
+                CHECK_BOOL(StatisticsEqual(statsWithBufs.MemorySegmentGroup[0].Stats, localBudgetWithBufs.Stats));
+                CHECK_BOOL(StatisticsEqual(statsEnd.MemorySegmentGroup[0].Stats, localBudgetEnd.Stats));
+            }
+
+            // CHECK THE STATS: Non-local.
+            {
+                CHECK_BOOL(nonLocalBudgetEnd.Stats.AllocationBytes == nonLocalBudgetBeg.Stats.AllocationBytes && nonLocalBudgetEnd.Stats.AllocationBytes == nonLocalBudgetWithBufs.Stats.AllocationBytes);
+                CHECK_BOOL(nonLocalBudgetEnd.Stats.BlockBytes == nonLocalBudgetBeg.Stats.BlockBytes && nonLocalBudgetEnd.Stats.BlockBytes == nonLocalBudgetWithBufs.Stats.BlockBytes);
+                CHECK_BOOL(nonLocalBudgetEnd.Stats.AllocationCount == nonLocalBudgetBeg.Stats.AllocationCount && nonLocalBudgetEnd.Stats.AllocationCount == nonLocalBudgetWithBufs.Stats.AllocationCount);
+                CHECK_BOOL(nonLocalBudgetEnd.Stats.BlockCount == nonLocalBudgetBeg.Stats.BlockCount && nonLocalBudgetEnd.Stats.BlockCount == nonLocalBudgetWithBufs.Stats.BlockCount);
+
+                // Compare CalculateStatistics per memory segment group with GetBudget.
+                CHECK_BOOL(StatisticsEqual(statsBeg.MemorySegmentGroup[1].Stats, nonLocalBudgetBeg.Stats));
+                CHECK_BOOL(StatisticsEqual(statsWithBufs.MemorySegmentGroup[1].Stats, nonLocalBudgetWithBufs.Stats));
+                CHECK_BOOL(StatisticsEqual(statsEnd.MemorySegmentGroup[1].Stats, nonLocalBudgetEnd.Stats));
+            }
+
+            if (usePool)
+            {
+                // Compare simple stats with calculated stats to make sure they are identical.
+                CHECK_BOOL(StatisticsEqual(poolStatsBeg, detailedPoolStatsBeg.Stats));
+                CHECK_BOOL(StatisticsEqual(poolStatsWithBufs, detailedPoolStatsWithBufs.Stats));
+                CHECK_BOOL(StatisticsEqual(poolStatsEnd, detailedPoolStatsEnd.Stats));
+
+                // Validate stats of an empty pool.
+                CHECK_BOOL(detailedPoolStatsBeg.AllocationSizeMax == 0);
+                CHECK_BOOL(detailedPoolStatsEnd.AllocationSizeMax == 0);
+                CHECK_BOOL(detailedPoolStatsBeg.AllocationSizeMin == UINT64_MAX);
+                CHECK_BOOL(detailedPoolStatsEnd.AllocationSizeMin == UINT64_MAX);
+                CHECK_BOOL(poolStatsBeg.AllocationCount == 0);
+                CHECK_BOOL(poolStatsBeg.AllocationBytes == 0);
+                CHECK_BOOL(poolStatsEnd.AllocationCount == 0);
+                CHECK_BOOL(poolStatsEnd.AllocationBytes == 0);
+
+                if (usePreallocated)
+                {
+                    CHECK_BOOL(poolStatsBeg.BlockCount == 1);
+                    CHECK_BOOL(poolStatsEnd.BlockCount == 1);
+                    CHECK_BOOL(poolStatsBeg.BlockBytes == PREALLOCATED_BLOCK_SIZE);
+                    CHECK_BOOL(poolStatsEnd.BlockBytes == PREALLOCATED_BLOCK_SIZE);
+                }
+                else
+                {
+                    CHECK_BOOL(poolStatsBeg.BlockCount == 0);
+                    CHECK_BOOL(poolStatsBeg.BlockBytes == 0);
+                    // Not checking poolStatsEnd.blockCount, blockBytes, because an empty block may stay allocated.
+                }
+
+                // Validate stats of a pool with buffers.
+                CHECK_BOOL(detailedPoolStatsWithBufs.AllocationSizeMin == BUF_SIZE);
+                CHECK_BOOL(detailedPoolStatsWithBufs.AllocationSizeMax == BUF_SIZE);
+                CHECK_BOOL(poolStatsWithBufs.AllocationCount == BUF_COUNT);
+                CHECK_BOOL(poolStatsWithBufs.AllocationBytes == BUF_COUNT * BUF_SIZE);
+
+                if (usePreallocated)
+                {
+                    CHECK_BOOL(poolStatsWithBufs.BlockCount == 1);
+                    CHECK_BOOL(poolStatsWithBufs.BlockBytes == PREALLOCATED_BLOCK_SIZE);
+                }
+                else
+                {
+                    CHECK_BOOL(poolStatsWithBufs.BlockCount > 0);
+                    CHECK_BOOL(poolStatsWithBufs.BlockBytes >= poolStatsWithBufs.AllocationBytes);
+                }
+            }
+
+            // No allocation from D3D12_HEAP_TYPE_CUSTOM or GPU_UPLOAD in this test.
+            CHECK_BOOL(statsEnd.HeapType[3].Stats.BlockCount == 0);
+            CHECK_BOOL(statsEnd.HeapType[4].Stats.BlockCount == 0);
+
+            for (nuint i = 0; i < BUF_COUNT; i++)
+            {
+                allocs[i].Dispose();
+            }
         }
     }
 
@@ -2041,26 +2413,18 @@ public static unsafe partial class D3D12MemAllocTests
         ResourceWithAllocation* resourcesDefault = stackalloc ResourceWithAllocation[(int)(count)];
         ResourceWithAllocation* resourcesReadback = stackalloc ResourceWithAllocation[(int)(count)];
 
-        D3D12MA_ALLOCATION_DESC allocDescUpload = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_UPLOAD,
-        };
-
-        D3D12MA_ALLOCATION_DESC allocDescDefault = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_DEFAULT,
-        };
-
-        D3D12MA_ALLOCATION_DESC allocDescReadback = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_READBACK,
-        };
+        D3D12MA_ALLOCATION_DESC allocDescUpload = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_UPLOAD);
+        D3D12MA_ALLOCATION_DESC allocDescDefault = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_DEFAULT);
+        D3D12MA_ALLOCATION_DESC allocDescReadback = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_READBACK);
 
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resourceDesc, bufSize);
 
         // Create 3 sets of resources.
         for (uint i = 0; i < count; ++i)
         {
-            CHECK_HR(ctx.allocator->CreateResource(&allocDescUpload, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&resourcesUpload[i].allocation), __uuidof<ID3D12Resource>(), (void**)(&resourcesUpload[i].resource)));
-            CHECK_HR(ctx.allocator->CreateResource(&allocDescDefault, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&resourcesDefault[i].allocation), __uuidof<ID3D12Resource>(), (void**)(&resourcesDefault[i].resource)));
-            CHECK_HR(ctx.allocator->CreateResource(&allocDescReadback, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&resourcesReadback[i].allocation), __uuidof<ID3D12Resource>(), (void**)(&resourcesReadback[i].resource)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDescUpload, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, resourcesUpload[i].allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resourcesUpload[i].resource)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDescDefault, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, resourcesDefault[i].allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resourcesDefault[i].resource)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDescReadback, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, resourcesReadback[i].allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resourcesReadback[i].resource)));
         }
 
         // Map and fill data in UPLOAD.
@@ -2147,131 +2511,6 @@ public static unsafe partial class D3D12MemAllocTests
         }
     }
 
-    internal static void TestZeroInitialized([NativeTypeName("const TestContext &")] in TestContext ctx)
-    {
-        _ = wprintf("Test zero initialized\n");
-
-        const ulong bufSize = 128ul * 1024;
-        FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resourceDesc, bufSize);
-
-        // # Create upload buffer and fill it with data.
-
-        D3D12MA_ALLOCATION_DESC allocDescUpload = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_UPLOAD,
-        };
-
-        using ResourceWithAllocation bufUpload = new ResourceWithAllocation();
-        CHECK_HR(ctx.allocator->CreateResource(&allocDescUpload, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&bufUpload.allocation), __uuidof<ID3D12Resource>(), (void**)(&bufUpload.resource)));
-
-        {
-            void* mappedPtr = null;
-            CHECK_HR(bufUpload.resource.Get()->Map(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE))), &mappedPtr));
-
-            FillData(mappedPtr, bufSize, 5236245);
-            bufUpload.resource.Get()->Unmap(0, null);
-        }
-
-        // # Create readback buffer
-
-        D3D12MA_ALLOCATION_DESC allocDescReadback = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_READBACK,
-        };
-
-        using ResourceWithAllocation bufReadback = new ResourceWithAllocation();
-        CHECK_HR(ctx.allocator->CreateResource(&allocDescReadback, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&bufReadback.allocation), __uuidof<ID3D12Resource>(), (void**)(&bufReadback.resource)));
-
-        static void CheckBufferData([NativeTypeName("const ResourceWithAllocation &")] in ResourceWithAllocation buf, in ResourceWithAllocation bufReadback)
-        {
-            bool shouldBeZero = buf.allocation.Get()->WasZeroInitialized() != FALSE;
-
-            {
-                ID3D12GraphicsCommandList* cmdList = BeginCommandList();
-                cmdList->CopyBufferRegion(bufReadback.resource.Get(), 0, buf.resource.Get(), 0, bufSize);
-                EndCommandList(cmdList);
-            }
-
-            bool isZero = false;
-            {
-                // I could pass pReadRange = NULL but it generates D3D Debug layer warning: EXECUTION WARNING #930: MAP_INVALID_NULLRANGE
-
-                D3D12_RANGE readRange = new D3D12_RANGE {
-                    Begin = 0,
-                    End = (nuint)(bufSize),
-                };
-
-                void* mappedPtr = null;
-                CHECK_HR(bufReadback.resource.Get()->Map(0, &readRange, &mappedPtr));
-
-                isZero = ValidateDataZero(mappedPtr, bufSize);
-                bufReadback.resource.Get()->Unmap(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE))));
-            }
-
-            _ = wprintf("Should be zero: {0}, is zero: {1}\n", shouldBeZero ? 1 : 0, isZero ? 1 : 0);
-
-            if (shouldBeZero)
-            {
-                CHECK_BOOL(isZero);
-            }
-        }
-
-        // # Test 1: Committed resource. Should always be zero initialized.
-        using ResourceWithAllocation bufDefault = new ResourceWithAllocation();
-
-        {
-            D3D12MA_ALLOCATION_DESC allocDescDefault = new D3D12MA_ALLOCATION_DESC {
-                HeapType = D3D12_HEAP_TYPE_DEFAULT,
-                Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED,
-            };
-            CHECK_HR(ctx.allocator->CreateResource(&allocDescDefault, &resourceDesc, D3D12_RESOURCE_STATE_COPY_SOURCE, null, (D3D12MA_Allocation**)(&bufDefault.allocation), __uuidof<ID3D12Resource>(), (void**)(&bufDefault.resource)));
-
-            _ = wprintf("  Committed: ");
-            CheckBufferData(bufDefault, bufReadback);
-            CHECK_BOOL(bufDefault.allocation.Get()->WasZeroInitialized());
-
-            bufDefault.Dispose();
-        }
-
-        // # Test 2: (Probably) placed resource.
-
-        for (uint i = 0; i < 2; ++i)
-        {
-            // 1. Create buffer
-
-            D3D12MA_ALLOCATION_DESC allocDescDefault = new D3D12MA_ALLOCATION_DESC {
-                HeapType = D3D12_HEAP_TYPE_DEFAULT,
-            };
-            CHECK_HR(ctx.allocator->CreateResource(&allocDescDefault, &resourceDesc, D3D12_RESOURCE_STATE_COPY_SOURCE, null, (D3D12MA_Allocation**)(&bufDefault.allocation), __uuidof<ID3D12Resource>(), (void**)(&bufDefault.resource)));
-
-            // 2. Check it
-
-            _ = wprintf("  Normal #{0}: ", i);
-            CheckBufferData(bufDefault, bufReadback);
-
-            // 3. Upload some data to it
-
-            {
-                ID3D12GraphicsCommandList* cmdList = BeginCommandList();
-
-                D3D12_RESOURCE_BARRIER barrier = new D3D12_RESOURCE_BARRIER {
-                    Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                };
-                barrier.Transition.pResource = bufDefault.resource.Get();
-                barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
-                barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-                barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-                cmdList->ResourceBarrier(1, &barrier);
-
-                cmdList->CopyBufferRegion(bufDefault.resource.Get(), 0, bufUpload.resource.Get(), 0, bufSize);
-
-                EndCommandList(cmdList);
-            }
-
-            // 4. Delete it
-
-            bufDefault.Reset();
-        }
-    }
-
     internal static void TestMultithreading([NativeTypeName("const TestContext &")] in TestContext ctx)
     {
         _ = wprintf("Test multithreading\n");
@@ -2280,9 +2519,7 @@ public static unsafe partial class D3D12MemAllocTests
         const uint bufSizeMin = 1024u;
         const uint bufSizeMax = 1024u * 1024;
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_UPLOAD,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_UPLOAD);
 
         // Launch threads.
         Thread[] threads = new Thread[threadCount];
@@ -2311,7 +2548,7 @@ public static unsafe partial class D3D12MemAllocTests
                     };
                     FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resourceDesc, res.size);
 
-                    CHECK_HR(ctx.allocator->CreateResource(pAllocDesc, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&res.allocation), __uuidof<ID3D12Resource>(), (void**)(&res.resource)));
+                    CHECK_HR(ctx.allocator->CreateResource(pAllocDesc, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, res.allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res.resource)));
 
                     void* mappedPtr = null;
                     CHECK_HR(res.resource.Get()->Map(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE))), &mappedPtr));
@@ -2352,7 +2589,7 @@ public static unsafe partial class D3D12MemAllocTests
                         };
                         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resourceDesc, res.size);
 
-                        CHECK_HR(ctx.allocator->CreateResource(pAllocDesc, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&res.allocation), __uuidof<ID3D12Resource>(), (void**)(&res.resource)));
+                        CHECK_HR(ctx.allocator->CreateResource(pAllocDesc, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, res.allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res.resource)));
 
                         void* mappedPtr = null;
                         CHECK_HR(res.resource.Get()->Map(0, null, &mappedPtr));
@@ -2419,22 +2656,21 @@ public static unsafe partial class D3D12MemAllocTests
         _ = wprintf("Test linear allocator\n");
         RandomNumberGenerator rand = new RandomNumberGenerator(645332);
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC {
-            HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
-        };
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-        poolDesc.Flags = D3D12MA_POOL_FLAG_ALGORITHM_LINEAR;
-        poolDesc.BlockSize = 64 * KILOBYTE * 300; // Alignment of buffers is always 64KB
-        poolDesc.MinBlockCount = poolDesc.MaxBlockCount = 1;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+            D3D12MA_POOL_FLAG_ALGORITHM_LINEAR,
+            64 * KILOBYTE * 300,
+            1,
+            1
+        );
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
 
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC buffDesc, 0);
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            CustomPool = pool.Get(),
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
 
         const nuint maxBufCount = 100;
         List<BufferInfo> buffInfo = [];
@@ -2455,7 +2691,7 @@ public static unsafe partial class D3D12MemAllocTests
                 buffDesc.Width = AlignUp(bufSizeMin + (rand.Generate() % (bufSizeMax - bufSizeMin)), 16);
 
                 using BufferInfo newBuffInfo = new BufferInfo();
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
                 ulong offset = newBuffInfo.Allocation.Get()->GetOffset();
                 CHECK_BOOL(j == 0 || offset > prevOffset);
@@ -2493,7 +2729,7 @@ public static unsafe partial class D3D12MemAllocTests
                 buffDesc.Width = AlignUp(bufSizeMin + (rand.Generate() % (bufSizeMax - bufSizeMin)), 16);
 
                 using BufferInfo newBuffInfo = new BufferInfo();
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
                 ulong offset = newBuffInfo.Allocation.Get()->GetOffset();
                 CHECK_BOOL(i == 0 || offset > prevOffset);
@@ -2517,7 +2753,7 @@ public static unsafe partial class D3D12MemAllocTests
                 buffDesc.Width = AlignUp(bufSizeMin + (rand.Generate() % (bufSizeMax - bufSizeMin)), 16);
 
                 using BufferInfo newBuffInfo = new BufferInfo();
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
                 ulong offset = newBuffInfo.Allocation.Get()->GetOffset();
                 CHECK_BOOL(i == 0 || offset > prevOffset);
@@ -2543,7 +2779,7 @@ public static unsafe partial class D3D12MemAllocTests
             for (nuint i = 0; i < maxBufCount; ++i)
             {
                 using BufferInfo newBuffInfo = new BufferInfo();
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
                 ulong offset = newBuffInfo.Allocation.Get()->GetOffset();
                 CHECK_BOOL(i == 0 || offset > prevOffset);
@@ -2569,7 +2805,7 @@ public static unsafe partial class D3D12MemAllocTests
                 for (nuint bufPerIter = 0; bufPerIter < buffersPerIter; ++bufPerIter)
                 {
                     using BufferInfo newBuffInfo = new BufferInfo();
-                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
                     buffInfo.Add(newBuffInfo);
                     Unsafe.AsRef(in newBuffInfo) = default;
@@ -2583,7 +2819,7 @@ public static unsafe partial class D3D12MemAllocTests
             {
                 using BufferInfo newBuffInfo = new BufferInfo();
 
-                HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer));
+                HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer));
                 ++debugIndex;
 
                 if (SUCCEEDED(hr))
@@ -2630,7 +2866,7 @@ public static unsafe partial class D3D12MemAllocTests
 
                 using BufferInfo newBuffInfo = new BufferInfo();
 
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
                 ulong offset = newBuffInfo.Allocation.Get()->GetOffset();
 
                 if (upperAddress)
@@ -2674,7 +2910,7 @@ public static unsafe partial class D3D12MemAllocTests
                 buffDesc.Width = AlignUp(bufSizeMin + (rand.Generate() % (bufSizeMax - bufSizeMin)), 16);
 
                 using BufferInfo newBuffInfo = new BufferInfo();
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
                 buffInfo.Add(newBuffInfo);
                 Unsafe.AsRef(in newBuffInfo) = default;
@@ -2708,7 +2944,7 @@ public static unsafe partial class D3D12MemAllocTests
                 buffDesc.Width = AlignUp(bufSizeMin + (rand.Generate() % (bufSizeMax - bufSizeMin)), 16);
 
                 using BufferInfo newBuffInfo = new BufferInfo();
-                HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer));
+                HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer));
 
                 if (SUCCEEDED(hr))
                 {
@@ -2753,7 +2989,7 @@ public static unsafe partial class D3D12MemAllocTests
             while (true)
             {
                 using BufferInfo newBuffInfo = new BufferInfo();
-                HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer));
+                HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer));
 
                 if (SUCCEEDED(hr))
                 {
@@ -2788,20 +3024,18 @@ public static unsafe partial class D3D12MemAllocTests
 
         RandomNumberGenerator rand = new RandomNumberGenerator(345673);
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC {
-            HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
-        };
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-        poolDesc.Flags = D3D12MA_POOL_FLAG_ALGORITHM_LINEAR;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+            D3D12MA_POOL_FLAG_ALGORITHM_LINEAR
+        );
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
 
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC buffDesc, 1024 * 1024);
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            CustomPool = pool.Get(),
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
 
         List<BufferInfo> buffInfo = [];
 
@@ -2812,7 +3046,7 @@ public static unsafe partial class D3D12MemAllocTests
             while (true)
             {
                 using BufferInfo newBuffInfo = new BufferInfo();
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
                 ID3D12Heap* heap = newBuffInfo.Allocation.Get()->GetHeap();
 
@@ -2855,7 +3089,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             while (true)
             {
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
                 ID3D12Heap* heap = newBuffInfo.Allocation.Get()->GetHeap();
 
@@ -2873,7 +3107,7 @@ public static unsafe partial class D3D12MemAllocTests
             // Add few more buffers.
             for (uint i = 0; i < 5; ++i)
             {
-                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+                CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
                 buffInfo.Add(newBuffInfo);
                 Unsafe.AsRef(in newBuffInfo) = default;
             }
@@ -2891,7 +3125,7 @@ public static unsafe partial class D3D12MemAllocTests
             }
 
             // Add one more buffer.
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
             buffInfo.Add(newBuffInfo);
             Unsafe.AsRef(in newBuffInfo) = default;
 
@@ -2919,22 +3153,21 @@ public static unsafe partial class D3D12MemAllocTests
         D3D12MA_TotalStatistics origStats;
         ctx.allocator->CalculateStatistics(&origStats);
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC {
-            HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
-        };
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-        poolDesc.Flags = D3D12MA_POOL_FLAG_ALGORITHM_LINEAR;
-        poolDesc.BlockSize = 6 * 64 * KILOBYTE;
-        poolDesc.MinBlockCount = poolDesc.MaxBlockCount = 1;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+            D3D12MA_POOL_FLAG_ALGORITHM_LINEAR,
+            6 * 64 * KILOBYTE,
+            1,
+            1
+        );
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
 
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC buffDesc, 0);
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            CustomPool = pool.Get(),
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
 
         List<BufferInfo> buffInfo = [];
         using BufferInfo newBuffInfo = new BufferInfo();
@@ -2946,25 +3179,25 @@ public static unsafe partial class D3D12MemAllocTests
             Upper: Buffer 16 B, Buffer 1024 B, Buffer 128 B
             Totally:
             1 block allocated
-            393 216 DirectX 12 bytes
+            393216 DirectX 12 bytes
             6 new allocations
             2256 bytes in allocations (384 KB according to alignment)
             */
 
             buffDesc.Width = 32;
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
             buffInfo.Add(newBuffInfo);
             Unsafe.AsRef(in newBuffInfo) = default;
 
             buffDesc.Width = 1024;
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
             buffInfo.Add(newBuffInfo);
             Unsafe.AsRef(in newBuffInfo) = default;
 
             buffDesc.Width = 32;
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
             buffInfo.Add(newBuffInfo);
             Unsafe.AsRef(in newBuffInfo) = default;
@@ -2972,19 +3205,19 @@ public static unsafe partial class D3D12MemAllocTests
             allocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_UPPER_ADDRESS;
 
             buffDesc.Width = 128;
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
             buffInfo.Add(newBuffInfo);
             Unsafe.AsRef(in newBuffInfo) = default;
 
             buffDesc.Width = 1024;
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
             buffInfo.Add(newBuffInfo);
             Unsafe.AsRef(in newBuffInfo) = default;
 
             buffDesc.Width = 16;
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&newBuffInfo.Allocation), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &buffDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, newBuffInfo.Allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&newBuffInfo.Buffer)));
 
             buffInfo.Add(newBuffInfo);
             Unsafe.AsRef(in newBuffInfo) = default;
@@ -3022,25 +3255,23 @@ public static unsafe partial class D3D12MemAllocTests
         const nuint maxBufCapacity = 10000;
         const uint iterationCount = 10;
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC {
-            HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
-        };
-
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-        poolDesc.BlockSize = bufSize * maxBufCapacity;
-        poolDesc.Flags |= algorithm;
-        poolDesc.MinBlockCount = poolDesc.MaxBlockCount = 1;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+            algorithm,
+            bufSize * maxBufCapacity,
+            1,
+            1
+        );
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
         D3D12_RESOURCE_ALLOCATION_INFO allocInfo = new D3D12_RESOURCE_ALLOCATION_INFO {
             SizeInBytes = bufSize,
         };
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            CustomPool = pool.Get(),
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
 
         List<ComPtr<D3D12MA_Allocation>> baseAllocations = [];
         nuint allocCount = maxBufCapacity / 3;
@@ -3051,7 +3282,7 @@ public static unsafe partial class D3D12MemAllocTests
             for (ulong i = 0; i < allocCount; ++i)
             {
                 using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-                CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &allocInfo, (D3D12MA_Allocation**)(&alloc)));
+                CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &allocInfo, alloc.GetAddressOf()));
 
                 baseAllocations.Add(alloc);
                 _ = alloc.Detach();
@@ -3084,7 +3315,7 @@ public static unsafe partial class D3D12MemAllocTests
             for (nuint i = 0; i < allocCount; ++i)
             {
                 using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-                CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &allocInfo, (D3D12MA_Allocation**)(&alloc)));
+                CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &allocInfo, alloc.GetAddressOf()));
 
                 testAllocations.Add(alloc);
                 _ = alloc.Detach();
@@ -3277,14 +3508,12 @@ public static unsafe partial class D3D12MemAllocTests
             return;
         }
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC();
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-        poolDesc.pProtectedSession = session.Get();
-        poolDesc.MinAllocationAlignment = 0;
-        poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS) {
+            pProtectedSession = session.Get(),
+        };
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-        hr = ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool));
+        hr = ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf());
 
         if (FAILED(hr))
         {
@@ -3292,14 +3521,13 @@ public static unsafe partial class D3D12MemAllocTests
             return;
         }
 
-        FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resourceDesc, 1024);
+        FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resourceDesc, 64 * KILOBYTE);
 
         for (uint testIndex = 0; testIndex < 2; ++testIndex)
         {
             // Create a buffer
-            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-                CustomPool = pool.Get(),
-            };
+            D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
+
             if (testIndex == 0)
             {
                 allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
@@ -3308,7 +3536,7 @@ public static unsafe partial class D3D12MemAllocTests
             using ComPtr<D3D12MA_Allocation> bufAlloc = new ComPtr<D3D12MA_Allocation>();
             using ComPtr<ID3D12Resource> bufRes = new ComPtr<ID3D12Resource>();
 
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, (D3D12MA_Allocation**)(&bufAlloc), __uuidof<ID3D12Resource>(), (void**)(&bufRes)));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, bufAlloc.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&bufRes)));
             CHECK_BOOL((bufAlloc.Get() != null) && (bufAlloc.Get()->GetResource() == bufRes.Get()));
 
             // Make sure it's (not) committed.
@@ -3324,7 +3552,7 @@ public static unsafe partial class D3D12MemAllocTests
                 };
 
                 using ComPtr<D3D12MA_Allocation> memAlloc = new ComPtr<D3D12MA_Allocation>();
-                CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &heapAllocInfo, (D3D12MA_Allocation**)(&memAlloc)));
+                CHECK_HR(ctx.allocator->AllocateMemory(&allocDesc, &heapAllocInfo, memAlloc.GetAddressOf()));
 
                 CHECK_BOOL(memAlloc.Get()->GetHeap() != null);
             }
@@ -3343,26 +3571,305 @@ public static unsafe partial class D3D12MemAllocTests
 
         // Create a committed buffer
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_DEFAULT,
-            Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12MA_ALLOCATION_FLAG_COMMITTED
+        );
 
         using ComPtr<D3D12MA_Allocation> allocPtr0 = new ComPtr<D3D12MA_Allocation>();
         using ComPtr<ID3D12Resource> res0 = new ComPtr<ID3D12Resource>();
 
-        CHECK_HR(ctx.allocator->CreateResource2(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, (D3D12MA_Allocation**)(&allocPtr0), __uuidof<ID3D12Resource>(), (void**)(&res0)));
+        CHECK_HR(ctx.allocator->CreateResource2(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, allocPtr0.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res0)));
         CHECK_BOOL(allocPtr0.Get()->GetHeap() == null);
+
+        // Create a heap and buffer in it
+
+        allocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_CAN_ALIAS;
+
+        using ComPtr<D3D12MA_Allocation> allocPtr1 = new ComPtr<D3D12MA_Allocation>();
+        using ComPtr<ID3D12Resource> res1 = new ComPtr<ID3D12Resource>();
+
+        CHECK_HR(ctx.allocator->CreateResource2(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, allocPtr1.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res1)));
+        CHECK_BOOL(allocPtr1.Get()->GetHeap() != null);
 
         // Create a placed buffer
 
         allocDesc.Flags &= ~D3D12MA_ALLOCATION_FLAG_COMMITTED;
 
+        using ComPtr<D3D12MA_Allocation> allocPtr2 = new ComPtr<D3D12MA_Allocation>();
+        using ComPtr<ID3D12Resource> res2 = new ComPtr<ID3D12Resource>();
+
+        CHECK_HR(ctx.allocator->CreateResource2(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, allocPtr2.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res2)));
+        CHECK_BOOL(allocPtr2.Get()->GetHeap()!= null);
+
+        // Create an aliasing buffer
+        using ComPtr<ID3D12Resource> res3 = new ComPtr<ID3D12Resource>();
+        CHECK_HR(ctx.allocator->CreateAliasingResource1(allocPtr2.Get(), 0, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, __uuidof<ID3D12Resource>(), (void**)(&res3)));
+    }
+
+    internal static void TestDevice10([NativeTypeName("const TestContext &")] in TestContext ctx)
+    {
+        _ = wprintf("Test ID3D12Device10\n");
+
+        using ComPtr<ID3D12Device10> dev10 = new ComPtr<ID3D12Device10>();
+        if(FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device10>(), (void**)(&dev10))))
+        {
+            _ = wprintf("QueryInterface for ID3D12Device10 failed!\n");
+            return;
+        }
+
+        D3D12_RESOURCE_DESC1 resourceDesc = new D3D12_RESOURCE_DESC1 {
+            Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+            Alignment = 0,
+            Width = 1920,
+            Height = 1080,
+            DepthOrArraySize = 1,
+            MipLevels = 1,
+            Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+            SampleDesc = new DXGI_SAMPLE_DESC {
+                Count = 1,
+                Quality = 0,
+            },
+            Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN,
+        };
+
+        // Create a committed texture
+
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12MA_ALLOCATION_FLAG_COMMITTED
+        );
+
+        using ComPtr<D3D12MA_Allocation> allocPtr0 = new ComPtr<D3D12MA_Allocation>();
+        using ComPtr<ID3D12Resource> res0 = new ComPtr<ID3D12Resource>();
+
+        CHECK_HR(ctx.allocator->CreateResource3(&allocDesc, &resourceDesc, D3D12_BARRIER_LAYOUT_UNDEFINED, null, 0, null, allocPtr0.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res0)));
+        CHECK_BOOL(allocPtr0.Get()->GetHeap() == null);
+
+        // Create a heap and placed texture in it
+
+        allocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_CAN_ALIAS;
+
         using ComPtr<D3D12MA_Allocation> allocPtr1 = new ComPtr<D3D12MA_Allocation>();
         using ComPtr<ID3D12Resource> res1 = new ComPtr<ID3D12Resource>();
 
-        CHECK_HR(ctx.allocator->CreateResource2(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, (D3D12MA_Allocation**)(&allocPtr1), __uuidof<ID3D12Resource>(), (void**)(&res1)));
+        CHECK_HR(ctx.allocator->CreateResource3(&allocDesc, &resourceDesc, D3D12_BARRIER_LAYOUT_UNDEFINED, null, 0, null, allocPtr1.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res1)));
         CHECK_BOOL(allocPtr1.Get()->GetHeap() != null);
+
+        // Create a placed texture
+
+        allocDesc.Flags &= ~D3D12MA_ALLOCATION_FLAG_COMMITTED;
+
+        using ComPtr<D3D12MA_Allocation> allocPtr2 = new ComPtr<D3D12MA_Allocation>();
+        using ComPtr<ID3D12Resource> res2 = new ComPtr<ID3D12Resource>();
+
+        CHECK_HR(ctx.allocator->CreateResource3(&allocDesc, &resourceDesc, D3D12_BARRIER_LAYOUT_UNDEFINED, null, 0, null, allocPtr2.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res2)));
+        CHECK_BOOL(allocPtr2.Get()->GetHeap() != null);
+
+        // Create an aliasing texture
+        using ComPtr<ID3D12Resource> res3 = new ComPtr<ID3D12Resource>();
+        CHECK_HR(ctx.allocator->CreateAliasingResource2(allocPtr2.Get(), 0, &resourceDesc, D3D12_BARRIER_LAYOUT_UNDEFINED, null, 0, null, __uuidof<ID3D12Resource>(), (void**)(&res3)));
+    }
+
+    internal static void TestDevice12([NativeTypeName("const TestContext &")] in TestContext ctx)
+    {
+        _ = wprintf("Test ID3D12Device12\n");
+
+        using ComPtr<ID3D12Device12> dev12 = new ComPtr<ID3D12Device12>();
+        if (FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device12>(), (void**)(&dev12))))
+        {
+            _ = wprintf("QueryInterface for ID3D12Device12 failed!\n");
+            return;
+        }
+
+        // Texture based on Issue #62.
+        D3D12_RESOURCE_DESC1 resourceDesc = new D3D12_RESOURCE_DESC1 {
+            Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+            Width = 1920,
+            Height = 1080,
+            DepthOrArraySize = 1,
+            MipLevels = 1,
+            Format = DXGI_FORMAT_BC3_UNORM,
+            SampleDesc = new DXGI_SAMPLE_DESC {
+                Count = 1,
+            },
+            Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN,
+            Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+        };
+
+        DXGI_FORMAT* castableFormats = stackalloc DXGI_FORMAT[2] {
+            DXGI_FORMAT_R32G32B32A32_FLOAT,
+            DXGI_FORMAT_BC3_UNORM_SRGB
+        };
+
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_DEFAULT);
+
+        using ComPtr<D3D12MA_Allocation> alloc0 = new ComPtr<D3D12MA_Allocation>();
+        using ComPtr<ID3D12Resource> res0 = new ComPtr<ID3D12Resource>();
+
+        HRESULT hr = ctx.allocator->CreateResource3(&allocDesc, &resourceDesc, D3D12_BARRIER_LAYOUT_UNDEFINED, null, 2, castableFormats, alloc0.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res0));
+
+        if (hr == E_INVALIDARG)
+        {
+            _ = wprintf("Allocator::CreateResource3 failed with E_INVALIDARG!\n");
+            return;
+        }
+
+        CHECK_HR(hr);
+        CHECK_BOOL((alloc0.Get() != null) && (res0.Get() != null));
+    }
+
+    internal static void TestGPUUploadHeap([NativeTypeName("const TestContext &")] in TestContext ctx)
+    {
+        _ = wprintf("Test GPU Upload Heap\n");
+
+        bool supported = ctx.allocator->IsGPUUploadHeapSupported();
+
+        D3D12MA_Budget begLocalBudget = new D3D12MA_Budget();
+        ctx.allocator->GetBudget(&begLocalBudget, null);
+
+        D3D12MA_TotalStatistics begStats = new D3D12MA_TotalStatistics();
+        ctx.allocator->CalculateStatistics(&begStats);
+
+        // Create a buffer, likely placed.
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_GPU_UPLOAD);
+        FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, 64 * KILOBYTE);
+
+        using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
+        HRESULT hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, alloc.GetAddressOf(), IID_NULL, null);
+
+        if (!supported)
+        {
+            // Skip further tests. Just wanted to test that the respource creation fails with the right error code.
+            CHECK_BOOL(hr == E_NOTIMPL);
+            return;
+        }
+        CHECK_HR(hr);
+        CHECK_BOOL((alloc.Get() != null) && (alloc.Get()->GetResource() != null));
+        CHECK_BOOL(alloc.Get()->GetResource()->GetGPUVirtualAddress() != 0);
+
+        {
+            D3D12_HEAP_PROPERTIES heapProps = new D3D12_HEAP_PROPERTIES();
+            D3D12_HEAP_FLAGS heapFlags = new D3D12_HEAP_FLAGS();
+            CHECK_HR(alloc.Get()->GetResource()->GetHeapProperties(&heapProps, &heapFlags));
+            CHECK_BOOL(heapProps.Type == D3D12_HEAP_TYPE_GPU_UPLOAD);
+        }
+
+        // Create a committed one.
+        D3D12MA_ALLOCATION_DESC committedAllocDesc = allocDesc;
+        committedAllocDesc.Flags |= D3D12MA_ALLOCATION_FLAG_COMMITTED;
+
+        using ComPtr<D3D12MA_Allocation> committedAlloc = new ComPtr<D3D12MA_Allocation>();
+        CHECK_HR(ctx.allocator->CreateResource(&committedAllocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, committedAlloc.GetAddressOf(), IID_NULL, null));
+        CHECK_BOOL((committedAlloc.Get() != null) && (committedAlloc.Get()->GetResource() != null));
+        CHECK_BOOL(committedAlloc.Get()->GetHeap() == null); // Committed, heap is implicit and inaccessible.
+
+        // Create a custom pool and a buffer inside of it.
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(D3D12_HEAP_TYPE_GPU_UPLOAD, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
+        using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
+
+        D3D12MA_ALLOCATION_DESC poolAllocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
+        using ComPtr<D3D12MA_Allocation> poolAlloc = new ComPtr<D3D12MA_Allocation>();
+        CHECK_HR(ctx.allocator->CreateResource(&poolAllocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, poolAlloc.GetAddressOf(), IID_NULL, null));
+        CHECK_BOOL((poolAlloc.Get() != null) && (poolAlloc.Get()->GetResource() != null));
+
+        // Map the original buffer, write, then read
+        {
+            var res = alloc.Get()->GetResource();
+
+            uint* mappedData = null;
+            CHECK_HR(res->Map(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE))), (void**)&mappedData)); // {0, 0} - not reading anything.
+            for(uint i = 0; i < resDesc.Width / sizeof(uint); ++i)
+            {
+                mappedData[i] = i * 3;
+            }
+            res->Unmap(0, null); // null - written everything.
+
+            CHECK_HR(res->Map(0, null, (void**)&mappedData)); // null - reading everything.
+            CHECK_BOOL(mappedData[100] == 300);
+            res->Unmap(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE)))); // {0, 0} - not written anything.
+
+        }
+
+        // Create two big buffers.
+        ComPtr<D3D12MA_Allocation>* bigAllocs = stackalloc ComPtr<D3D12MA_Allocation>[2];
+
+        D3D12_RESOURCE_DESC bigResDesc = resDesc;
+        bigResDesc.Width = 128 * MEGABYTE;
+
+        for (uint i = 0; i < 2; ++i)
+        {
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &bigResDesc, D3D12_RESOURCE_STATE_COMMON, null, bigAllocs[i].GetAddressOf(), IID_NULL, null));
+            CHECK_BOOL((bigAllocs[i].Get() != null) && (bigAllocs[i].Get()->GetResource() != null));
+        }
+
+        // Create a texture.
+        const uint texSize = 256;
+        D3D12_RESOURCE_DESC texDesc = new D3D12_RESOURCE_DESC {
+            Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+            Alignment = 0,
+            Width = texSize,
+            Height = texSize,
+            DepthOrArraySize = 1,
+            MipLevels = 1,
+            Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+            SampleDesc = new DXGI_SAMPLE_DESC {
+                Count = 1,
+                Quality = 0,
+            },
+            Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN,
+            Flags = D3D12_RESOURCE_FLAG_NONE,
+        };
+        using ComPtr<D3D12MA_Allocation> texAlloc = new ComPtr<D3D12MA_Allocation>();
+        CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &texDesc, D3D12_RESOURCE_STATE_COMMON, null, texAlloc.GetAddressOf(), IID_NULL, null));
+        CHECK_BOOL((texAlloc.Get() != null) && (texAlloc.Get()->GetResource() != null));
+
+        {
+            uint[] texPixels = new uint[texSize * texSize];
+
+            fixed (uint* pTexPixels = texPixels)
+            {
+                // Contents of texPixels[i] doesn't matter.
+                var texRes = texAlloc.Get()->GetResource();
+
+                // Need to pass ppData == null for Map() to be used with a texture having D3D12_TEXTURE_LAYOUT_UNKNOWN.
+                CHECK_HR(texRes->Map(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE))), null)); // {0, 0} - not reading anything.
+                CHECK_HR(texRes->WriteToSubresource(
+                    0, // DstSubresource
+                    null, // pDstBox
+                    pTexPixels, // pSrcData
+                    texSize * sizeof(uint), // SrcRowPitch
+                    texSize * texSize * sizeof(uint) // SrcDepthPitch
+                ));
+                texRes->Unmap(0, null); // null - written everything.
+            }
+        }
+
+        // Check budget and stats
+        const uint totalAllocCount = 6;
+        D3D12MA_Budget endLocalBudget = new D3D12MA_Budget();
+        ctx.allocator->GetBudget(&endLocalBudget, null);
+        D3D12MA_TotalStatistics endStats = new D3D12MA_TotalStatistics();
+        ctx.allocator->CalculateStatistics(&endStats);
+        CHECK_BOOL(endLocalBudget.UsageBytes >= (begLocalBudget.UsageBytes + (2 * bigResDesc.Width)), "This can fail if GPU_UPLOAD falls back to system RAM e.g. when under PIX?");
+
+        static void validateStats(ulong totalAllocCount, ref D3D12_RESOURCE_DESC bigResDesc, [NativeTypeName("const D3D12MA::Statistics &")] in D3D12MA_Statistics begStats, [NativeTypeName("const D3D12MA::Statistics &")] in D3D12MA_Statistics endStats)
+        {
+            CHECK_BOOL(endStats.BlockCount >= begStats.BlockCount);
+            CHECK_BOOL(endStats.BlockBytes >= begStats.BlockBytes);
+            CHECK_BOOL(endStats.AllocationCount == begStats.AllocationCount + totalAllocCount);
+            CHECK_BOOL(endStats.AllocationBytes > begStats.AllocationBytes + 2 * bigResDesc.Width);
+        };
+        validateStats(totalAllocCount, ref bigResDesc, begLocalBudget.Stats, endLocalBudget.Stats);
+        validateStats(totalAllocCount, ref bigResDesc, begStats.Total.Stats, endStats.Total.Stats);
+        validateStats(totalAllocCount, ref bigResDesc, begStats.MemorySegmentGroup[0].Stats, endStats.MemorySegmentGroup[0].Stats); // DXGI_MEMORY_SEGMENT_GROUP_LOCAL
+        validateStats(totalAllocCount, ref bigResDesc, begStats.HeapType[4].Stats, endStats.HeapType[4].Stats); // D3D12_HEAP_TYPE_GPU_UPLOAD
+
+        for (var i = 0; i < 2; ++i)
+        {
+            bigAllocs[i].Dispose();
+        }
     }
 
     internal static void TestVirtualBlocks([NativeTypeName("const TestContext &")] in TestContext ctx)
@@ -3376,21 +3883,23 @@ public static unsafe partial class D3D12MemAllocTests
 
         using ComPtr<D3D12MA_VirtualBlock> block = new ComPtr<D3D12MA_VirtualBlock>();
 
-        D3D12MA_VIRTUAL_BLOCK_DESC blockDesc = new D3D12MA_VIRTUAL_BLOCK_DESC {
-            pAllocationCallbacks = ctx.allocationCallbacks,
-            Size = blockSize,
-        };
-        CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, (D3D12MA_VirtualBlock**)(&block)));
+        D3D12MA_VIRTUAL_BLOCK_DESC blockDesc = new D3D12MA_VIRTUAL_BLOCK_DESC(
+            blockSize,
+            D3D12MA_VIRTUAL_BLOCK_FLAG_NONE,
+            ctx.allocationCallbacks
+        );
+        CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, block.GetAddressOf()));
 
         CHECK_BOOL(block.Get() != null);
 
         // # Allocate 8 MB
 
-        D3D12MA_VIRTUAL_ALLOCATION_DESC allocDesc = new D3D12MA_VIRTUAL_ALLOCATION_DESC {
-            Alignment = alignment,
-            pPrivateData = (void*)(nuint)(1),
-            Size = 8 * MEGABYTE,
-        };
+        D3D12MA_VIRTUAL_ALLOCATION_DESC allocDesc = new D3D12MA_VIRTUAL_ALLOCATION_DESC(
+            8 * MEGABYTE,
+            alignment,
+            D3D12MA_VIRTUAL_ALLOCATION_FLAG_NONE,
+            (void*)(nuint)(1)
+        );
 
         D3D12MA_VirtualAllocation alloc0;
         CHECK_HR(block.Get()->Allocate(&allocDesc, &alloc0, null));
@@ -3522,10 +4031,11 @@ public static unsafe partial class D3D12MemAllocTests
         for (nuint algorithmIndex = 0; algorithmIndex < 2; ++algorithmIndex)
         {
             // Create the block
-            D3D12MA_VIRTUAL_BLOCK_DESC blockDesc = new D3D12MA_VIRTUAL_BLOCK_DESC {
-                pAllocationCallbacks = ctx.allocationCallbacks,
-                Size = 10_000,
-            };
+            D3D12MA_VIRTUAL_BLOCK_DESC blockDesc = new D3D12MA_VIRTUAL_BLOCK_DESC(
+                10_000,
+                D3D12MA_VIRTUAL_BLOCK_FLAG_NONE,
+                ctx.allocationCallbacks
+            );
 
             switch (algorithmIndex)
             {
@@ -3543,17 +4053,20 @@ public static unsafe partial class D3D12MemAllocTests
             }
 
             using ComPtr<D3D12MA_VirtualBlock> block = new ComPtr<D3D12MA_VirtualBlock>();
-            CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, (D3D12MA_VirtualBlock**)(&block)));
+            CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, block.GetAddressOf()));
 
             List<AllocData> allocations = [];
 
             // Make some allocations
             for (nuint i = 0; i < 20; ++i)
             {
-                D3D12MA_VIRTUAL_ALLOCATION_DESC allocDesc = new D3D12MA_VIRTUAL_ALLOCATION_DESC {
-                    Size = calcRandomAllocSize(),
-                };
-                allocDesc.pPrivateData = (void*)(nuint)(allocDesc.Size * 10);
+                ulong size = calcRandomAllocSize();
+                D3D12MA_VIRTUAL_ALLOCATION_DESC allocDesc = new D3D12MA_VIRTUAL_ALLOCATION_DESC(
+                    size,
+                    0,
+                    D3D12MA_VIRTUAL_ALLOCATION_FLAG_NONE,
+                    (void*)(nuint)(size * 10)
+                );
 
                 if (i < 10)
                 {
@@ -3588,10 +4101,14 @@ public static unsafe partial class D3D12MemAllocTests
             // Allocate some more
             for (nuint i = 0; i < 6; ++i)
             {
-                D3D12MA_VIRTUAL_ALLOCATION_DESC allocDesc = new D3D12MA_VIRTUAL_ALLOCATION_DESC {
-                    Size = calcRandomAllocSize(),
-                };
-                allocDesc.pPrivateData = (void*)(nuint)(allocDesc.Size * 10);
+                ulong size = calcRandomAllocSize();
+
+                D3D12MA_VIRTUAL_ALLOCATION_DESC allocDesc = new D3D12MA_VIRTUAL_ALLOCATION_DESC(
+                    size,
+                    0,
+                    D3D12MA_VIRTUAL_ALLOCATION_FLAG_NONE,
+                    (void*)(nuint)(size * 10)
+                );
 
                 AllocData alloc = new AllocData {
                     requestedSize = allocDesc.Size,
@@ -3610,11 +4127,14 @@ public static unsafe partial class D3D12MemAllocTests
             // Allocate some with extra alignment
             for (nuint i = 0; i < 3; ++i)
             {
-                D3D12MA_VIRTUAL_ALLOCATION_DESC allocDesc = new D3D12MA_VIRTUAL_ALLOCATION_DESC {
-                    Size = calcRandomAllocSize(),
-                    Alignment = 16,
-                };
-                allocDesc.pPrivateData = (void*)(nuint)(allocDesc.Size * 10);
+                ulong size = calcRandomAllocSize();
+
+                D3D12MA_VIRTUAL_ALLOCATION_DESC allocDesc = new D3D12MA_VIRTUAL_ALLOCATION_DESC(
+                    size,
+                    16,
+                    D3D12MA_VIRTUAL_ALLOCATION_FLAG_NONE,
+                    (void*)(nuint)(size * 10)
+                );
 
                 AllocData alloc = new AllocData {
                     requestedSize = allocDesc.Size,
@@ -3701,10 +4221,11 @@ public static unsafe partial class D3D12MemAllocTests
         const nuint ALLOCATION_COUNT = 7200;
         const uint MAX_ALLOC_SIZE = 2056;
 
-        D3D12MA_VIRTUAL_BLOCK_DESC blockDesc = new D3D12MA_VIRTUAL_BLOCK_DESC {
-            pAllocationCallbacks = ctx.allocationCallbacks,
-            Size = 0,
-        };
+        D3D12MA_VIRTUAL_BLOCK_DESC blockDesc = new D3D12MA_VIRTUAL_BLOCK_DESC(
+            0,
+            D3D12MA_VIRTUAL_BLOCK_FLAG_NONE,
+            ctx.allocationCallbacks
+        );
 
         RandomNumberGenerator rand = new RandomNumberGenerator(20092010);
         uint* allocSizes = stackalloc uint[(int)(ALLOCATION_COUNT)];
@@ -3781,7 +4302,7 @@ public static unsafe partial class D3D12MemAllocTests
                 }
 
                 using ComPtr<D3D12MA_VirtualBlock> block = new ComPtr<D3D12MA_VirtualBlock>();
-                CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, (D3D12MA_VirtualBlock**)(&block)));
+                CHECK_HR(D3D12MA_CreateVirtualBlock(&blockDesc, block.GetAddressOf()));
 
                 TimeSpan allocDuration = TimeSpan.Zero;
                 TimeSpan freeDuration = TimeSpan.Zero;
@@ -3791,10 +4312,10 @@ public static unsafe partial class D3D12MemAllocTests
 
                 for (nuint i = 0; i < ALLOCATION_COUNT; ++i)
                 {
-                    D3D12MA_VIRTUAL_ALLOCATION_DESC allocCreateInfo = new D3D12MA_VIRTUAL_ALLOCATION_DESC {
-                        Size = allocSizes[i],
-                        Alignment = alignment,
-                    };
+                    D3D12MA_VIRTUAL_ALLOCATION_DESC allocCreateInfo = new D3D12MA_VIRTUAL_ALLOCATION_DESC(
+                        allocSizes[i],
+                        alignment
+                    );
 
                     CHECK_HR(block.Get()->Allocate(&allocCreateInfo, allocs + i, null));
                 }
@@ -3816,7 +4337,7 @@ public static unsafe partial class D3D12MemAllocTests
         }
     }
 
-    internal static void ProcessDefragmentationPass([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("D3D12MA::DEFRAGMENTATION_PASS_MOVE_INFO &")] ref D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO stepInfo)
+    internal static void ProcessDefragmentationPass([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO &")] ref D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO stepInfo)
     {
         List<D3D12_RESOURCE_BARRIER> startBarriers = [];
         List<D3D12_RESOURCE_BARRIER> finalBarriers = [];
@@ -3931,17 +4452,17 @@ public static unsafe partial class D3D12MemAllocTests
         }
     }
 
-    internal static void Defragment([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("D3D12MA::DEFRAGMENTATION_DESC &")] ref D3D12MA_DEFRAGMENTATION_DESC defragDesc, D3D12MA_Pool* pool, D3D12MA_DEFRAGMENTATION_STATS* defragStats = null)
+    internal static void Defragment([NativeTypeName("const TestContext &")] in TestContext ctx, [NativeTypeName("D3D12MA_DEFRAGMENTATION_DESC &")] ref D3D12MA_DEFRAGMENTATION_DESC defragDesc, D3D12MA_Pool* pool, D3D12MA_DEFRAGMENTATION_STATS* defragStats = null)
     {
         using ComPtr<D3D12MA_DefragmentationContext> defragCtx = new ComPtr<D3D12MA_DefragmentationContext>();
 
         if (pool != null)
         {
-            CHECK_HR(pool->BeginDefragmentation((D3D12MA_DEFRAGMENTATION_DESC*)(Unsafe.AsPointer(ref defragDesc)), (D3D12MA_DefragmentationContext**)(&defragCtx)));
+            CHECK_HR(pool->BeginDefragmentation((D3D12MA_DEFRAGMENTATION_DESC*)(Unsafe.AsPointer(ref defragDesc)), defragCtx.GetAddressOf()));
         }
         else
         {
-            ctx.allocator->BeginDefragmentation((D3D12MA_DEFRAGMENTATION_DESC*)(Unsafe.AsPointer(ref defragDesc)), (D3D12MA_DefragmentationContext**)(&defragCtx));
+            ctx.allocator->BeginDefragmentation((D3D12MA_DEFRAGMENTATION_DESC*)(Unsafe.AsPointer(ref defragDesc)), defragCtx.GetAddressOf());
         }
 
         HRESULT hr = S_OK;
@@ -3986,19 +4507,17 @@ public static unsafe partial class D3D12MemAllocTests
             return AlignUp((rand.Generate() % (MAX_BUF_SIZE - MIN_BUF_SIZE + 1)) + MIN_BUF_SIZE, 64);
         }
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC {
-            BlockSize = BLOCK_SIZE,
-        };
-
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-        poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+            D3D12_HEAP_TYPE_UPLOAD,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+            D3D12MA_POOL_FLAG_NONE,
+            BLOCK_SIZE
+        );
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            CustomPool = pool.Get(),
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, BUF_SIZE);
 
         D3D12MA_DEFRAGMENTATION_DESC defragDesc = new D3D12MA_DEFRAGMENTATION_DESC {
@@ -4008,7 +4527,7 @@ public static unsafe partial class D3D12MemAllocTests
         // Defragmentation of empty pool.
         {
             using ComPtr<D3D12MA_DefragmentationContext> defragCtx = new ComPtr<D3D12MA_DefragmentationContext>();
-            CHECK_HR(pool.Get()->BeginDefragmentation(&defragDesc, (D3D12MA_DefragmentationContext**)(&defragCtx)));
+            CHECK_HR(pool.Get()->BeginDefragmentation(&defragDesc, defragCtx.GetAddressOf()));
 
             D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO pass = new D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO();
             CHECK_BOOL(defragCtx.Get()->BeginPass(&pass) == S_OK);
@@ -4038,7 +4557,7 @@ public static unsafe partial class D3D12MemAllocTests
                 for (nuint i = 0; i < BLOCK_SIZE / BUF_SIZE * 2; ++i)
                 {
                     using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, alloc.GetAddressOf(), IID_NULL, null));
 
                     if (persistentlyMapped)
                     {
@@ -4087,7 +4606,7 @@ public static unsafe partial class D3D12MemAllocTests
                 for (nuint i = 0; i < BLOCK_SIZE / BUF_SIZE * 2; ++i)
                 {
                     using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, alloc.GetAddressOf(), IID_NULL, null));
 
                     if (persistentlyMapped)
                     {
@@ -4119,7 +4638,7 @@ public static unsafe partial class D3D12MemAllocTests
                 defragDesc.MaxBytesPerPass = BUF_SIZE;
 
                 using ComPtr<D3D12MA_DefragmentationContext> defragCtx = new ComPtr<D3D12MA_DefragmentationContext>();
-                CHECK_HR(pool.Get()->BeginDefragmentation(&defragDesc, (D3D12MA_DefragmentationContext**)(&defragCtx)));
+                CHECK_HR(pool.Get()->BeginDefragmentation(&defragDesc, defragCtx.GetAddressOf()));
 
                 for (nuint i = 0; i < BLOCK_SIZE / BUF_SIZE / 2; ++i)
                 {
@@ -4156,7 +4675,7 @@ public static unsafe partial class D3D12MemAllocTests
                     localResDesc.Width = RandomBufSize();
 
                     using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &localResDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &localResDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, alloc.GetAddressOf(), IID_NULL, null));
 
                     if (persistentlyMapped)
                     {
@@ -4208,7 +4727,7 @@ public static unsafe partial class D3D12MemAllocTests
                 defragDesc.MaxBytesPerPass = 0;
 
                 using ComPtr<D3D12MA_DefragmentationContext> defragCtx = new ComPtr<D3D12MA_DefragmentationContext>();
-                CHECK_HR(pool.Get()->BeginDefragmentation(&defragDesc, (D3D12MA_DefragmentationContext**)(&defragCtx)));
+                CHECK_HR(pool.Get()->BeginDefragmentation(&defragDesc, defragCtx.GetAddressOf()));
 
                 HRESULT hr = S_OK;
                 D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO pass = new D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO();
@@ -4279,19 +4798,17 @@ public static unsafe partial class D3D12MemAllocTests
             return AlignUp((rand.Generate() % (MAX_BUF_SIZE - MIN_BUF_SIZE + 1)) + MIN_BUF_SIZE, 64);
         }
 
-        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC {
-            BlockSize = BLOCK_SIZE,
-        };
-
-        poolDesc.HeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-        poolDesc.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+        D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
+            D3D12_HEAP_TYPE_UPLOAD,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+            D3D12MA_POOL_FLAG_NONE,
+            BLOCK_SIZE
+        );
 
         using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
-        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, (D3D12MA_Pool**)(&pool)));
+        CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            CustomPool = pool.Get(),
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(pool.Get());
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, BUF_SIZE);
 
         D3D12MA_DEFRAGMENTATION_DESC defragDesc = new D3D12MA_DEFRAGMENTATION_DESC();
@@ -4332,7 +4849,7 @@ public static unsafe partial class D3D12MemAllocTests
                     resDesc.Width = RandomBufSize();
 
                     using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, alloc.GetAddressOf(), IID_NULL, null));
 
                     allocations.Add(alloc);
                     _ = alloc.Detach();
@@ -4388,7 +4905,7 @@ public static unsafe partial class D3D12MemAllocTests
                 SaveStatsStringToFile(ctx, (output + "_Before.json"));
 
                 using ComPtr<D3D12MA_DefragmentationContext> defragCtx = new ComPtr<D3D12MA_DefragmentationContext>();
-                CHECK_HR(pool.Get()->BeginDefragmentation(&defragDesc, (D3D12MA_DefragmentationContext**)(&defragCtx)));
+                CHECK_HR(pool.Get()->BeginDefragmentation(&defragDesc, defragCtx.GetAddressOf()));
 
                 HRESULT hr = S_OK;
                 D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO pass = new D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO();
@@ -4466,17 +4983,19 @@ public static unsafe partial class D3D12MemAllocTests
         const uint ALLOC_SEED = 20101220;
         List<ComPtr<D3D12MA_Allocation>> allocations = [];
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_UPLOAD,
-            ExtraHeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+            D3D12_HEAP_TYPE_UPLOAD,
+            D3D12MA_ALLOCATION_FLAG_NONE,
+            null,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS
+        );
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, 0x10000);
 
         // Create initial allocations.
         for (nuint i = 0; i < 400; ++i)
         {
             using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, alloc.GetAddressOf(), IID_NULL, null));
 
             allocations.Add(alloc);
             _ = alloc.Detach();
@@ -4559,10 +5078,12 @@ public static unsafe partial class D3D12MemAllocTests
         RandomNumberGenerator rand = new RandomNumberGenerator(234522);
         FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, 0x10000);
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_DEFAULT,
-            ExtraHeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(
+            D3D12_HEAP_TYPE_DEFAULT,
+            D3D12MA_ALLOCATION_FLAG_NONE,
+            null,
+            D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS
+        );
 
         // Create all intended buffers.
         for (nuint i = 0; i < bufCount; ++i)
@@ -4570,7 +5091,7 @@ public static unsafe partial class D3D12MemAllocTests
             resDesc.Width = AlignUp((rand.Generate() % (bufSizeMax - bufSizeMin)) + bufSizeMin, 32ul);
 
             using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null));
 
             allocations.Add(alloc);
             _ = alloc.Detach();
@@ -4661,9 +5182,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         RandomNumberGenerator rand = new RandomNumberGenerator(234522);
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_DEFAULT,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_DEFAULT);
 
         D3D12_RESOURCE_DESC resDesc = new D3D12_RESOURCE_DESC {
             Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
@@ -4687,7 +5206,7 @@ public static unsafe partial class D3D12MemAllocTests
             resDesc.Height = size;
 
             using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null));
 
             alloc.Get()->SetPrivateData((void*)(uint)(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 
@@ -4703,7 +5222,7 @@ public static unsafe partial class D3D12MemAllocTests
             resDesc.Width = AlignUp((rand.Generate() % (bufSizeMax - bufSizeMin)) + bufSizeMin, 32ul);
 
             using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null));
 
             alloc.Get()->SetPrivateData((void*)(uint)(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
@@ -4735,7 +5254,7 @@ public static unsafe partial class D3D12MemAllocTests
             D3D12MA_DEFRAGMENTATION_DESC defragDesc = new D3D12MA_DEFRAGMENTATION_DESC();
 
             using ComPtr<D3D12MA_DefragmentationContext> defragCtx = new ComPtr<D3D12MA_DefragmentationContext>();
-            ctx.allocator->BeginDefragmentation(&defragDesc, (D3D12MA_DefragmentationContext**)(&defragCtx));
+            ctx.allocator->BeginDefragmentation(&defragDesc, defragCtx.GetAddressOf());
 
             HRESULT hr = S_OK;
             D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO pass = new D3D12MA_DEFRAGMENTATION_PASS_MOVE_INFO();
@@ -4818,9 +5337,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         RandomNumberGenerator rand = new RandomNumberGenerator(234522);
 
-        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC {
-            HeapType = D3D12_HEAP_TYPE_DEFAULT,
-        };
+        D3D12MA_ALLOCATION_DESC allocDesc = new D3D12MA_ALLOCATION_DESC(D3D12_HEAP_TYPE_DEFAULT);
 
         D3D12_RESOURCE_DESC resDesc = new D3D12_RESOURCE_DESC {
             Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
@@ -4845,7 +5362,7 @@ public static unsafe partial class D3D12MemAllocTests
             resDesc.Height = size;
 
             using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null));
 
             alloc.Get()->SetPrivateData((void*)(uint)(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 
@@ -4861,7 +5378,7 @@ public static unsafe partial class D3D12MemAllocTests
             resDesc.Width = AlignUp((rand.Generate() % (bufSizeMax - bufSizeMin)) + bufSizeMin, 32ul);
 
             using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null));
 
             alloc.Get()->SetPrivateData((void*)(uint)(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
@@ -4899,7 +5416,7 @@ public static unsafe partial class D3D12MemAllocTests
                 pResDesc->Width = AlignUp(bufSizeMin + (rand.Generate() % (bufSizeMax - bufSizeMin)), 16ul);
 
                 using ComPtr<D3D12MA_Allocation> alloc = new ComPtr<D3D12MA_Allocation>();
-                CHECK_HR(ctx.allocator->CreateResource(pAllocDesc, pResDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, (D3D12MA_Allocation**)(&alloc), IID_NULL, null));
+                CHECK_HR(ctx.allocator->CreateResource(pAllocDesc, pResDesc, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, null, alloc.GetAddressOf(), IID_NULL, null));
 
                 alloc.Get()->SetPrivateData((void*)(uint)(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
@@ -4915,7 +5432,7 @@ public static unsafe partial class D3D12MemAllocTests
             };
 
             using ComPtr<D3D12MA_DefragmentationContext> defragCtx = new ComPtr<D3D12MA_DefragmentationContext>();
-            ctx.allocator->BeginDefragmentation(&defragDesc, (D3D12MA_DefragmentationContext**)(&defragCtx));
+            ctx.allocator->BeginDefragmentation(&defragDesc, defragCtx.GetAddressOf());
 
             makeAdditionalAllocation(ctx, &allocDesc, &resDesc);
 
@@ -5029,12 +5546,14 @@ public static unsafe partial class D3D12MemAllocTests
         {
             TestJson(ctx);
             TestCommittedResourcesAndJson(ctx);
+            TestSmallBuffers(ctx);
             TestCustomHeapFlags(ctx);
             TestPlacedResources(ctx);
             TestOtherComInterface(ctx);
             TestCustomPools(ctx);
             TestCustomPool_MinAllocationAlignment(ctx);
             TestCustomPool_Committed(ctx);
+            TestCustomPool_AlwaysCommitted(ctx);
             TestPoolsAndAllocationParameters(ctx);
             TestCustomHeaps(ctx);
             TestStandardCustomCommittedPlaced(ctx);
@@ -5044,7 +5563,6 @@ public static unsafe partial class D3D12MemAllocTests
             TestMapping(ctx);
             TestStats(ctx);
             TestTransfer(ctx);
-            TestZeroInitialized(ctx);
             TestMultithreading(ctx);
             TestLinearAllocator(ctx);
             TestLinearAllocatorMultiBlock(ctx);
@@ -5054,7 +5572,11 @@ public static unsafe partial class D3D12MemAllocTests
             {
                 TestDevice4(ctx);
                 TestDevice8(ctx);
+                TestDevice10(ctx);
+                TestDevice12(ctx);
             }
+
+            TestGPUUploadHeap(ctx);
         }
     }
 

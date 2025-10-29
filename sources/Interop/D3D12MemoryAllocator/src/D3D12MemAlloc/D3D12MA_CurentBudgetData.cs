@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System.Runtime.CompilerServices;
@@ -9,6 +9,7 @@ using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 using static TerraFX.Interop.DirectX.DXGI_MEMORY_SEGMENT_GROUP;
 using static TerraFX.Interop.Windows.Windows;
+using static TerraFX.Interop.Windows.S;
 
 namespace TerraFX.Interop.DirectX;
 
@@ -52,11 +53,11 @@ internal unsafe partial struct D3D12MA_CurrentBudgetData
 
     public readonly void GetStatistics([NativeTypeName("D3D12MA::Statistics &")] out D3D12MA_Statistics outStats, [NativeTypeName("UINT")] uint group)
     {
-        outStats.BlockCount = Volatile.Read(ref Unsafe.AsRef(in m_BlockCount[(int)(group)]));
-        outStats.AllocationCount = Volatile.Read(ref Unsafe.AsRef(in m_AllocationCount[(int)(group)]));
+        outStats.BlockCount = Volatile.Read(in m_BlockCount[(int)(group)]);
+        outStats.AllocationCount = Volatile.Read(in m_AllocationCount[(int)(group)]);
 
-        outStats.BlockBytes = Volatile.Read(ref Unsafe.AsRef(in m_BlockBytes[(int)(group)]));
-        outStats.AllocationBytes = Volatile.Read(ref Unsafe.AsRef(in m_AllocationBytes[(int)(group)]));
+        outStats.BlockBytes = Volatile.Read(in m_BlockBytes[(int)(group)]);
+        outStats.AllocationBytes = Volatile.Read(in m_AllocationBytes[(int)(group)]);
     }
 
     public void GetBudget(bool useMutex, [NativeTypeName("UINT64 *")] ulong* outLocalUsage, [NativeTypeName("UINT64 *")] ulong* outLocalBudget, [NativeTypeName("UINT64 *")] ulong* outNonLocalUsage, [NativeTypeName("UINT64 *")] ulong* outNonLocalBudget)
@@ -103,30 +104,32 @@ internal unsafe partial struct D3D12MA_CurrentBudgetData
         DXGI_QUERY_VIDEO_MEMORY_INFO infoNonLocal = new DXGI_QUERY_VIDEO_MEMORY_INFO();
 
         HRESULT hrLocal = adapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &infoLocal);
-        HRESULT hrNonLocal = adapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &infoNonLocal);
 
-        if (SUCCEEDED(hrLocal) || SUCCEEDED(hrNonLocal))
+        if (FAILED(hrLocal))
         {
-            using D3D12MA_MutexLockWrite lockWrite = new D3D12MA_MutexLockWrite(ref m_BudgetMutex, useMutex);
-
-            if (SUCCEEDED(hrLocal))
-            {
-                m_D3D12Usage[0] = infoLocal.CurrentUsage;
-                m_D3D12Budget[0] = infoLocal.Budget;
-            }
-
-            if (SUCCEEDED(hrNonLocal))
-            {
-                m_D3D12Usage[1] = infoNonLocal.CurrentUsage;
-                m_D3D12Budget[1] = infoNonLocal.Budget;
-            }
-
-            m_BlockBytesAtD3D12Fetch[0] = Volatile.Read(ref m_BlockBytes[0]);
-            m_BlockBytesAtD3D12Fetch[1] = Volatile.Read(ref m_BlockBytes[1]);
-            m_OperationsSinceBudgetFetch = 0;
+            return hrLocal;
         }
 
-        return FAILED(hrLocal) ? hrLocal : hrNonLocal;
+        HRESULT hrNonLocal = adapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &infoNonLocal);
+
+        if (FAILED(hrNonLocal))
+        {
+            return hrNonLocal;
+        }
+
+        using D3D12MA_MutexLockWrite lockWrite = new D3D12MA_MutexLockWrite(ref m_BudgetMutex, useMutex);
+
+        m_D3D12Usage[0] = infoLocal.CurrentUsage;
+        m_D3D12Budget[0] = infoLocal.Budget;
+
+        m_D3D12Usage[1] = infoNonLocal.CurrentUsage;
+        m_D3D12Budget[1] = infoNonLocal.Budget;
+
+        m_BlockBytesAtD3D12Fetch[0] = Volatile.Read(ref m_BlockBytes[0]);
+        m_BlockBytesAtD3D12Fetch[1] = Volatile.Read(ref m_BlockBytes[1]);
+        m_OperationsSinceBudgetFetch = 0;
+
+        return S_OK;
     }
 
     public void AddAllocation([NativeTypeName("UINT")] uint group, [NativeTypeName("UINT64")] ulong allocationBytes)
