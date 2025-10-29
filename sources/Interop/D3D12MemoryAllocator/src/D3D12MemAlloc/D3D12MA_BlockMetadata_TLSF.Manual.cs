@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System.Runtime.CompilerServices;
@@ -16,18 +16,18 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
 
     private static void** InitVtblInstance()
     {
-        void** lpVtbl = (void**)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_BlockMetadata_TLSF), 21 * sizeof(void*)));
+        void** lpVtbl = (void**)(RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(D3D12MA_BlockMetadata_TLSF), 22 * sizeof(void*)));
 
         lpVtbl[0] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, void>)(&Dispose);
         lpVtbl[1] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, void>)(&Init);
-        lpVtbl[2] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, byte>)(&Validate);
+        lpVtbl[2] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, bool>)(&Validate);
         lpVtbl[3] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, nuint>)(&GetAllocationCount);
         lpVtbl[4] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, nuint>)(&GetFreeRegionsCount);
         lpVtbl[5] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong>)(&GetSumFreeSize);
         lpVtbl[6] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong>)(&GetAllocationOffset);
-        lpVtbl[7] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, byte>)(&IsEmpty);
+        lpVtbl[7] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, bool>)(&IsEmpty);
         lpVtbl[8] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, D3D12MA_VIRTUAL_ALLOCATION_INFO*, void>)(&GetAllocationInfo);
-        lpVtbl[9] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong, byte, uint, D3D12MA_AllocationRequest*, byte>)(&CreateAllocationRequest);
+        lpVtbl[9] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, ulong, bool, uint, D3D12MA_AllocationRequest*, bool>)(&CreateAllocationRequest);
         lpVtbl[10] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_AllocationRequest*, ulong, void*, void>)(&Alloc);
         lpVtbl[11] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, ulong, void>)(&Free);
         lpVtbl[12] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, void>)(&Clear);
@@ -39,6 +39,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
         lpVtbl[18] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_Statistics*, void>)(&AddStatistics);
         lpVtbl[19] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_DetailedStatistics*, void>)(&AddDetailedStatistics);
         lpVtbl[20] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, D3D12MA_JsonWriter*, void>)(&WriteAllocationInfoToJson);
+        lpVtbl[21] = (delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_TLSF*, void>)(&DebugLogAllAllocations);
 
         return lpVtbl;
     }
@@ -90,7 +91,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
 
     [VtblIndex(2)]
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    internal static byte Validate(D3D12MA_BlockMetadata_TLSF* pThis)
+    internal static bool Validate(D3D12MA_BlockMetadata_TLSF* pThis)
     {
         D3D12MA_VALIDATE(pThis->GetSumFreeSize() <= pThis->GetSize());
 
@@ -189,7 +190,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
         D3D12MA_VALIDATE(allocCount == pThis->m_AllocCount);
         D3D12MA_VALIDATE(freeCount == pThis->m_BlocksFreeCount);
 
-        return 1;
+        return true;
     }
 
     [VtblIndex(3)]
@@ -226,9 +227,9 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
 
     [VtblIndex(7)]
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    internal static byte IsEmpty(D3D12MA_BlockMetadata_TLSF* pThis)
+    internal static bool IsEmpty(D3D12MA_BlockMetadata_TLSF* pThis)
     {
-        return (byte)((pThis->m_NullBlock->offset == 0) ? 1 : 0);
+        return pThis->m_NullBlock->offset == 0;
     }
 
     [VtblIndex(8)]
@@ -245,10 +246,10 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
 
     [VtblIndex(9)]
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    internal static byte CreateAllocationRequest(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("ulong")] ulong allocSize, [NativeTypeName("ulong")] ulong allocAlignment, byte upperAddress, [NativeTypeName("uint")] uint strategy, D3D12MA_AllocationRequest* pAllocationRequest)
+    internal static bool CreateAllocationRequest(D3D12MA_BlockMetadata_TLSF* pThis, [NativeTypeName("ulong")] ulong allocSize, [NativeTypeName("ulong")] ulong allocAlignment, bool upperAddress, [NativeTypeName("uint")] uint strategy, D3D12MA_AllocationRequest* pAllocationRequest)
     {
         D3D12MA_ASSERT(allocSize > 0, "Cannot allocate empty block!");
-        D3D12MA_ASSERT(upperAddress == 0, "D3D12MA_ALLOCATION_FLAG_UPPER_ADDRESS can be used only with linear algorithm.");
+        D3D12MA_ASSERT(!upperAddress, "D3D12MA_ALLOCATION_FLAG_UPPER_ADDRESS can be used only with linear algorithm.");
         D3D12MA_ASSERT(pAllocationRequest != null);
         D3D12MA_HEAVY_ASSERT(pThis->Validate());
 
@@ -257,24 +258,24 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
         // Quick check for too small pool
         if (allocSize > pThis->GetSumFreeSize())
         {
-            return 0;
+            return false;
         }
 
         // If no free blocks in pool then check only null block
         if (pThis->m_BlocksFreeCount == 0)
         {
-            return (byte)(pThis->CheckBlock(ref *pThis->m_NullBlock, pThis->m_ListsCount, allocSize, allocAlignment, pAllocationRequest) ? 1 : 0);
+            return pThis->CheckBlock(ref *pThis->m_NullBlock, pThis->m_ListsCount, allocSize, allocAlignment, pAllocationRequest);
         }
 
         // Round up to the next block
         ulong sizeForNextList = allocSize;
-        ulong smallSizeStep = SMALL_BUFFER_SIZE / (pThis->IsVirtual() ? (1u << SECOND_LEVEL_INDEX) : 4u);
+        ushort smallSizeStep = (ushort)(SMALL_BUFFER_SIZE / (pThis->IsVirtual() ? (1u << SECOND_LEVEL_INDEX) : 4u));
 
         if (allocSize > SMALL_BUFFER_SIZE)
         {
             sizeForNextList += (1ul << (D3D12MA_BitScanMSB(allocSize) - SECOND_LEVEL_INDEX));
         }
-        else if (allocSize > SMALL_BUFFER_SIZE - smallSizeStep)
+        else if (allocSize > (ushort)(SMALL_BUFFER_SIZE - smallSizeStep))
         {
             sizeForNextList = SMALL_BUFFER_SIZE + 1;
         }
@@ -297,13 +298,13 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
 
             if (nextListBlock != null && pThis->CheckBlock(ref *nextListBlock, nextListIndex, allocSize, allocAlignment, pAllocationRequest))
             {
-                return 1;
+                return true;
             }
 
             // If not fitted then null block
             if (pThis->CheckBlock(ref *pThis->m_NullBlock, pThis->m_ListsCount, allocSize, allocAlignment, pAllocationRequest))
             {
-                return 1;
+                return true;
             }
 
             // Null block failed, search larger bucket
@@ -311,7 +312,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
             {
                 if (pThis->CheckBlock(ref *nextListBlock, nextListIndex, allocSize, allocAlignment, pAllocationRequest))
                 {
-                    return 1;
+                    return true;
                 }
                 nextListBlock = nextListBlock->NextFree();
             }
@@ -323,7 +324,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
             {
                 if (pThis->CheckBlock(ref *prevListBlock, prevListIndex, allocSize, allocAlignment, pAllocationRequest))
                 {
-                    return 1;
+                    return true;
                 }
                 prevListBlock = prevListBlock->NextFree();
             }
@@ -337,7 +338,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
             {
                 if (pThis->CheckBlock(ref *prevListBlock, prevListIndex, allocSize, allocAlignment, pAllocationRequest))
                 {
-                    return 1;
+                    return true;
                 }
                 prevListBlock = prevListBlock->NextFree();
             }
@@ -345,7 +346,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
             // If failed check null block
             if (pThis->CheckBlock(ref *pThis->m_NullBlock, pThis->m_ListsCount, allocSize, allocAlignment, pAllocationRequest))
             {
-                return 1;
+                return true;
             }
 
             // Check larger bucket
@@ -355,7 +356,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
             {
                 if (pThis->CheckBlock(ref *nextListBlock, nextListIndex, allocSize, allocAlignment, pAllocationRequest))
                 {
-                    return 1;
+                    return true;
                 }
                 nextListBlock = nextListBlock->NextFree();
             }
@@ -381,18 +382,18 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
 
                 if (pThis->CheckBlock(ref block, pThis->GetListIndex(block.size), allocSize, allocAlignment, pAllocationRequest))
                 {
-                    return 1;
+                    return true;
                 }
             }
 
             // If failed check null block
             if (pThis->CheckBlock(ref *pThis->m_NullBlock, pThis->m_ListsCount, allocSize, allocAlignment, pAllocationRequest))
             {
-                return 1;
+                return true;
             }
 
             // Whole range searched, no more memory
-            return 0;
+            return false;
         }
         else
         {
@@ -403,7 +404,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
             {
                 if (pThis->CheckBlock(ref *nextListBlock, nextListIndex, allocSize, allocAlignment, pAllocationRequest))
                 {
-                    return 1;
+                    return true;
                 }
                 nextListBlock = nextListBlock->NextFree();
             }
@@ -411,7 +412,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
             // If failed check null block
             if (pThis->CheckBlock(ref *pThis->m_NullBlock, pThis->m_ListsCount, allocSize, allocAlignment, pAllocationRequest))
             {
-                return 1;
+                return true;
             }
 
             // Check best fit bucket
@@ -421,7 +422,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
             {
                 if (pThis->CheckBlock(ref *prevListBlock, prevListIndex, allocSize, allocAlignment, pAllocationRequest))
                 {
-                    return 1;
+                    return true;
                 }
                 prevListBlock = prevListBlock->NextFree();
             }
@@ -436,14 +437,14 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
             {
                 if (pThis->CheckBlock(ref *nextListBlock, nextListIndex, allocSize, allocAlignment, pAllocationRequest))
                 {
-                    return 1;
+                    return true;
                 }
                 nextListBlock = nextListBlock->NextFree();
             }
         }
 
         // No more memory sadly
-        return 0;
+        return false;
     }
 
     [VtblIndex(10)]
@@ -792,5 +793,18 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
         }
 
         PrintDetailedMap_End(ref *json);
+    }
+
+    [VtblIndex(21)]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    internal static void DebugLogAllAllocations(D3D12MA_BlockMetadata_TLSF* pThis)
+    {
+        for (Block* block = pThis->m_NullBlock->prevPhysical; block != null; block = block->prevPhysical)
+        {
+            if (!block->IsFree())
+            {
+                pThis->Base.DebugLogAllocation(block->offset, block->size, block->PrivateData());
+            }
+        }
     }
 }

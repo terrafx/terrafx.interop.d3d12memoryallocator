@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -40,10 +40,10 @@ internal static unsafe partial class D3D12MA_PoolAllocator
         }
     }
 
-    public static D3D12MA_Allocation* Alloc(ref this D3D12MA_PoolAllocator<D3D12MA_Allocation> self, D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, BOOL wasZeroInitialized)
+    public static D3D12MA_Allocation* Alloc(ref this D3D12MA_PoolAllocator<D3D12MA_Allocation> self, D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment)
     {
         D3D12MA_Allocation* result = self.Allocate();
-        result->_ctor(allocator, size, alignment, wasZeroInitialized);
+        result->_ctor(allocator, size, alignment);
         return result;
     }
 

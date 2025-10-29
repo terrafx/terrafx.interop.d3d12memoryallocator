@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -53,14 +53,20 @@ public static unsafe partial class D3D12MemAlloc
         }
     }
 
-    [NativeTypeName("UINT")]
-    internal const uint D3D12MA_HEAP_TYPE_COUNT = 4;
+    internal static void D3D12MA_DEBUG_LOG(string message)
+    {
+        Console.WriteLine(message);
+    }
 
     [NativeTypeName("UINT")]
-    internal const uint D3D12MA_STANDARD_HEAP_TYPE_COUNT = 3;
+    internal const uint D3D12MA_HEAP_TYPE_COUNT = 5;
+
+    /// <summary>Only <see cref="D3D12_HEAP_TYPE_DEFAULT" />, <see cref="D3D12_HEAP_TYPE_UPLOAD" />, <see cref="D3D12_HEAP_TYPE_READBACK" />, and <see cref="D3D12_HEAP_TYPE_GPU_UPLOAD" /></summary>
+    [NativeTypeName("UINT")]
+    internal const uint D3D12MA_STANDARD_HEAP_TYPE_COUNT = 4;
 
     [NativeTypeName("UINT")]
-    internal const uint D3D12MA_DEFAULT_POOL_MAX_COUNT = 9;
+    internal const uint D3D12MA_DEFAULT_POOL_MAX_COUNT = D3D12MA_STANDARD_HEAP_TYPE_COUNT * 3;
 
     [NativeTypeName("UINT")]
     internal const uint D3D12MA_NEW_BLOCK_SIZE_SHIFT_MAX = 3;
@@ -70,6 +76,14 @@ public static unsafe partial class D3D12MemAlloc
         "UPLOAD",
         "READBACK",
         "CUSTOM",
+        "GPU_UPLOAD",
+    ];
+
+    internal static readonly string[] D3D12MA_StandardHeapTypeNames = [
+        "DEFAULT",
+        "UPLOAD",
+        "READBACK",
+        "GPU_UPLOAD",
     ];
 
     internal static readonly string[] D3D12MA_HeapSubTypeName = [
@@ -79,6 +93,10 @@ public static unsafe partial class D3D12MemAlloc
     ];
 
     internal const D3D12_HEAP_FLAGS D3D12MA_RESOURCE_CLASS_HEAP_FLAGS = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
+
+    internal const D3D12_RESIDENCY_PRIORITY D3D12_RESIDENCY_PRIORITY_NONE = default;
+
+    internal const D3D12_HEAP_TYPE D3D12_HEAP_TYPE_GPU_UPLOAD_COPY = D3D12_HEAP_TYPE_GPU_UPLOAD;
 
     internal const uint DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY = (uint)(DXGI_MEMORY_SEGMENT_GROUP_LOCAL);
 
@@ -228,32 +246,32 @@ public static unsafe partial class D3D12MemAlloc
         D3D12MA_ASSERT(cond, "Validation failed: " + message);
     }
 
-    internal static uint D3D12MA_MIN([NativeTypeName("const T &")] in uint a, [NativeTypeName("const T &")] in uint b)
+    internal static uint D3D12MA_MIN([NativeTypeName("const T &")] uint a, [NativeTypeName("const T &")] uint b)
     {
         return (a <= b) ? a : b;
     }
 
-    internal static nuint D3D12MA_MIN([NativeTypeName("const T &")] in nuint a, [NativeTypeName("const T &")] in nuint b)
+    internal static nuint D3D12MA_MIN([NativeTypeName("const T &")] nuint a, [NativeTypeName("const T &")] nuint b)
     {
         return (a <= b) ? a : b;
     }
 
-    internal static ulong D3D12MA_MIN([NativeTypeName("const T &")] in ulong a, [NativeTypeName("const T &")] in ulong b)
+    internal static ulong D3D12MA_MIN([NativeTypeName("const T &")] ulong a, [NativeTypeName("const T &")] ulong b)
     {
         return (a <= b) ? a : b;
     }
 
-    internal static uint D3D12MA_MAX([NativeTypeName("const T &")] in uint a, [NativeTypeName("const T &")] in uint b)
+    internal static uint D3D12MA_MAX([NativeTypeName("const T &")] uint a, [NativeTypeName("const T &")] uint b)
     {
         return (a <= b) ? b : a;
     }
 
-    internal static nuint D3D12MA_MAX([NativeTypeName("const T &")] in nuint a, [NativeTypeName("const T &")] in nuint b)
+    internal static nuint D3D12MA_MAX([NativeTypeName("const T &")] nuint a, [NativeTypeName("const T &")] nuint b)
     {
         return (a <= b) ? b : a;
     }
 
-    internal static ulong D3D12MA_MAX([NativeTypeName("const T &")] in ulong a, [NativeTypeName("const T &")] in ulong b)
+    internal static ulong D3D12MA_MAX([NativeTypeName("const T &")] ulong a, [NativeTypeName("const T &")] ulong b)
     {
         return (a <= b) ? b : a;
     }
@@ -518,7 +536,7 @@ public static unsafe partial class D3D12MemAlloc
     }
 
     [return: NativeTypeName("UINT")]
-    internal static uint D3D12MA_HeapTypeToIndex(D3D12_HEAP_TYPE type)
+    internal static uint D3D12MA_StandardHeapTypeToIndex(D3D12_HEAP_TYPE type)
     {
         switch (type)
         {
@@ -537,7 +555,7 @@ public static unsafe partial class D3D12MemAlloc
                 return 2;
             }
 
-            case D3D12_HEAP_TYPE_CUSTOM:
+            case D3D12_HEAP_TYPE_GPU_UPLOAD_COPY:
             {
                 return 3;
             }
@@ -550,12 +568,36 @@ public static unsafe partial class D3D12MemAlloc
         }
     }
 
-    internal static D3D12_HEAP_TYPE D3D12MA_IndexToHeapType([NativeTypeName("UINT")] uint heapTypeIndex)
+    internal static D3D12_HEAP_TYPE D3D12MA_IndexToStandardHeapType([NativeTypeName("UINT")] uint heapTypeIndex)
     {
-        D3D12MA_ASSERT(heapTypeIndex < 4);
+        switch (heapTypeIndex)
+        {
+            case 0:
+            {
+                return D3D12_HEAP_TYPE_DEFAULT;
+            }
 
-        // D3D12_HEAP_TYPE_DEFAULT starts at 1.
-        return (D3D12_HEAP_TYPE)(heapTypeIndex + 1);
+            case 1:
+            {
+                return D3D12_HEAP_TYPE_UPLOAD;
+            }
+
+            case 2:
+            {
+                return D3D12_HEAP_TYPE_READBACK;
+            }
+
+            case 3:
+            {
+                return D3D12_HEAP_TYPE_GPU_UPLOAD_COPY;
+            }
+
+            default:
+            {
+                D3D12MA_FAIL();
+                return D3D12_HEAP_TYPE_CUSTOM;
+            }
+        }
     }
 
     [return: NativeTypeName("UINT64")]
@@ -608,7 +650,7 @@ public static unsafe partial class D3D12MemAlloc
 
     internal static bool D3D12MA_IsHeapTypeStandard(D3D12_HEAP_TYPE type)
     {
-        return (type == D3D12_HEAP_TYPE_DEFAULT) || (type == D3D12_HEAP_TYPE_UPLOAD) || (type == D3D12_HEAP_TYPE_READBACK);
+        return (type == D3D12_HEAP_TYPE_DEFAULT) || (type == D3D12_HEAP_TYPE_UPLOAD) || (type == D3D12_HEAP_TYPE_READBACK) || (type == D3D12_HEAP_TYPE_GPU_UPLOAD_COPY);
     }
 
     internal static D3D12_HEAP_PROPERTIES D3D12MA_StandardHeapTypeToHeapProperties(D3D12_HEAP_TYPE type)

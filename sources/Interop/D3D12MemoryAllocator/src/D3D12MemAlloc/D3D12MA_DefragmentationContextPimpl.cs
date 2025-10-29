@@ -1,9 +1,10 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
@@ -497,7 +498,7 @@ internal unsafe partial struct D3D12MA_DefragmentationContextPimpl : IDisposable
                 {
                     if (metadata->GetAllocationOffset(request.allocHandle) < offset)
                     {
-                        if (SUCCEEDED(vector.CommitAllocationRequest(request, block, moveData.size, moveData.alignment, Unsafe.AsPointer(ref this), &moveData.move.pDstTmpAllocation)))
+                        if (SUCCEEDED(vector.CommitAllocationRequest(&request, block, moveData.size, moveData.alignment, Unsafe.AsPointer(ref this), &moveData.move.pDstTmpAllocation)))
                         {
                             m_Moves.push_back(moveData.move);
 
@@ -697,7 +698,7 @@ internal unsafe partial struct D3D12MA_DefragmentationContextPimpl : IDisposable
                         {
                             if (metadata->GetAllocationOffset(request.allocHandle) < offset)
                             {
-                                if (SUCCEEDED(vector.CommitAllocationRequest(request, block, moveData.size, moveData.alignment, Unsafe.AsPointer(ref this), &moveData.move.pDstTmpAllocation)))
+                                if (SUCCEEDED(vector.CommitAllocationRequest(&request, block, moveData.size, moveData.alignment, Unsafe.AsPointer(ref this), &moveData.move.pDstTmpAllocation)))
                                 {
                                     m_Moves.push_back(moveData.move);
 
@@ -786,7 +787,7 @@ internal unsafe partial struct D3D12MA_DefragmentationContextPimpl : IDisposable
                     {
                         if (metadata->GetAllocationOffset(request.allocHandle) < offset)
                         {
-                            if (SUCCEEDED(vector.CommitAllocationRequest(request, block, moveData.size, moveData.alignment, Unsafe.AsPointer(ref this), &moveData.move.pDstTmpAllocation)))
+                            if (SUCCEEDED(vector.CommitAllocationRequest(&request, block, moveData.size, moveData.alignment, Unsafe.AsPointer(ref this), &moveData.move.pDstTmpAllocation)))
                             {
                                 m_Moves.push_back(moveData.move);
 

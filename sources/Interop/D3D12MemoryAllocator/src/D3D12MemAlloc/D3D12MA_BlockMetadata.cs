@@ -1,10 +1,11 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
 namespace TerraFX.Interop.DirectX;
@@ -51,7 +52,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
     [VtblIndex(2)]
     public readonly bool Validate()
     {
-        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, byte>)(lpVtbl[2]))((D3D12MA_BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(in this))) != 0;
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, bool>)(lpVtbl[2]))((D3D12MA_BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
     }
 
     [VtblIndex(3)]
@@ -86,7 +87,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
     [VtblIndex(7)]
     public readonly bool IsEmpty()
     {
-        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, byte>)(lpVtbl[7]))((D3D12MA_BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(in this))) != 0;
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, bool>)(lpVtbl[7]))((D3D12MA_BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
     }
 
     [VtblIndex(8)]
@@ -101,7 +102,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
     [VtblIndex(9)]
     public bool CreateAllocationRequest([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, bool upperAddress, [NativeTypeName("UINT32")] uint strategy, D3D12MA_AllocationRequest* pAllocationRequest)
     {
-        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, ulong, ulong, byte, uint, D3D12MA_AllocationRequest*, byte>)(lpVtbl[9]))((D3D12MA_BlockMetadata*)Unsafe.AsPointer(ref this), allocSize, allocAlignment, (byte)(upperAddress ? 1 : 0), strategy, pAllocationRequest) != 0;
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, ulong, ulong, bool, uint, D3D12MA_AllocationRequest*, bool>)(lpVtbl[9]))((D3D12MA_BlockMetadata*)Unsafe.AsPointer(ref this), allocSize, allocAlignment, upperAddress, strategy, pAllocationRequest);
     }
 
     // Makes actual allocation based on request. Request must already be checked and valid.
@@ -176,6 +177,12 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
         ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, D3D12MA_JsonWriter*, void>)(lpVtbl[20]))((D3D12MA_BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), json);
     }
 
+    [VtblIndex(21)]
+    public readonly void DebugLogAllAllocations()
+    {
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata*, void>)(lpVtbl[21]))((D3D12MA_BlockMetadata*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
+    }
+
     [return: NativeTypeName("UINT64")]
     public readonly ulong GetSize()
     {
@@ -198,6 +205,24 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
     internal readonly ulong GetDebugMargin()
     {
         return IsVirtual() ? 0 : D3D12MA_DEBUG_MARGIN;
+    }
+
+    internal readonly void DebugLogAllocation([NativeTypeName("UINT64")] ulong offset, [NativeTypeName("UINT64")] ulong size, void* privateData)
+    {
+        if (IsVirtual())
+        {
+            D3D12MA_DEBUG_LOG($"UNFREED VIRTUAL ALLOCATION; Offset: {offset}; Size: {size}; PrivateData: {(nuint)(privateData):X}");
+        }
+        else
+        {
+            D3D12MA_ASSERT(privateData != null);
+            D3D12MA_Allocation* allocation = (D3D12MA_Allocation*)(privateData);
+
+            privateData = allocation->GetPrivateData();
+            char* name = allocation->GetName();
+
+            D3D12MA_DEBUG_LOG($"UNFREED ALLOCATION; Offset: {offset}; Size: {size}; PrivateData: {(nuint)(privateData):X}; Name: {((name != null) ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(name) : "")}");
+        }
     }
 
     internal readonly void PrintDetailedMap_Begin([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json, [NativeTypeName("UINT64")] ulong unusedBytes, [NativeTypeName("size_t")] nuint allocationCount, [NativeTypeName("size_t")] nuint unusedRangeCount)
@@ -334,6 +359,9 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
 
         [VtblIndex(20)]
         void WriteAllocationInfoToJson([NativeTypeName("D3D12MA::JsonWriter &")] D3D12MA_JsonWriter* json);
+
+        [VtblIndex(21)]
+        void DebugLogAllAllocations();
     }
 
     public partial struct Vtbl<TSelf>
@@ -346,7 +374,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
         public delegate* unmanaged[MemberFunction]<TSelf*, ulong, void> Init;
 
         [NativeTypeName("bool () __attribute__((stdcall))")]
-        public delegate* unmanaged[MemberFunction]<TSelf*, byte> Validate;
+        public delegate* unmanaged[MemberFunction]<TSelf*, bool> Validate;
 
         [NativeTypeName("size_t () __attribute__((stdcall))")]
         public delegate* unmanaged[MemberFunction]<TSelf*, nuint> GetAllocationCount;
@@ -361,13 +389,13 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
         public delegate* unmanaged[MemberFunction]<TSelf*, ulong, ulong> GetAllocationOffset;
 
         [NativeTypeName("bool () __attribute__((stdcall))")]
-        public delegate* unmanaged[MemberFunction]<TSelf*, byte> IsEmpty;
+        public delegate* unmanaged[MemberFunction]<TSelf*, bool> IsEmpty;
 
         [NativeTypeName("void (D3D12MA::AllocHandle, D3D12MA::VIRTUAL_ALLOCATION_INFO &) __attribute__((stdcall))")]
         public delegate* unmanaged[MemberFunction]<TSelf*, ulong, D3D12MA_VIRTUAL_ALLOCATION_INFO*, void> GetAllocationInfo;
 
         [NativeTypeName("bool (UINT64, UINT64, bool, UINT32, D3D12MA::AllocationRequest *) __attribute__((stdcall))")]
-        public delegate* unmanaged[MemberFunction]<TSelf*, ulong, ulong, byte, uint, D3D12MA_AllocationRequest*, byte> CreateAllocationRequest;
+        public delegate* unmanaged[MemberFunction]<TSelf*, ulong, ulong, bool, uint, D3D12MA_AllocationRequest*, bool> CreateAllocationRequest;
 
         [NativeTypeName("void (const D3D12MA::AllocationRequest &, UINT64, void *) __attribute__((stdcall))")]
         public delegate* unmanaged[MemberFunction]<TSelf*, D3D12MA_AllocationRequest*, ulong, void*, void> Alloc;
@@ -401,5 +429,8 @@ internal unsafe partial struct D3D12MA_BlockMetadata : D3D12MA_BlockMetadata.Int
 
         [NativeTypeName("void (D3D12MA::JsonWriter &) __attribute__((stdcall))")]
         public delegate* unmanaged[MemberFunction]<TSelf*, D3D12MA_JsonWriter*, void> WriteAllocationInfoToJson;
+
+        [NativeTypeName("void () __attribute__((stdcall))")]
+        public delegate* unmanaged[MemberFunction]<TSelf*, void> DebugLogAllAllocations;
     }
 }

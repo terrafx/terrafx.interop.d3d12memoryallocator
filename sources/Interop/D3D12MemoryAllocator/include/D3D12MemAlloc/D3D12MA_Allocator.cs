@@ -1,13 +1,16 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
+using System.Collections;
 using System.Runtime.CompilerServices;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MA_POOL_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 using static TerraFX.Interop.DirectX.DXGI_MEMORY_SEGMENT_GROUP;
 using static TerraFX.Interop.Windows.E;
@@ -137,6 +140,17 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
         return m_Pimpl->IsCacheCoherentUMA();
     }
 
+    /// <summary>Returns true if GPU Upload Heaps are supported on the current system.</summary>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>When true, you can use <see cref="D3D12_HEAP_TYPE_GPU_UPLOAD" />.</para>
+    ///   <para>This flag is fetched from <see cref="D3D12_FEATURE_D3D12_OPTIONS16.GPUUploadHeapSupported" />.</para>
+    /// </remarks>
+    public readonly BOOL IsGPUUploadHeapSupported()
+    {
+        return m_Pimpl->IsGPUUploadHeapSupported();
+    }
+
     /// <summary>Returns total amount of memory of specific segment group, in bytes.</summary>
     /// <param name="memorySegmentGroup">Use <see cref="DXGI_MEMORY_SEGMENT_GROUP_LOCAL" /> or <see cref="DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL" />.</param>
     /// <returns></returns>
@@ -201,7 +215,7 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
         }
 
         using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
-        return m_Pimpl->CreateResource(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
+        return m_Pimpl->CreateResource(pAllocDesc, new D3D12MA_CREATE_RESOURCE_PARAMS(pResourceDesc, InitialResourceState, pOptimizedClearValue), ppAllocation, riidResource, ppvResource);
     }
 
     /// <summary>Similar to Allocator::CreateResource, but supports new structure <see cref="D3D12_RESOURCE_DESC1" />.</summary>
@@ -226,7 +240,34 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
         }
 
         using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
-        return m_Pimpl->CreateResource2(pAllocDesc, pResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
+        return m_Pimpl->CreateResource(pAllocDesc, new D3D12MA_CREATE_RESOURCE_PARAMS(pResourceDesc, InitialResourceState, pOptimizedClearValue), ppAllocation, riidResource, ppvResource);
+    }
+
+    /// <summary>Similar to <see cref="CreateResource2" />, but there are initial layout instead of state and castable formats list</summary>
+    /// <param name="pAllocDesc"></param>
+    /// <param name="pResourceDesc"></param>
+    /// <param name="InitialLayout"></param>
+    /// <param name="pOptimizedClearValue"></param>
+    /// <param name="NumCastableFormats"></param>
+    /// <param name="pCastableFormats"></param>
+    /// <param name="ppAllocation"></param>
+    /// <param name="riidResource"></param>
+    /// <param name="ppvResource"></param>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>It internally uses <see cref="ID3D12Device10.CreateCommittedResource3" /> or <see cref="ID3D12Device10.CreatePlacedResource2" />.</para>
+    ///   <para>To work correctly, <see cref="ID3D12Device10" /> interface must be available in the current system. Otherwise, <see cref="E_NOINTERFACE" /> is returned. If you use <paramref name="pCastableFormats" />, <see cref="ID3D12Device12" /> must also be available.</para>
+    /// </remarks>
+    public HRESULT CreateResource3([NativeTypeName("const D3D12MA::ALLOCATION_DESC *")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC1 *")] D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_BARRIER_LAYOUT InitialLayout, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, [NativeTypeName("UINT32")] uint NumCastableFormats, [NativeTypeName("const DXGI_FORMAT *")] DXGI_FORMAT* pCastableFormats, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    {
+        if ((pAllocDesc == null) || (pResourceDesc == null) || (ppAllocation == null))
+        {
+            D3D12MA_FAIL("Invalid arguments passed to Allocator::CreateResource3.");
+            return E_INVALIDARG;
+        }
+
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        return m_Pimpl->CreateResource(pAllocDesc, new D3D12MA_CREATE_RESOURCE_PARAMS(pResourceDesc, InitialLayout, pOptimizedClearValue, NumCastableFormats, pCastableFormats), ppAllocation, riidResource, ppvResource);
     }
 
     /// <summary>Allocates memory without creating any resource placed in it.</summary>
@@ -283,7 +324,59 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
         }
 
         using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
-        return m_Pimpl->CreateAliasingResource(pAllocation, AllocationLocalOffset, pResourceDesc, InitialResourceState, pOptimizedClearValue, riidResource, ppvResource);
+        return m_Pimpl->CreateAliasingResource(pAllocation, AllocationLocalOffset, new D3D12MA_CREATE_RESOURCE_PARAMS(pResourceDesc, InitialResourceState, pOptimizedClearValue), riidResource, ppvResource);
+    }
+
+    /// <summary>Similar to <see cref="CreateAliasingResource" />, but supports new structure <see cref="D3D12_RESOURCE_DESC1" />.</summary>
+    /// <param name="pAllocation"></param>
+    /// <param name="AllocationLocalOffset"></param>
+    /// <param name="pResourceDesc"></param>
+    /// <param name="InitialResourceState"></param>
+    /// <param name="pOptimizedClearValue"></param>
+    /// <param name="riidResource"></param>
+    /// <param name="ppvResource"></param>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>It internally uses <see cref="ID3D12Device8.CreatePlacedResource1" />.</para>
+    ///   <para>To work correctly, <see cref="ID3D12Device8" /> interface must be available in the current system. Otherwise, <see cref="E_NOINTERFACE" /> is returned.</para>
+    /// </remarks>
+    public HRESULT CreateAliasingResource1(D3D12MA_Allocation* pAllocation, [NativeTypeName("UINT64")] ulong AllocationLocalOffset, [NativeTypeName("const D3D12_RESOURCE_DESC1 *")] D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    {
+        if ((pAllocation == null) || (pResourceDesc == null) || (ppvResource == null))
+        {
+            D3D12MA_FAIL("Invalid arguments passed to D3D12MA_Allocator.CreateAliasingResource.");
+            return E_INVALIDARG;
+        }
+
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        return m_Pimpl->CreateAliasingResource(pAllocation, AllocationLocalOffset, new D3D12MA_CREATE_RESOURCE_PARAMS(pResourceDesc, InitialResourceState, pOptimizedClearValue), riidResource, ppvResource);
+    }
+
+    /// <summary>Similar to <see cref="CreateAliasingResource1" />, but there are initial layout instead of state and castable formats list.</summary>
+    /// <param name="pAllocation"></param>
+    /// <param name="AllocationLocalOffset"></param>
+    /// <param name="pResourceDesc"></param>
+    /// <param name="InitialLayout"></param>
+    /// <param name="pOptimizedClearValue"></param>
+    /// <param name="NumCastableFormats"></param>
+    /// <param name="pCastableFormats"></param>
+    /// <param name="riidResource"></param>
+    /// <param name="ppvResource"></param>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>It internally uses <see cref="ID3D12Device10.CreatePlacedResource2" />.</para>
+    ///   <para>To work correctly, <see cref="ID3D12Device10" /> interface must be available in the current system. Otherwise, <see cref="E_NOINTERFACE" /> is returned. If you use <paramref name="pCastableFormats" />, <see cref="ID3D12Device12" /> must albo be available.</para>
+    /// </remarks>
+    public HRESULT CreateAliasingResource2(D3D12MA_Allocation* pAllocation, [NativeTypeName("UINT64")] ulong AllocationLocalOffset, [NativeTypeName("const D3D12_RESOURCE_DESC1 *")] D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_BARRIER_LAYOUT InitialLayout, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, [NativeTypeName("UINT32")] uint NumCastableFormats, [NativeTypeName("const DXGI_FORMAT *")] DXGI_FORMAT* pCastableFormats, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    {
+        if ((pAllocation == null) || (pResourceDesc == null) || (ppvResource == null))
+        {
+            D3D12MA_FAIL("Invalid arguments passed to D3D12MA_Allocator.CreateAliasingResource.");
+            return E_INVALIDARG;
+        }
+
+        using D3D12MA_MutexLock debugGlobalMutexLock = new D3D12MA_MutexLock(ref *g_DebugGlobalMutex, true);
+        return m_Pimpl->CreateAliasingResource(pAllocation, AllocationLocalOffset, new D3D12MA_CREATE_RESOURCE_PARAMS(pResourceDesc, InitialLayout, pOptimizedClearValue, NumCastableFormats, pCastableFormats), riidResource, ppvResource);
     }
 
     /// <summary>Creates custom pool.</summary>
@@ -295,6 +388,12 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
         if ((pPoolDesc == null) || (ppPool == null) || ((pPoolDesc->MaxBlockCount > 0) && (pPoolDesc->MaxBlockCount < pPoolDesc->MinBlockCount)) || ((pPoolDesc->MinAllocationAlignment > 0) && !D3D12MA_IsPow2(pPoolDesc->MinAllocationAlignment)))
         {
             D3D12MA_FAIL("Invalid arguments passed to D3D12MA_Allocator.CreatePool.");
+            return E_INVALIDARG;
+        }
+
+        if (((pPoolDesc->Flags & D3D12MA_POOL_FLAG_ALWAYS_COMMITTED) != 0) && ((pPoolDesc->BlockSize != 0) || (pPoolDesc->MinBlockCount > 0)))
+        {
+            D3D12MA_FAIL("Invalid arguments passed to D3D12MA_Allocator.CreatePool while D3D12MA_POOL_FLAG_ALWAYS_COMMITTED is specified.");
             return E_INVALIDARG;
         }
 

@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -155,6 +155,11 @@ public unsafe partial struct D3D12MA_Pool : D3D12MA_IUnknownImpl.Interface, INat
 
         // Check for support
         if ((m_Pimpl->GetBlockVector()->GetAlgorithm() & (uint)(D3D12MA_POOL_FLAG_ALGORITHM_LINEAR)) != 0)
+        {
+            return E_NOINTERFACE;
+        }
+
+        if (m_Pimpl->AlwaysCommitted())
         {
             return E_NOINTERFACE;
         }

@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -217,9 +217,11 @@ public unsafe partial struct D3D12MA_VirtualBlock : D3D12MA_IUnknownImpl.Interfa
 
         using D3D12MA_StringBuilder sb = new D3D12MA_StringBuilder(m_Pimpl->m_AllocationCallbacks);
         {
-            using D3D12MA_JsonWriter json = new D3D12MA_JsonWriter(m_Pimpl->m_AllocationCallbacks, ref Unsafe.AsRef(in sb));
+            using D3D12MA_JsonWriter json = new D3D12MA_JsonWriter(m_Pimpl->m_AllocationCallbacks, &sb);
             D3D12MA_HEAVY_ASSERT(m_Pimpl->m_Metadata->Validate());
+            json.BeginObject();
             m_Pimpl->m_Metadata->WriteAllocationInfoToJson(&json);
+            json.EndObject();
         } // Scope for JsonWriter
 
         nuint length = sb.GetLength();

@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -26,7 +26,7 @@ internal unsafe partial struct D3D12MA_PoolAllocator<T> : IDisposable
     // allocationCallbacks externally owned, must outlive this object.
     public D3D12MA_PoolAllocator([NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks, [NativeTypeName("UINT")] uint firstBlockCapacity)
     {
-        m_AllocationCallbacks = (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(ref Unsafe.AsRef(in allocationCallbacks)));
+        m_AllocationCallbacks = (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(in allocationCallbacks));
         m_FirstBlockCapacity = firstBlockCapacity;
         m_ItemBlocks = new D3D12MA_Vector<ItemBlock>(allocationCallbacks);
 

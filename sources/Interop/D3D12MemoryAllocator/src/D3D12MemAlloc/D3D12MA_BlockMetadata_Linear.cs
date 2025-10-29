@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System.Runtime.CompilerServices;
@@ -86,7 +86,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear : D3D12MA_BlockMetad
     [VtblIndex(2)]
     public readonly bool Validate()
     {
-        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_Linear*, byte>)(Base.lpVtbl[2]))((D3D12MA_BlockMetadata_Linear*)Unsafe.AsPointer(ref Unsafe.AsRef(in this))) != 0;
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_Linear*, bool>)(Base.lpVtbl[2]))((D3D12MA_BlockMetadata_Linear*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
     }
 
     [VtblIndex(3)]
@@ -120,7 +120,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear : D3D12MA_BlockMetad
     [VtblIndex(7)]
     public readonly bool IsEmpty()
     {
-        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_Linear*, byte>)(Base.lpVtbl[7]))((D3D12MA_BlockMetadata_Linear*)Unsafe.AsPointer(ref Unsafe.AsRef(in this))) != 0;
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_Linear*, bool>)(Base.lpVtbl[7]))((D3D12MA_BlockMetadata_Linear*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
     }
 
     [VtblIndex(8)]
@@ -132,7 +132,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear : D3D12MA_BlockMetad
     [VtblIndex(9)]
     public bool CreateAllocationRequest([NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("UINT64")] ulong allocAlignment, bool upperAddress, [NativeTypeName("UINT32")] uint strategy, D3D12MA_AllocationRequest* pAllocationRequest)
     {
-        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_Linear*, ulong, ulong, byte, uint, D3D12MA_AllocationRequest*, byte>)(Base.lpVtbl[9]))((D3D12MA_BlockMetadata_Linear*)Unsafe.AsPointer(ref this), allocSize, allocAlignment, (byte)(upperAddress ? 1 : 0), strategy, pAllocationRequest) != 0;
+        return ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_Linear*, ulong, ulong, bool, uint, D3D12MA_AllocationRequest*, bool>)(Base.lpVtbl[9]))((D3D12MA_BlockMetadata_Linear*)Unsafe.AsPointer(ref this), allocSize, allocAlignment, upperAddress, strategy, pAllocationRequest);
     }
 
     [VtblIndex(10)]
@@ -202,6 +202,12 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear : D3D12MA_BlockMetad
     public readonly void WriteAllocationInfoToJson([NativeTypeName("D3D12MA::JsonWriter &")] D3D12MA_JsonWriter* json)
     {
         ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_Linear*, D3D12MA_JsonWriter*, void>)(Base.lpVtbl[20]))((D3D12MA_BlockMetadata_Linear*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)), json);
+    }
+
+    [VtblIndex(21)]
+    public readonly void DebugLogAllAllocations()
+    {
+        ((delegate* unmanaged[MemberFunction]<D3D12MA_BlockMetadata_Linear*, void>)(Base.lpVtbl[21]))((D3D12MA_BlockMetadata_Linear*)Unsafe.AsPointer(ref Unsafe.AsRef(in this)));
     }
 
     [return: NativeTypeName("UINT64")]

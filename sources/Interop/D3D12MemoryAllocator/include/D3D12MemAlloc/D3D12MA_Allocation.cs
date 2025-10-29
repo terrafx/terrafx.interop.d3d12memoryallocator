@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -12,7 +12,6 @@ using static TerraFX.Interop.DirectX.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12_TEXTURE_LAYOUT;
 using static TerraFX.Interop.DirectX.D3D12MA_Allocation.Type;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
-using static TerraFX.Interop.Windows.Windows;
 
 namespace TerraFX.Interop.DirectX;
 
@@ -57,7 +56,7 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
         };
     }
 
-    internal void _ctor(D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, BOOL wasZeroInitialized)
+    internal void _ctor(D3D12MA_AllocatorPimpl* allocator, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment)
     {
         _ctor();
 
@@ -76,7 +75,6 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
         m_PackedData.SetResourceDimension(D3D12_RESOURCE_DIMENSION_UNKNOWN);
         m_PackedData.SetResourceFlags(D3D12_RESOURCE_FLAG_NONE);
         m_PackedData.SetTextureLayout(D3D12_TEXTURE_LAYOUT_UNKNOWN);
-        m_PackedData.SetWasZeroInitialized(wasZeroInitialized);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -183,8 +181,9 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
         return m_Resource;
     }
 
-    /// <summary>Releases the resource currently pointed by the allocation (if any), sets it to new one, incrementing its reference counter (if not null).</summary>
+    /// <summary>Releases the resource currently pointed by the allocation (if not null), sets it to new one, incrementing its reference counter (if not null).</summary>
     /// <param name="pResource"></param>
+    /// <remarks>WARNING: This is an advanced feature that should be used only in special cases, e.g. during defragmentation. Typically, an allocation object should reference the resource that was created together with it. If you swap it to another resource of different size, statistics and budgets can be calculated incorrectly.</remarks>
     public void SetResource(ID3D12Resource* pResource)
     {
         if (pResource != m_Resource)
@@ -277,26 +276,6 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
         return m_Name;
     }
 
-    /// <summary>Returns <see cref="TRUE" /> if the memory of the allocation was filled with zeros when the allocation was created.</summary>
-    /// <returns></returns>
-    /// <remarks>
-    ///   <para>Returns <see cref="TRUE" /> only if the allocator is sure that the entire memory where the allocation was created was filled with zeros at the moment the allocation was made.</para>
-    ///   <para>Returns <see cref="FALSE" /> if the memory could potentially contain garbage data. If it's a render-target or depth-stencil texture, it then needs proper initialization with <see cref="ID3D12GraphicsCommandList.ClearRenderTargetView" />, <see cref="ID3D12GraphicsCommandList.ClearDepthStencilView" />, <see cref="ID3D12GraphicsCommandList.DiscardResource" />, or a copy operation, as described on page <see cref="ID3D12Device.CreatePlacedResource" /> method - Notes on the required resource initialization" in Microsoft documentation. Please note that rendering a fullscreen triangle or quad to the texture as a render target is not a proper way of initialization!</para>
-    ///   <para>See also articles:</para>
-    ///   <list type="bullet">
-    ///     <item>
-    ///       <description>"Coming to DirectX 12: More control over memory allocation" on DirectX Developer Blog</description>
-    ///     </item>
-    ///     <item>
-    ///       <description>https://asawicki.info/news_1724_initializing_dx12_textures_after_allocation_and_aliasing</description>
-    ///     </item>
-    ///   </list>
-    /// </remarks>
-    public readonly BOOL WasZeroInitialized()
-    {
-        return m_PackedData.WasZeroInitialized();
-    }
-
     internal void InitCommitted(D3D12MA_CommittedAllocationList* list)
     {
         m_PackedData.SetType(TYPE_COMMITTED);
@@ -328,7 +307,6 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
         D3D12MA_ASSERT(allocation->m_PackedData.GetType() == TYPE_PLACED);
 
         D3D12MA_SWAP(ref m_Resource, ref allocation->m_Resource);
-        m_PackedData.SetWasZeroInitialized(allocation->m_PackedData.WasZeroInitialized());
         Anonymous.m_Placed.block->m_pMetadata->SetAllocationPrivateData(Anonymous.m_Placed.allocHandle, allocation);
 
         D3D12MA_SWAP(ref Anonymous.m_Placed, ref allocation->Anonymous.m_Placed);
@@ -394,11 +372,7 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
 
     internal void SetResourcePointer(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T *")] D3D12_RESOURCE_DESC1* pResourceDesc)
     {
-        D3D12MA_ASSERT((m_Resource == null) && (pResourceDesc != null));
-        m_Resource = resource;
-        m_PackedData.SetResourceDimension(pResourceDesc->Dimension);
-        m_PackedData.SetResourceFlags(pResourceDesc->Flags);
-        m_PackedData.SetTextureLayout(pResourceDesc->Layout);
+        SetResourcePointer(resource, (D3D12_RESOURCE_DESC*)(pResourceDesc));
     }
 
     private void FreeName()
@@ -533,22 +507,6 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
             }
         }
 
-        [NativeTypeName("UINT : 1")]
-        private uint m_WasZeroInitialized
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get
-            {
-                return (_bitfield2 >> 9) & 0x1u;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _bitfield2 = (_bitfield2 & ~(0x1u << 9)) | ((value & 0x1u) << 9);
-            }
-        }
-
         public new readonly Type GetType()
         {
             return (Type)(m_Type);
@@ -567,11 +525,6 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
         public readonly D3D12_TEXTURE_LAYOUT GetTextureLayout()
         {
             return (D3D12_TEXTURE_LAYOUT)(m_TextureLayout);
-        }
-
-        public readonly BOOL WasZeroInitialized()
-        {
-            return (BOOL)(m_WasZeroInitialized);
         }
 
         public void SetType(Type type)
@@ -600,11 +553,6 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
             uint u = (uint)(textureLayout);
             D3D12MA_ASSERT(u < (1u << 9));
             m_TextureLayout = u;
-        }
-
-        public void SetWasZeroInitialized(BOOL wasZeroInitialized)
-        {
-            m_WasZeroInitialized = wasZeroInitialized ? 1u : 0u;
         }
     }
 }

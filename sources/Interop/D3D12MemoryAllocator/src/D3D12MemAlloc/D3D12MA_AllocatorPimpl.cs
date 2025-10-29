@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -40,11 +40,21 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
     private bool m_MsaaAlwaysCommitted;
 
+    private bool m_PreferSmallBuffersCommitted;
+
+    private bool m_DefaultPoolsNotZeroed;
+
     private ID3D12Device* m_Device; // AddRef
+
+    private ID3D12Device1* m_Device1; // AddRef, optional
 
     private ID3D12Device4* m_Device4; // AddRef, optional
 
     private ID3D12Device8* m_Device8; // AddRef, optional
+
+    private ID3D12Device10* m_Device10; // AddRef, optional
+
+    private ID3D12Device12* m_Device12; // AddRef, optional
 
     private IDXGIAdapter* m_Adapter; // AddRef
 
@@ -61,6 +71,8 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     private DXGI_ADAPTER_DESC m_AdapterDesc;
 
     private D3D12_FEATURE_DATA_D3D12_OPTIONS m_D3D12Options;
+
+    private BOOL m_GPUUploadHeapSupported;
 
     private D3D12_FEATURE_DATA_ARCHITECTURE m_D3D12Architecture;
 
@@ -106,6 +118,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         m_UseMutex = (desc.Flags & D3D12MA_ALLOCATOR_FLAG_SINGLETHREADED) == 0;
         m_AlwaysCommitted = (desc.Flags & D3D12MA_ALLOCATOR_FLAG_ALWAYS_COMMITTED) != 0;
         m_MsaaAlwaysCommitted = (desc.Flags & D3D12MA_ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED) != 0;
+        m_PreferSmallBuffersCommitted = (desc.Flags & D3D12MA_ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED) == 0;
         m_Device = desc.pDevice;
         m_Adapter = desc.pAdapter;
         m_PreferredBlockSize = (desc.PreferredBlockSize != 0) ? desc.PreferredBlockSize : D3D12MA_DEFAULT_BLOCK_SIZE;
@@ -113,7 +126,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         m_CurrentFrameIndex = 0;
 
         // Below this line don't use allocationCallbacks but m_AllocationCallbacks!!!
-        m_AllocationObjectAllocator = new D3D12MA_AllocationObjectAllocator(m_AllocationCallbacks);
+        m_AllocationObjectAllocator = new D3D12MA_AllocationObjectAllocator(m_AllocationCallbacks, m_UseMutex);
 
         // desc.pAllocationCallbacks intentionally ignored here, preprocessed by CreateAllocator.
         ZeroMemory(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_D3D12Options, __sizeof<D3D12_FEATURE_DATA_D3D12_OPTIONS>());
@@ -123,7 +136,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         for (uint i = 0; i < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++i)
         {
-            m_CommittedAllocations[(int)(i)].Init(m_UseMutex, (D3D12_HEAP_TYPE)((uint)(D3D12_HEAP_TYPE_DEFAULT) + i), null); // pool
+            m_CommittedAllocations[(int)(i)].Init(m_UseMutex, D3D12MA_IndexToStandardHeapType(i), null); // pool
         }
 
         _ = m_Device->AddRef();
@@ -134,8 +147,11 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     {
         if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0))
         {
+            D3D12MA_SAFE_RELEASE(ref m_Device12);
+            D3D12MA_SAFE_RELEASE(ref m_Device10);
             D3D12MA_SAFE_RELEASE(ref m_Device8);
             D3D12MA_SAFE_RELEASE(ref m_Device4);
+            D3D12MA_SAFE_RELEASE(ref m_Device1);
         }
         D3D12MA_SAFE_RELEASE(ref m_Adapter3);
         D3D12MA_SAFE_RELEASE(ref m_Adapter);
@@ -164,6 +180,11 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         return m_Device;
     }
 
+    public readonly ID3D12Device1* GetDevice1()
+    {
+        return m_Device1;
+    }
+
     public readonly ID3D12Device4* GetDevice4()
     {
         return m_Device4;
@@ -172,6 +193,16 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     public readonly ID3D12Device8* GetDevice8()
     {
         return m_Device8;
+    }
+
+    public readonly ID3D12Device10* GetDevice10()
+    {
+        return m_Device10;
+    }
+
+    public readonly ID3D12Device12* GetDevice12()
+    {
+        return m_Device12;
     }
 
     // Shortcut for "Allocation Callbacks", because this function is called so often.
@@ -205,6 +236,11 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         return m_D3D12Options.ResourceHeapTier >= D3D12_RESOURCE_HEAP_TIER_2;
     }
 
+    public readonly bool IsGPUUploadHeapSupported()
+    {
+        return m_GPUUploadHeapSupported != FALSE;
+    }
+
     public readonly bool UseMutex()
     {
         return m_UseMutex;
@@ -230,6 +266,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         //     0: D3D12_HEAP_TYPE_DEFAULT
         //     1: D3D12_HEAP_TYPE_UPLOAD
         //     2: D3D12_HEAP_TYPE_READBACK
+        //     3: D3D12_HEAP_TYPE_GPU_UPLOAD
         // else:
         //     0: D3D12_HEAP_TYPE_DEFAULT + buffer
         //     1: D3D12_HEAP_TYPE_DEFAULT + texture
@@ -240,8 +277,11 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         //     6: D3D12_HEAP_TYPE_READBACK + buffer
         //     7: D3D12_HEAP_TYPE_READBACK + texture
         //     8: D3D12_HEAP_TYPE_READBACK + texture RT or DS
+        //     9: D3D12_HEAP_TYPE_GPU_UPLOAD + buffer
+        //     10: D3D12_HEAP_TYPE_GPU_UPLOAD + texture
+        //     11: D3D12_HEAP_TYPE_GPU_UPLOAD + texture RT or DS
 
-        return SupportsResourceHeapTier2() ? 3u : 9u;
+        return SupportsResourceHeapTier2() ? 4u : 12u;
     }
 
     public Pointer<D3D12MA_BlockVector>* GetDefaultPools()
@@ -252,11 +292,26 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     public HRESULT Init([NativeTypeName("const D3D12MA::ALLOCATOR_DESC &")] in D3D12MA_ALLOCATOR_DESC desc)
     {
         _ = desc.pAdapter->QueryInterface(__uuidof<IDXGIAdapter3>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Adapter3));
+        _ = m_Device->QueryInterface(__uuidof<ID3D12Device1>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Device1));
 
         if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0))
         {
             _ = m_Device->QueryInterface(__uuidof<ID3D12Device4>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Device4));
             _ = m_Device->QueryInterface(__uuidof<ID3D12Device8>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Device8));
+
+            if ((desc.Flags & D3D12MA_ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED) != 0)
+            {
+                D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7 = default;
+
+                if (SUCCEEDED(m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, (uint)(sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS7)))))
+                {
+                    // DEFAULT_POOLS_NOT_ZEROED both supported and enabled by the user.
+                    m_DefaultPoolsNotZeroed = true;
+                }
+            }
+
+            _ = m_Device->QueryInterface(__uuidof<ID3D12Device10>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Device10));
+            _ = m_Device->QueryInterface(__uuidof<ID3D12Device12>(), (void**)(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_Device12));
         }
 
         HRESULT hr = m_Adapter->GetDesc(&((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_AdapterDesc);
@@ -278,6 +333,14 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             m_D3D12Options.ResourceHeapTier = (D3D12_RESOURCE_HEAP_TIER)(D3D12MA_FORCE_RESOURCE_HEAP_TIER);
         }
 
+        D3D12_FEATURE_DATA_D3D12_OPTIONS16 options16 = default;
+        hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS16, &options16, (uint)(sizeof(D3D12_FEATURE_DATA_D3D12_OPTIONS16)));
+
+        if (SUCCEEDED(hr))
+        {
+            m_GPUUploadHeapSupported = options16.GPUUploadHeapSupported;
+        }
+
         hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_D3D12Architecture, __sizeof<D3D12_FEATURE_DATA_ARCHITECTURE>());
 
         if (FAILED(hr))
@@ -293,12 +356,12 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         {
             CalcDefaultPoolParams(out heapProps.Type, out D3D12_HEAP_FLAGS heapFlags, i);
 
-            if ((desc.Flags & D3D12MA_ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED) != 0)
+            if (m_DefaultPoolsNotZeroed)
             {
                 heapFlags |= D3D12_HEAP_FLAG_CREATE_NOT_ZEROED;
             }
 
-            D3D12MA_BlockVector* blockVector = D3D12MA_BlockVector.Create(GetAllocs(), (D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)), heapProps, heapFlags, m_PreferredBlockSize, 0, nuint.MaxValue, false, D3D12MA_DEBUG_ALIGNMENT, 0, m_MsaaAlwaysCommitted, null);
+            D3D12MA_BlockVector* blockVector = D3D12MA_BlockVector.Create(GetAllocs(), (D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)), heapProps, heapFlags, m_PreferredBlockSize, 0, nuint.MaxValue, false, D3D12MA_DEBUG_ALIGNMENT, 0, m_MsaaAlwaysCommitted, null, D3D12_RESIDENCY_PRIORITY_NONE);
             m_BlockVectors[(int)(i)] = new Pointer<D3D12MA_BlockVector>(blockVector);
 
             // No need to call m_pBlockVectors[i]->CreateMinBlocks here, becase minBlockCount is 0.
@@ -338,7 +401,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             return DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY;
         }
 
-        return (heapType == D3D12_HEAP_TYPE_DEFAULT) ? DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY : DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY;
+        return ((heapType == D3D12_HEAP_TYPE_DEFAULT) || (heapType == D3D12_HEAP_TYPE_GPU_UPLOAD_COPY)) ? DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY : DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY;
     }
 
     [return: NativeTypeName("UINT")]
@@ -380,9 +443,43 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         }
     }
 
-    public HRESULT CreateResource([NativeTypeName("const D3D12MA::ALLOCATION_DESC *")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC *")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    public HRESULT CreatePlacedResourceWrap(ID3D12Heap* pHeap, [NativeTypeName("UINT64")] ulong HeapOffset, [NativeTypeName("const D3D12MA_CREATE_RESOURCE_PARAMS &")] in D3D12MA_CREATE_RESOURCE_PARAMS createParams, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
     {
-        D3D12MA_ASSERT((pAllocDesc != null) && (pResourceDesc != null) && (ppAllocation != null));
+        if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_LAYOUT)
+        {
+            if (m_Device10 == null)
+            {
+                return E_NOINTERFACE;
+            }
+
+            // Microsoft defined pCastableFormats parameter as pointer to non-const and only fixed it in later Agility SDK, thus we need const_cast.
+            return m_Device10->CreatePlacedResource2(pHeap, HeapOffset, createParams.GetResourceDesc1(), createParams.GetInitialLayout(), createParams.GetOptimizedClearValue(), createParams.GetNumCastableFormats(), (DXGI_FORMAT*)(createParams.GetCastableFormats()), riidResource, ppvResource);
+        }
+
+        if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE_AND_DESC1)
+        {
+            if (m_Device8 == null)
+            {
+                return E_NOINTERFACE;
+            }
+            Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
+
+            return m_Device8->CreatePlacedResource1(pHeap, HeapOffset, createParams.GetResourceDesc1(), createParams.GetInitialResourceState(), createParams.GetOptimizedClearValue(), riidResource, ppvResource);
+        }
+
+        if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE)
+        {
+            return m_Device->CreatePlacedResource(pHeap, HeapOffset, createParams.GetResourceDesc(), createParams.GetInitialResourceState(), createParams.GetOptimizedClearValue(), riidResource, ppvResource);
+        }
+
+        D3D12MA_FAIL();
+        return E_INVALIDARG;
+    }
+
+    public HRESULT CreateResource([NativeTypeName("const D3D12MA::ALLOCATION_DESC *")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12MA_CREATE_RESOURCE_PARAMS &")] in D3D12MA_CREATE_RESOURCE_PARAMS createParams, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    {
+        D3D12MA_ASSERT((pAllocDesc != null) && (createParams.GetBaseResourceDesc() != null) && (ppAllocation != null));
+
         *ppAllocation = null;
 
         if (ppvResource != null)
@@ -390,13 +487,64 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             *ppvResource = null;
         }
 
-        D3D12_RESOURCE_DESC finalResourceDesc = *pResourceDesc;
-        D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(ref finalResourceDesc);
+        HRESULT hr = E_NOINTERFACE;
+        D3D12MA_CREATE_RESOURCE_PARAMS finalCreateParams = createParams;
+        D3D12_RESOURCE_DESC finalResourceDesc;
+        D3D12_RESOURCE_DESC1 finalResourceDesc1;
+        Unsafe.SkipInit(out D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo);
+
+        if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE)
+        {
+            finalResourceDesc = *createParams.GetResourceDesc();
+            finalCreateParams.AccessResourceDesc() = &finalResourceDesc;
+            hr = GetResourceAllocationInfo(&finalResourceDesc, 0, null, out resAllocInfo);
+        }
+        else if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE_AND_DESC1)
+        {
+            if (m_Device8 != null)
+            {
+                finalResourceDesc1 = *createParams.GetResourceDesc1();
+                finalCreateParams.AccessResourceDesc1() = &finalResourceDesc1;
+                hr = GetResourceAllocationInfo(&finalResourceDesc1, 0, null, out resAllocInfo);
+            }
+        }
+        else if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_LAYOUT)
+        {
+            if (m_Device10 != null)
+            {
+                finalResourceDesc1 = *createParams.GetResourceDesc1();
+                finalCreateParams.AccessResourceDesc1() = &finalResourceDesc1;
+                hr = GetResourceAllocationInfo(&finalResourceDesc1, createParams.GetNumCastableFormats(), createParams.GetCastableFormats(), out resAllocInfo);
+            }
+        }
+        else
+        {
+            D3D12MA_FAIL();
+            hr = E_INVALIDARG;
+        }
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
 
         D3D12MA_ASSERT(D3D12MA_IsPow2(resAllocInfo.Alignment));
+        // We've seen UINT64_MAX returned when the call to GetResourceAllocationInfo was invalid.
+        D3D12MA_ASSERT(resAllocInfo.SizeInBytes != UINT64_MAX);
         D3D12MA_ASSERT(resAllocInfo.SizeInBytes > 0);
 
-        HRESULT hr = CalcAllocationParams(*pAllocDesc, resAllocInfo.SizeInBytes, pResourceDesc, out D3D12MA_BlockVector* blockVector, out D3D12MA_CommittedAllocationParameters committedAllocationParams, out bool preferCommitted);
+        D3D12MA_BlockVector* blockVector = null;
+        D3D12MA_CommittedAllocationParameters committedAllocationParams = default;
+        bool preferCommitted = false;
+
+        if (createParams.Variant >= D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE_AND_DESC1)
+        {
+            hr = CalcAllocationParams(*pAllocDesc, resAllocInfo.SizeInBytes, createParams.GetResourceDesc1(), out blockVector, out committedAllocationParams, out preferCommitted);
+        }
+        else
+        {
+            hr = CalcAllocationParams(*pAllocDesc, resAllocInfo.SizeInBytes, createParams.GetResourceDesc(), out blockVector, out committedAllocationParams, out preferCommitted);
+        }
 
         if (FAILED(hr))
         {
@@ -408,25 +556,27 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         if (committedAllocationParams.IsValid() && preferCommitted)
         {
-            hr = AllocateCommittedResource(committedAllocationParams,resAllocInfo.SizeInBytes, withinBudget, pAllocDesc->pPrivateData, &finalResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
+            hr = AllocateCommittedResource(committedAllocationParams, resAllocInfo.SizeInBytes, withinBudget, pAllocDesc->pPrivateData, finalCreateParams, ppAllocation, riidResource, ppvResource);
 
             if (SUCCEEDED(hr))
             {
                 return hr;
             }
         }
+
         if (blockVector != null)
         {
-            hr = blockVector->CreateResource(resAllocInfo.SizeInBytes, resAllocInfo.Alignment, *pAllocDesc, finalResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
+            hr = blockVector->CreateResource(resAllocInfo.SizeInBytes, resAllocInfo.Alignment, *pAllocDesc, finalCreateParams, committedAllocationParams.IsValid(), ppAllocation, riidResource, ppvResource);
 
             if (SUCCEEDED(hr))
             {
                 return hr;
             }
         }
+
         if (committedAllocationParams.IsValid() && !preferCommitted)
         {
-            hr = AllocateCommittedResource(committedAllocationParams, resAllocInfo.SizeInBytes, withinBudget, pAllocDesc->pPrivateData, &finalResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
+            hr = AllocateCommittedResource(committedAllocationParams, resAllocInfo.SizeInBytes, withinBudget, pAllocDesc->pPrivateData, finalCreateParams, ppAllocation, riidResource, ppvResource);
 
             if (SUCCEEDED(hr))
             {
@@ -437,77 +587,50 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         return hr;
     }
 
-    public HRESULT CreateResource2([NativeTypeName("const D3D12MA::ALLOCATION_DESC *")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC1 *")] D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
-    {
-        D3D12MA_ASSERT(pAllocDesc != null && pResourceDesc != null && ppAllocation != null);
-
-        *ppAllocation = null;
-
-        if (ppvResource != null)
-        {
-            *ppvResource = null;
-        }
-
-        if (m_Device8 == null)
-        {
-            return E_NOINTERFACE;
-        }
-
-        D3D12_RESOURCE_DESC1 finalResourceDesc = *pResourceDesc;
-        D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(ref finalResourceDesc);
-
-        D3D12MA_ASSERT(D3D12MA_IsPow2(resAllocInfo.Alignment));
-        D3D12MA_ASSERT(resAllocInfo.SizeInBytes > 0);
-
-        HRESULT hr = CalcAllocationParams(*pAllocDesc, resAllocInfo.SizeInBytes, pResourceDesc, out D3D12MA_BlockVector* blockVector, out D3D12MA_CommittedAllocationParameters committedAllocationParams, out bool preferCommitted);
-
-        if (FAILED(hr))
-        {
-            return hr;
-        }
-
-        bool withinBudget = (pAllocDesc->Flags & D3D12MA_ALLOCATION_FLAG_WITHIN_BUDGET) != 0;
-        hr = E_INVALIDARG;
-
-        if (committedAllocationParams.IsValid() && preferCommitted)
-        {
-            hr = AllocateCommittedResource2(committedAllocationParams, resAllocInfo.SizeInBytes, withinBudget, pAllocDesc->pPrivateData, &finalResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
-
-            if (SUCCEEDED(hr))
-            {
-                return hr;
-            }
-        }
-
-        if (blockVector != null)
-        {
-            hr = blockVector->CreateResource2(resAllocInfo.SizeInBytes, resAllocInfo.Alignment, *pAllocDesc, finalResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
-
-            if (SUCCEEDED(hr))
-            {
-                return hr;
-            }
-        }
-
-        if (committedAllocationParams.IsValid() && !preferCommitted)
-        {
-            hr = AllocateCommittedResource2(committedAllocationParams, resAllocInfo.SizeInBytes, withinBudget, pAllocDesc->pPrivateData, &finalResourceDesc, InitialResourceState, pOptimizedClearValue, ppAllocation, riidResource, ppvResource);
-
-            if (SUCCEEDED(hr))
-            {
-                return hr;
-            }
-        }
-
-        return hr;
-    }
-
-    public HRESULT CreateAliasingResource(D3D12MA_Allocation* pAllocation, [NativeTypeName("UINT64")] ulong AllocationLocalOffset, [NativeTypeName("const D3D12_RESOURCE_DESC *")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    public HRESULT CreateAliasingResource(D3D12MA_Allocation* pAllocation, [NativeTypeName("UINT64")] ulong AllocationLocalOffset, [NativeTypeName("const D3D12_CREATE_RESOURCE_PARAMS &")] in D3D12MA_CREATE_RESOURCE_PARAMS createParams, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
     {
         *ppvResource = null;
 
-        D3D12_RESOURCE_DESC resourceDesc2 = *pResourceDesc;
-        D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo = GetResourceAllocationInfo(ref resourceDesc2);
+        HRESULT hr = E_NOINTERFACE;
+        D3D12MA_CREATE_RESOURCE_PARAMS finalCreateParams = createParams;
+        D3D12_RESOURCE_DESC finalResourceDesc;
+        D3D12_RESOURCE_DESC1 finalResourceDesc1;
+        Unsafe.SkipInit(out D3D12_RESOURCE_ALLOCATION_INFO resAllocInfo);
+
+        if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE)
+        {
+            finalResourceDesc = *createParams.GetResourceDesc();
+            finalCreateParams.AccessResourceDesc() = &finalResourceDesc;
+            hr = GetResourceAllocationInfo(&finalResourceDesc, 0, null, out resAllocInfo);
+        }
+        else if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE_AND_DESC1)
+        {
+            if (m_Device8 != null)
+            {
+                finalResourceDesc1 = *createParams.GetResourceDesc1();
+                finalCreateParams.AccessResourceDesc1() = &finalResourceDesc1;
+                hr = GetResourceAllocationInfo(&finalResourceDesc1, 0, null, out resAllocInfo);
+            }
+        }
+        else if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_LAYOUT)
+        {
+            if (m_Device10 != null)
+            {
+                finalResourceDesc1 = *createParams.GetResourceDesc1();
+                finalCreateParams.AccessResourceDesc1() = &finalResourceDesc1;
+                hr = GetResourceAllocationInfo(&finalResourceDesc1, createParams.GetNumCastableFormats(), createParams.GetCastableFormats(), out resAllocInfo);
+            }
+        }
+        else
+        {
+            D3D12MA_FAIL();
+            hr = E_INVALIDARG;
+        }
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
 
         D3D12MA_ASSERT(D3D12MA_IsPow2(resAllocInfo.Alignment));
         D3D12MA_ASSERT(resAllocInfo.SizeInBytes > 0);
@@ -522,7 +645,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             return E_INVALIDARG;
         }
 
-        return m_Device->CreatePlacedResource(existingHeap, newOffset, &resourceDesc2, InitialResourceState, pOptimizedClearValue, riidResource, ppvResource);
+        return CreatePlacedResourceWrap(existingHeap, newOffset, finalCreateParams, riidResource, ppvResource);
     }
 
     public HRESULT AllocateMemory([NativeTypeName("const D3D12MA::ALLOCATION_DESC *")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO *")] D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo, D3D12MA_Allocation** ppAllocation)
@@ -551,7 +674,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         if (blockVector != null)
         {
-            hr = blockVector->Allocate(pAllocInfo->SizeInBytes, pAllocInfo->Alignment, *pAllocDesc, 1, ppAllocation);
+            hr = blockVector->Allocate(pAllocInfo->SizeInBytes, pAllocInfo->Alignment, *pAllocDesc, committedAllocationParams.IsValid(), 1, ppAllocation);
 
             if (SUCCEEDED(hr))
             {
@@ -622,6 +745,15 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         m_Budget.RemoveBlock(memSegmentGroup, allocSize);
     }
 
+    public readonly void SetResidencyPriority(ID3D12Pageable* obj, D3D12_RESIDENCY_PRIORITY priority)
+    {
+        if ((priority != D3D12_RESIDENCY_PRIORITY_NONE) && (m_Device1 != null))
+        {
+            // Intentionally ignoring the result.
+            _ = m_Device1->SetResidencyPriority(1, &obj, &priority);
+        }
+    }
+
     public void SetCurrentFrameIndex([NativeTypeName("UINT")] uint frameIndex)
     {
         m_CurrentFrameIndex = frameIndex;
@@ -656,15 +788,16 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             D3D12MA_ClearDetailedStatistics(out outCustomHeaps[1]);
         }
 
-        // Process default pools. 3 standard heap types only. Add them to outStats.HeapType[i].
+        // Process default pools. 4 standard heap types only. Add them to outStats.HeapType[i].
         if (SupportsResourceHeapTier2())
         {
-            // DEFAULT, UPLOAD, READBACK.
+            // DEFAULT, UPLOAD, READBACK, GPU_UPLOAD.
             for (nuint heapTypeIndex = 0; heapTypeIndex < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapTypeIndex)
             {
                 D3D12MA_BlockVector* pBlockVector = m_BlockVectors[(int)(heapTypeIndex)].Value;
                 D3D12MA_ASSERT(pBlockVector != null);
-                pBlockVector->AddDetailedStatistics(ref outStats.HeapType[(int)(heapTypeIndex)]);
+                nuint outputIndex = (heapTypeIndex < 3) ? heapTypeIndex : 4; // GPU_UPLOAD 3 -> 4
+                pBlockVector->AddDetailedStatistics(ref outStats.HeapType[(int)(outputIndex)]);
             }
         }
         else
@@ -676,7 +809,9 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                 {
                     D3D12MA_BlockVector* pBlockVector = m_BlockVectors[(int)((heapTypeIndex * 3) + heapSubType)].Value;
                     D3D12MA_ASSERT(pBlockVector != null);
-                    pBlockVector->AddDetailedStatistics(ref outStats.HeapType[(int)(heapTypeIndex)]);
+
+                    nuint outputIndex = (heapTypeIndex < 3) ? heapTypeIndex : 4; // GPU_UPLOAD 3 -> 4
+                    pBlockVector->AddDetailedStatistics(ref outStats.HeapType[(int)(outputIndex)]);
                 }
             }
         }
@@ -685,6 +820,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         D3D12MA_AddDetailedStatistics(ref outStats.MemorySegmentGroup[(int)(StandardHeapTypeToMemorySegmentGroup(D3D12_HEAP_TYPE_DEFAULT))], outStats.HeapType[0]);
         D3D12MA_AddDetailedStatistics(ref outStats.MemorySegmentGroup[(int)(StandardHeapTypeToMemorySegmentGroup(D3D12_HEAP_TYPE_UPLOAD))], outStats.HeapType[1]);
         D3D12MA_AddDetailedStatistics(ref outStats.MemorySegmentGroup[(int)(StandardHeapTypeToMemorySegmentGroup(D3D12_HEAP_TYPE_READBACK))], outStats.HeapType[2]);
+        D3D12MA_AddDetailedStatistics(ref outStats.MemorySegmentGroup[(int)(StandardHeapTypeToMemorySegmentGroup(D3D12_HEAP_TYPE_GPU_UPLOAD_COPY))], outStats.HeapType[4]);
 
         // Process custom pools.
         D3D12MA_DetailedStatistics tmpStats;
@@ -713,14 +849,16 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             }
         }
 
-        // Process committed allocations. 3 standard heap types only.
+        // Process committed allocations. standard heap types only.
         for (uint heapTypeIndex = 0; heapTypeIndex < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapTypeIndex)
         {
             D3D12MA_ClearDetailedStatistics(out tmpStats);
             m_CommittedAllocations[(int)(heapTypeIndex)].AddDetailedStatistics(ref tmpStats);
 
-            D3D12MA_AddDetailedStatistics(ref outStats.HeapType[(int)(heapTypeIndex)], tmpStats);
-            D3D12MA_AddDetailedStatistics(ref outStats.MemorySegmentGroup[(int)(StandardHeapTypeToMemorySegmentGroup(D3D12MA_IndexToHeapType(heapTypeIndex)))], tmpStats);
+            nuint outputIndex = (heapTypeIndex < 3) ? heapTypeIndex : 4; // GPU_UPLOAD 3 -> 4
+
+            D3D12MA_AddDetailedStatistics(ref outStats.HeapType[(int)(outputIndex)], tmpStats);
+            D3D12MA_AddDetailedStatistics(ref outStats.MemorySegmentGroup[(int)(StandardHeapTypeToMemorySegmentGroup(D3D12MA_IndexToStandardHeapType(heapTypeIndex)))], tmpStats);
         }
 
         // Sum up memory segment groups to totals.
@@ -735,13 +873,13 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         D3D12MA_ASSERT(outStats.Total.UnusedRangeCount == (outStats.MemorySegmentGroup[0].UnusedRangeCount + outStats.MemorySegmentGroup[1].UnusedRangeCount));
 
-        D3D12MA_ASSERT(outStats.Total.Stats.BlockCount == (outStats.HeapType[0].Stats.BlockCount + outStats.HeapType[1].Stats.BlockCount + outStats.HeapType[2].Stats.BlockCount + outStats.HeapType[3].Stats.BlockCount));
-        D3D12MA_ASSERT(outStats.Total.Stats.AllocationCount == (outStats.HeapType[0].Stats.AllocationCount + outStats.HeapType[1].Stats.AllocationCount + outStats.HeapType[2].Stats.AllocationCount + outStats.HeapType[3].Stats.AllocationCount));
+        D3D12MA_ASSERT(outStats.Total.Stats.BlockCount == (outStats.HeapType[0].Stats.BlockCount + outStats.HeapType[1].Stats.BlockCount + outStats.HeapType[2].Stats.BlockCount + outStats.HeapType[3].Stats.BlockCount + outStats.HeapType[4].Stats.BlockCount));
+        D3D12MA_ASSERT(outStats.Total.Stats.AllocationCount == (outStats.HeapType[0].Stats.AllocationCount + outStats.HeapType[1].Stats.AllocationCount + outStats.HeapType[2].Stats.AllocationCount + outStats.HeapType[3].Stats.AllocationCount + outStats.HeapType[4].Stats.AllocationCount));
 
-        D3D12MA_ASSERT(outStats.Total.Stats.BlockBytes == (outStats.HeapType[0].Stats.BlockBytes + outStats.HeapType[1].Stats.BlockBytes + outStats.HeapType[2].Stats.BlockBytes + outStats.HeapType[3].Stats.BlockBytes));
-        D3D12MA_ASSERT(outStats.Total.Stats.AllocationBytes == (outStats.HeapType[0].Stats.AllocationBytes + outStats.HeapType[1].Stats.AllocationBytes + outStats.HeapType[2].Stats.AllocationBytes + outStats.HeapType[3].Stats.AllocationBytes));
+        D3D12MA_ASSERT(outStats.Total.Stats.BlockBytes == (outStats.HeapType[0].Stats.BlockBytes + outStats.HeapType[1].Stats.BlockBytes + outStats.HeapType[2].Stats.BlockBytes + outStats.HeapType[3].Stats.BlockBytes + outStats.HeapType[4].Stats.BlockBytes));
+        D3D12MA_ASSERT(outStats.Total.Stats.AllocationBytes == (outStats.HeapType[0].Stats.AllocationBytes + outStats.HeapType[1].Stats.AllocationBytes + outStats.HeapType[2].Stats.AllocationBytes + outStats.HeapType[3].Stats.AllocationBytes + outStats.HeapType[4].Stats.AllocationBytes));
 
-        D3D12MA_ASSERT(outStats.Total.UnusedRangeCount == (outStats.HeapType[0].UnusedRangeCount + outStats.HeapType[1].UnusedRangeCount + outStats.HeapType[2].UnusedRangeCount + outStats.HeapType[3].UnusedRangeCount));
+        D3D12MA_ASSERT(outStats.Total.UnusedRangeCount == (outStats.HeapType[0].UnusedRangeCount + outStats.HeapType[1].UnusedRangeCount + outStats.HeapType[2].UnusedRangeCount + outStats.HeapType[3].UnusedRangeCount + outStats.HeapType[4].UnusedRangeCount));
     }
 
     public void GetBudget(D3D12MA_Budget* outLocalBudget, D3D12MA_Budget* outNonLocalBudget)
@@ -761,52 +899,43 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             if (!m_Budget.ShouldUpdateBudget())
             {
                 m_Budget.GetBudget(m_UseMutex, (outLocalBudget != null) ? &outLocalBudget->UsageBytes : null, (outLocalBudget != null) ? &outLocalBudget->BudgetBytes : null, (outNonLocalBudget != null) ? &outNonLocalBudget->UsageBytes : null, (outNonLocalBudget != null) ? &outNonLocalBudget->BudgetBytes : null);
-            }
-            else
-            {
-                _ = UpdateD3D12Budget();
-                GetBudget(outLocalBudget, outNonLocalBudget); // Recursion
-            }
-        }
-        else
-        {
-            if (outLocalBudget != null)
-            {
-                outLocalBudget->UsageBytes = outLocalBudget->Stats.BlockBytes;
-                outLocalBudget->BudgetBytes = GetMemoryCapacity(DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY) * 8 / 10; // 80% heuristics.
+                return;
             }
 
-            if (outNonLocalBudget != null)
+            if (SUCCEEDED(UpdateD3D12Budget()))
             {
-                outNonLocalBudget->UsageBytes = outNonLocalBudget->Stats.BlockBytes;
-                outNonLocalBudget->BudgetBytes = GetMemoryCapacity(DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY) * 8 / 10; // 80% heuristics.
+                GetBudget(outLocalBudget, outNonLocalBudget); // Recursion
+                return;
             }
+        }
+
+        // Fallback path - manual calculation, not real budget.
+        if (outLocalBudget != null)
+        {
+            outLocalBudget->UsageBytes = outLocalBudget->Stats.BlockBytes;
+            outLocalBudget->BudgetBytes = GetMemoryCapacity(DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY) * 8 / 10; // 80% heuristics.
+        }
+
+        if (outNonLocalBudget != null)
+        {
+            outNonLocalBudget->UsageBytes = outNonLocalBudget->Stats.BlockBytes;
+            outNonLocalBudget->BudgetBytes = GetMemoryCapacity(DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL_COPY) * 8 / 10; // 80% heuristics.
         }
     }
 
     public void GetBudgetForHeapType([NativeTypeName("D3D12MA::Budget &")] out D3D12MA_Budget outBudget, D3D12_HEAP_TYPE heapType)
     {
-        Unsafe.SkipInit(out outBudget);
+        bool isLocal = StandardHeapTypeToMemorySegmentGroup(heapType) == DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY;
 
-        switch (heapType)
+        fixed (D3D12MA_Budget* pOutBudget = &outBudget)
         {
-            case D3D12_HEAP_TYPE_DEFAULT:
+            if (isLocal)
             {
-                GetBudget((D3D12MA_Budget*)(Unsafe.AsPointer(ref outBudget)), null);
-                break;
+                GetBudget(pOutBudget, null);
             }
-
-            case D3D12_HEAP_TYPE_UPLOAD:
-            case D3D12_HEAP_TYPE_READBACK:
+            else
             {
-                GetBudget(null, (D3D12MA_Budget*)(Unsafe.AsPointer(ref outBudget)));
-                break;
-            }
-
-            default:
-            {
-                D3D12MA_FAIL();
-                break;
+                GetBudget(null, pOutBudget);
             }
         }
     }
@@ -822,7 +951,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             D3D12MA_DetailedStatistics* customHeaps = stackalloc D3D12MA_DetailedStatistics[2];
             CalculateStatistics(out D3D12MA_TotalStatistics stats, customHeaps);
 
-            using D3D12MA_JsonWriter json = new D3D12MA_JsonWriter(GetAllocs(), ref Unsafe.AsRef(in sb));
+            using D3D12MA_JsonWriter json = new D3D12MA_JsonWriter(GetAllocs(), &sb);
 
             json.BeginObject();
             {
@@ -833,7 +962,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                     json.WriteString("Direct3D 12");
 
                     json.WriteString("GPU");
-                    json.WriteString((char*)(Unsafe.AsPointer(ref m_AdapterDesc.Description[0])));
+                    json.WriteString(m_AdapterDesc.Description);
 
                     json.WriteString("DedicatedVideoMemory");
                     json.WriteNumber(m_AdapterDesc.DedicatedVideoMemory);
@@ -861,6 +990,9 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
                     json.WriteString("CacheCoherentUMA");
                     json.WriteBool(m_D3D12Architecture.CacheCoherentUMA);
+
+                    json.WriteString("GPUUploadHeapSupported");
+                    json.WriteBool(m_GPUUploadHeapSupported != FALSE);
                 }
                 json.EndObject();
             }
@@ -878,7 +1010,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                     json.BeginObject();
                     {
                         json.WriteString("Budget");
-                        WriteBudgetToJson(ref Unsafe.AsRef(in json), IsUMA() ? localBudget : nonLocalBudget); // When UMA device only L0 present as local
+                        WriteBudgetToJson(&json, IsUMA() ? localBudget : nonLocalBudget); // When UMA device only L0 present as local
 
                         json.WriteString("Stats");
                         json.AddDetailedStatisticsInfoObject(stats.MemorySegmentGroup[!IsUMA() ? 1 : 0]);
@@ -895,6 +1027,17 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                                     json.AddDetailedStatisticsInfoObject(stats.HeapType[0]);
                                 }
                                 json.EndObject();
+
+                                if (IsGPUUploadHeapSupported())
+                                {
+                                    json.WriteString("GPU_UPLOAD");
+                                    json.BeginObject();
+                                    {
+                                        json.WriteString("Stats");
+                                        json.AddDetailedStatisticsInfoObject(stats.HeapType[4]);
+                                    }
+                                    json.EndObject();
+                                }
                             }
 
                             json.WriteString("UPLOAD");
@@ -931,7 +1074,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                         json.BeginObject();
                         {
                             json.WriteString("Budget");
-                            WriteBudgetToJson(ref Unsafe.AsRef(in json), localBudget);
+                            WriteBudgetToJson(&json, localBudget);
 
                             json.WriteString("Stats");
                             json.AddDetailedStatisticsInfoObject(stats.MemorySegmentGroup[0]);
@@ -946,6 +1089,17 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                                     json.AddDetailedStatisticsInfoObject(stats.HeapType[0]);
                                 }
                                 json.EndObject();
+
+                                if (IsGPUUploadHeapSupported())
+                                {
+                                    json.WriteString("GPU_UPLOAD");
+                                    json.BeginObject();
+                                    {
+                                        json.WriteString("Stats");
+                                        json.AddDetailedStatisticsInfoObject(stats.HeapType[4]);
+                                    }
+                                    json.EndObject();
+                                }
 
                                 json.WriteString("CUSTOM");
                                 json.BeginObject();
@@ -965,9 +1119,10 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
             if (detailedMap)
             {
-                static void writeHeapInfo(ref D3D12MA_JsonWriter json, D3D12MA_BlockVector* blockVector, D3D12MA_CommittedAllocationList* committedAllocs, bool customHeap)
+                static void writeHeapInfo(D3D12MA_JsonWriter* pJson, D3D12MA_BlockVector* blockVector, D3D12MA_CommittedAllocationList* committedAllocs, bool customHeap)
                 {
                     D3D12MA_ASSERT(blockVector != null);
+                    ref D3D12MA_JsonWriter json = ref *pJson;
 
                     D3D12_HEAP_FLAGS flags = blockVector->GetHeapFlags();
                     json.WriteString("Flags");
@@ -1107,7 +1262,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                     json.WriteNumber(blockVector->GetPreferredBlockSize());
 
                     json.WriteString("Blocks");
-                    blockVector->WriteBlockInfoToJson(ref json);
+                    blockVector->WriteBlockInfoToJson(pJson);
 
                     json.WriteString("DedicatedAllocations");
                     json.BeginArray();
@@ -1127,9 +1282,9 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                     {
                         for (byte heapType = 0; heapType < D3D12MA_STANDARD_HEAP_TYPE_COUNT; ++heapType)
                         {
-                            json.WriteString(D3D12MA_HeapTypeNames[heapType]);
+                            json.WriteString(D3D12MA_StandardHeapTypeNames[heapType]);
                             json.BeginObject();
-                            writeHeapInfo(ref Unsafe.AsRef(in json), m_BlockVectors[heapType].Value, (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[heapType])), false);
+                            writeHeapInfo(&json, m_BlockVectors[heapType].Value, (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[heapType])), false);
                             json.EndObject();
                         }
                     }
@@ -1139,11 +1294,11 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                         {
                             for (byte heapSubType = 0; heapSubType < 3; ++heapSubType)
                             {
-                                json.BeginString(D3D12MA_HeapTypeNames[heapType]);
+                                json.BeginString(D3D12MA_StandardHeapTypeNames[heapType]);
                                 json.EndString(D3D12MA_HeapSubTypeName[heapSubType]);
 
                                 json.BeginObject();
-                                writeHeapInfo(ref Unsafe.AsRef(in json), m_BlockVectors[(int)(heapType + heapSubType)].Value, (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[heapType])), false);
+                                writeHeapInfo(&json, m_BlockVectors[(int)(heapType * 3 + heapSubType)].Value, (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[heapType])), false);
                                 json.EndObject();
                             }
                         }
@@ -1180,7 +1335,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
                             json.EndString();
 
-                            writeHeapInfo(ref Unsafe.AsRef(in json), item->GetBlockVector(), item->GetCommittedAllocationList(), heapTypeIndex == 3);
+                            writeHeapInfo(&json, item->GetBlockVector(), item->GetCommittedAllocationList(), heapTypeIndex == 3);
                             json.EndObject();
                         }
                         while ((item = D3D12MA_IntrusiveLinkedList<D3D12MA_PoolListItemTraits, D3D12MA_PoolPimpl>.GetNext(item)) != null);
@@ -1211,21 +1366,28 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     }
 
     // Heuristics that decides whether a resource should better be placed in its own, dedicated allocation (committed resource rather than placed resource).
-    private static bool PrefersCommittedAllocation([NativeTypeName("const D3D12_RESOURCE_DESC_T &")] in D3D12_RESOURCE_DESC resourceDesc)
+    private bool PrefersCommittedAllocation([NativeTypeName("const D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC* resourceDesc, D3D12MA_ALLOCATION_FLAGS strategy)
     {
+        // Prefer creating small buffers <= 32 KB as committed, because drivers pack them better, while placed buffers require 64 KB alignment.
+        // Creating as committed would be slower.
+
+        if ((resourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) && (resourceDesc->Width <= (D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT / 2)) && (strategy != D3D12MA_ALLOCATION_FLAG_STRATEGY_MIN_TIME) && m_PreferSmallBuffersCommitted)
+        {
+            return true;
+        }
+
         // Intentional. It may change in the future.
         return false;
     }
 
-    private static bool PrefersCommittedAllocation([NativeTypeName("const D3D12_RESOURCE_DESC_T &")] in D3D12_RESOURCE_DESC1 resourceDesc)
+    private bool PrefersCommittedAllocation([NativeTypeName("const D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC1* resourceDesc, D3D12MA_ALLOCATION_FLAGS strategy)
     {
-        // Intentional. It may change in the future.
-        return false;
+        return PrefersCommittedAllocation((D3D12_RESOURCE_DESC*)(resourceDesc), strategy);
     }
 
     // Allocates and registers new committed resource with implicit heap, as dedicated allocation.
     // Creates and returns Allocation object and optionally D3D12 resource.
-    private HRESULT AllocateCommittedResource([NativeTypeName("const D3D12MA::CommittedAllocationParameters &")] in D3D12MA_CommittedAllocationParameters committedAllocParams, [NativeTypeName("UINT64")] ulong resourceSize, bool withinBudget, void* pPrivateData, [NativeTypeName("const D3D12_RESOURCE_DESC *")] D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    private HRESULT AllocateCommittedResource([NativeTypeName("const D3D12MA::CommittedAllocationParameters &")] in D3D12MA_CommittedAllocationParameters committedAllocParams, [NativeTypeName("UINT64")] ulong resourceSize, bool withinBudget, void* pPrivateData, [NativeTypeName("D3D12MA_CREATE_RESOURCE_PARAMS &")] in D3D12MA_CREATE_RESOURCE_PARAMS createParams, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
     {
         D3D12MA_ASSERT(committedAllocParams.IsValid());
 
@@ -1244,7 +1406,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
             if (SUCCEEDED(hr))
             {
-                hr = m_Device->CreatePlacedResource((*ppAllocation)->GetHeap(), 0, pResourceDesc, InitialResourceState, pOptimizedClearValue, __uuidof<ID3D12Resource>(), (void**)(&res));
+                hr = CreatePlacedResourceWrap((*ppAllocation)->GetHeap(), 0, createParams, __uuidof<ID3D12Resource>(), (void**)(&res));
 
                 if (SUCCEEDED(hr))
                 {
@@ -1255,7 +1417,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
                     if (SUCCEEDED(hr))
                     {
-                        (*ppAllocation)->SetResourcePointer(res, pResourceDesc);
+                        (*ppAllocation)->SetResourcePointer(res, createParams.GetBaseResourceDesc());
                         return hr;
                     }
 
@@ -1273,124 +1435,59 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             return E_OUTOFMEMORY;
         }
 
-        // D3D12 ERROR:
-        // ID3D12Device::CreateCommittedResource:
-        // When creating a committed resource, D3D12_HEAP_FLAGS must not have either
-        //      D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES,
-        //      D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES,
-        //      nor D3D12_HEAP_FLAG_DENY_BUFFERS set.
-        // These flags will be set automatically to correspond with the committed resource type.
-        // 
-        // [ STATE_CREATION ERROR #640: CREATERESOURCEANDHEAP_INVALIDHEAPMISCFLAGS]
-
-        if (m_Device4 != null)
+        fixed (D3D12_HEAP_PROPERTIES* pHeapProperties = &committedAllocParams.m_HeapProperties)
         {
-            Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
-            hr = m_Device4->CreateCommittedResource1((D3D12_HEAP_PROPERTIES*)(Unsafe.AsPointer(ref Unsafe.AsRef(in committedAllocParams.m_HeapProperties))), (committedAllocParams.m_HeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS), pResourceDesc, InitialResourceState, pOptimizedClearValue, committedAllocParams.m_ProtectedSession, __uuidof<ID3D12Resource>(), (void**)(&res));
-        }
-        else
-        {
-            if (committedAllocParams.m_ProtectedSession == null)
+            // D3D12 ERROR: ID3D12Device::CreateCommittedResource: When creating a committed resource, D3D12_HEAP_FLAGS must not have either D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES, D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES, nor D3D12_HEAP_FLAG_DENY_BUFFERS set. These flags will be set automatically to correspond with the committed resource type. [ STATE_CREATION ERROR #640: CREATERESOURCEANDHEAP_INVALIDHEAPMISCFLAGS]
+            if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_LAYOUT)
             {
-                hr = m_Device->CreateCommittedResource((D3D12_HEAP_PROPERTIES*)(Unsafe.AsPointer(ref Unsafe.AsRef(in committedAllocParams.m_HeapProperties))), (committedAllocParams.m_HeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS), pResourceDesc, InitialResourceState, pOptimizedClearValue, __uuidof<ID3D12Resource>(), (void**)(&res));
-            }
-            else
-            {
-                hr = E_NOINTERFACE;
-            }
-        }
-
-        if (SUCCEEDED(hr))
-        {
-            if (ppvResource != null)
-            {
-                hr = res->QueryInterface(riidResource, ppvResource);
-            }
-
-            if (SUCCEEDED(hr))
-            {
-                BOOL wasZeroInitialized = TRUE;
-                D3D12MA_Allocation* alloc = m_AllocationObjectAllocator.Allocate((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)), resourceSize, pResourceDesc->Alignment, wasZeroInitialized);
-
-                alloc->InitCommitted(committedAllocParams.m_List);
-                alloc->SetResourcePointer(res, pResourceDesc);
-                alloc->SetPrivateData(pPrivateData);
-
-                *ppAllocation = alloc;
-
-                committedAllocParams.m_List->Register(alloc);
-
-                uint memSegmentGroup = HeapPropertiesToMemorySegmentGroup(committedAllocParams.m_HeapProperties);
-                m_Budget.AddBlock(memSegmentGroup, resourceSize);
-                m_Budget.AddAllocation(memSegmentGroup, resourceSize);
-            }
-            else
-            {
-                _ = res->Release();
-            }
-        }
-        return hr;
-    }
-
-    private HRESULT AllocateCommittedResource2([NativeTypeName("const D3D12MA::CommittedAllocationParameters &")] in D3D12MA_CommittedAllocationParameters committedAllocParams, [NativeTypeName("UINT64")] ulong resourceSize, bool withinBudget, void* pPrivateData, [NativeTypeName("const D3D12_RESOURCE_DESC1 *")] D3D12_RESOURCE_DESC1* pResourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
-    {
-        D3D12MA_ASSERT(committedAllocParams.IsValid());
-
-        if (m_Device8 == null)
-        {
-            return E_NOINTERFACE;
-        }
-        Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
-
-        HRESULT hr;
-        ID3D12Resource* res = null;
-
-        // Allocate aliasing memory with explicit heap
-        if (committedAllocParams.m_CanAlias)
-        {
-            D3D12_RESOURCE_ALLOCATION_INFO heapAllocInfo = new D3D12_RESOURCE_ALLOCATION_INFO {
-                SizeInBytes = resourceSize,
-                Alignment = D3D12MA_HeapFlagsToAlignment(committedAllocParams.m_HeapFlags, m_MsaaAlwaysCommitted),
-            };
-
-            hr = AllocateHeap(committedAllocParams, heapAllocInfo, withinBudget, pPrivateData, ppAllocation);
-
-            if (SUCCEEDED(hr))
-            {
-                hr = m_Device8->CreatePlacedResource1((*ppAllocation)->GetHeap(), 0, pResourceDesc, InitialResourceState, pOptimizedClearValue, __uuidof<ID3D12Resource>(), (void**)(&res));
-
-                if (SUCCEEDED(hr))
+                if (m_Device10 == null)
                 {
-                    if (ppvResource != null)
-                    {
-                        hr = res->QueryInterface(riidResource, ppvResource);
-                    }
-
-                    if (SUCCEEDED(hr))
-                    {
-                        (*ppAllocation)->SetResourcePointer(res, pResourceDesc);
-                        return hr;
-                    }
-
-                    _ = res->Release();
+                    return E_NOINTERFACE;
                 }
 
-                FreeHeapMemory(*ppAllocation);
+                // Microsoft defined pCastableFormats parameter as pointer to non-const and only fixed it in later Agility SDK, thus we need const_cast.
+                hr = m_Device10->CreateCommittedResource3(pHeapProperties, committedAllocParams.m_HeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS, createParams.GetResourceDesc1(), createParams.GetInitialLayout(), createParams.GetOptimizedClearValue(), committedAllocParams.m_ProtectedSession, createParams.GetNumCastableFormats(), (DXGI_FORMAT*)(createParams.GetCastableFormats()), __uuidof<ID3D12Resource>(), (void**)(&res));
             }
+            else if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE_AND_DESC1)
+            {
+                if (m_Device8 == null)
+                {
+                    return E_NOINTERFACE;
+                }
+                Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
 
-            return hr;
+                hr = m_Device8->CreateCommittedResource2(pHeapProperties, committedAllocParams.m_HeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS, createParams.GetResourceDesc1(), createParams.GetInitialResourceState(), createParams.GetOptimizedClearValue(), committedAllocParams.m_ProtectedSession, __uuidof<ID3D12Resource>(), (void**)(&res));
+            }
+            else if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE)
+            {
+                if (m_Device4 != null)
+                {
+                    Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
+                    hr = m_Device4->CreateCommittedResource1(pHeapProperties, committedAllocParams.m_HeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS, createParams.GetResourceDesc(), createParams.GetInitialResourceState(), createParams.GetOptimizedClearValue(), committedAllocParams.m_ProtectedSession, __uuidof<ID3D12Resource>(), (void**)(&res));
+                }
+                else
+                {
+                    if (committedAllocParams.m_ProtectedSession == null)
+                    {
+                        hr = m_Device->CreateCommittedResource(pHeapProperties, committedAllocParams.m_HeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS, createParams.GetResourceDesc(), createParams.GetInitialResourceState(), createParams.GetOptimizedClearValue(), __uuidof<ID3D12Resource>(), (void**)(&res));
+                    }
+                    else
+                    {
+                        hr = E_NOINTERFACE;
+                    }
+                }
+            }
+            else
+            {
+                D3D12MA_FAIL();
+                return E_INVALIDARG;
+            }
         }
-
-        if (withinBudget && !NewAllocationWithinBudget(committedAllocParams.m_HeapProperties.Type, resourceSize))
-        {
-            return E_OUTOFMEMORY;
-        }
-
-        // D3D12 ERROR: ID3D12Device::CreateCommittedResource: When creating a committed resource, D3D12_HEAP_FLAGS must not have either D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES, D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES, nor D3D12_HEAP_FLAG_DENY_BUFFERS set. These flags will be set automatically to correspond with the committed resource type. [ STATE_CREATION ERROR #640: CREATERESOURCEANDHEAP_INVALIDHEAPMISCFLAGS]
-        hr = m_Device8->CreateCommittedResource2((D3D12_HEAP_PROPERTIES*)(Unsafe.AsPointer(ref Unsafe.AsRef(in committedAllocParams.m_HeapProperties))), (committedAllocParams.m_HeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS), pResourceDesc, InitialResourceState, pOptimizedClearValue, committedAllocParams.m_ProtectedSession, __uuidof<ID3D12Resource>(), (void**)(&res));
 
         if (SUCCEEDED(hr))
         {
+            SetResidencyPriority((ID3D12Pageable*)(res), committedAllocParams.m_ResidencyPriority);
+
             if (ppvResource != null)
             {
                 hr = res->QueryInterface(riidResource, ppvResource);
@@ -1398,11 +1495,10 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
             if (SUCCEEDED(hr))
             {
-                BOOL wasZeroInitialized = TRUE;
-                D3D12MA_Allocation* alloc = m_AllocationObjectAllocator.Allocate((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)), resourceSize, pResourceDesc->Alignment, wasZeroInitialized);
+                D3D12MA_Allocation* alloc = m_AllocationObjectAllocator.Allocate((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)), resourceSize, createParams.GetBaseResourceDesc()->Alignment);
 
                 alloc->InitCommitted(committedAllocParams.m_List);
-                alloc->SetResourcePointer(res, pResourceDesc);
+                alloc->SetResourcePointer(res, createParams.GetBaseResourceDesc());
                 alloc->SetPrivateData(pPrivateData);
 
                 *ppAllocation = alloc;
@@ -1463,9 +1559,9 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         if (SUCCEEDED(hr))
         {
-            BOOL wasZeroInitialized = TRUE;
-            *ppAllocation = m_AllocationObjectAllocator.Allocate((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)), allocInfo.SizeInBytes, allocInfo.Alignment, wasZeroInitialized);
-            
+            *ppAllocation = m_AllocationObjectAllocator.Allocate((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)), allocInfo.SizeInBytes, allocInfo.Alignment);
+            SetResidencyPriority((ID3D12Pageable*)(heap), committedAllocParams.m_ResidencyPriority);
+
             (*ppAllocation)->InitHeap(committedAllocParams.m_List, heap);
             (*ppAllocation)->SetPrivateData(pPrivateData);
             committedAllocParams.m_List->Register(*ppAllocation);
@@ -1484,6 +1580,11 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         outCommittedAllocationParams = new D3D12MA_CommittedAllocationParameters();
         outPreferCommitted = false;
 
+        if ((allocDesc.HeapType == D3D12_HEAP_TYPE_GPU_UPLOAD_COPY) && !IsGPUUploadHeapSupported())
+        {
+            return E_NOTIMPL;
+        }
+
         bool msaaAlwaysCommitted;
 
         if (allocDesc.CustomPool != null)
@@ -1491,12 +1592,18 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             D3D12MA_PoolPimpl* pool = allocDesc.CustomPool->m_Pimpl;
 
             msaaAlwaysCommitted = pool->GetBlockVector()->DeniesMsaaTextures();
-            outBlockVector = pool->GetBlockVector();
 
-            outCommittedAllocationParams.m_ProtectedSession = pool->GetDesc().pProtectedSession;
-            outCommittedAllocationParams.m_HeapProperties = pool->GetDesc().HeapProperties;
-            outCommittedAllocationParams.m_HeapFlags = pool->GetDesc().HeapFlags;
+            if (!pool->AlwaysCommitted())
+            {
+                outBlockVector = pool->GetBlockVector();
+            }
+
+            ref readonly var desc = ref pool->GetDesc();
+            outCommittedAllocationParams.m_ProtectedSession = desc.pProtectedSession;
+            outCommittedAllocationParams.m_HeapProperties = desc.HeapProperties;
+            outCommittedAllocationParams.m_HeapFlags = desc.HeapFlags;
             outCommittedAllocationParams.m_List = pool->GetCommittedAllocationList();
+            outCommittedAllocationParams.m_ResidencyPriority = pool->GetDesc().ResidencyPriority;
         }
         else
         {
@@ -1508,7 +1615,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
             outCommittedAllocationParams.m_HeapProperties = D3D12MA_StandardHeapTypeToHeapProperties(allocDesc.HeapType);
             outCommittedAllocationParams.m_HeapFlags = allocDesc.ExtraHeapFlags;
-            outCommittedAllocationParams.m_List = (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[(int)(D3D12MA_HeapTypeToIndex(allocDesc.HeapType))]));
+            outCommittedAllocationParams.m_List = (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[(int)(D3D12MA_StandardHeapTypeToIndex(allocDesc.HeapType))]));
 
             D3D12MA_ResourceClass resourceClass = (resDesc != null) ? D3D12MA_ResourceDescToResourceClass(*resDesc) : D3D12MA_HeapFlagsToResourceClass(allocDesc.ExtraHeapFlags);
             uint defaultPoolIndex = CalcDefaultPoolIndex(allocDesc, resourceClass);
@@ -1527,13 +1634,6 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                     // Heuristics: Allocate committed memory if requested size if greater than half of preferred block size.
                     outPreferCommitted = true;
                 }
-            }
-
-            D3D12_HEAP_FLAGS extraHeapFlags = allocDesc.ExtraHeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS;
-
-            if ((outBlockVector != null) && (extraHeapFlags != 0))
-            {
-                outBlockVector = null;
             }
         }
 
@@ -1556,7 +1656,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                 outBlockVector = null;
             }
 
-            if (!outPreferCommitted && PrefersCommittedAllocation(*resDesc))
+            if (!outPreferCommitted && PrefersCommittedAllocation(resDesc, allocDesc.Flags & D3D12MA_ALLOCATION_FLAG_STRATEGY_MASK))
             {
                 outPreferCommitted = true;
             }
@@ -1567,89 +1667,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
     private HRESULT CalcAllocationParams([NativeTypeName("const D3D12MA::ALLOCATION_DESC &")] in D3D12MA_ALLOCATION_DESC allocDesc, [NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("const D3D12_RESOURCE_DESC_T *")] D3D12_RESOURCE_DESC1* resDesc, [NativeTypeName("D3D12MA::BlockVector *&")] out D3D12MA_BlockVector* outBlockVector, [NativeTypeName("D3D12MA::CommittedAllocationParameters &")] out D3D12MA_CommittedAllocationParameters outCommittedAllocationParams, [NativeTypeName("bool &")] out bool outPreferCommitted)
     {
-        outBlockVector = null;
-        outCommittedAllocationParams = new D3D12MA_CommittedAllocationParameters();
-        outPreferCommitted = false;
-
-        bool msaaAlwaysCommitted;
-
-        if (allocDesc.CustomPool != null)
-        {
-            D3D12MA_PoolPimpl* pool = allocDesc.CustomPool->m_Pimpl;
-
-            msaaAlwaysCommitted = pool->GetBlockVector()->DeniesMsaaTextures();
-            outBlockVector = pool->GetBlockVector();
-
-            outCommittedAllocationParams.m_ProtectedSession = pool->GetDesc().pProtectedSession;
-            outCommittedAllocationParams.m_HeapProperties = pool->GetDesc().HeapProperties;
-            outCommittedAllocationParams.m_HeapFlags = pool->GetDesc().HeapFlags;
-            outCommittedAllocationParams.m_List = pool->GetCommittedAllocationList();
-        }
-        else
-        {
-            if (!D3D12MA_IsHeapTypeStandard(allocDesc.HeapType))
-            {
-                return E_INVALIDARG;
-            }
-            msaaAlwaysCommitted = m_MsaaAlwaysCommitted;
-
-            outCommittedAllocationParams.m_HeapProperties = D3D12MA_StandardHeapTypeToHeapProperties(allocDesc.HeapType);
-            outCommittedAllocationParams.m_HeapFlags = allocDesc.ExtraHeapFlags;
-            outCommittedAllocationParams.m_List = (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[(int)(D3D12MA_HeapTypeToIndex(allocDesc.HeapType))]));
-
-            D3D12MA_ResourceClass resourceClass = (resDesc != null) ? D3D12MA_ResourceDescToResourceClass(*resDesc) : D3D12MA_HeapFlagsToResourceClass(allocDesc.ExtraHeapFlags);
-            uint defaultPoolIndex = CalcDefaultPoolIndex(allocDesc, resourceClass);
-
-            if (defaultPoolIndex != uint.MaxValue)
-            {
-                outBlockVector = m_BlockVectors[(int)(defaultPoolIndex)].Value;
-                ulong preferredBlockSize = outBlockVector->GetPreferredBlockSize();
-
-                if (allocSize > preferredBlockSize)
-                {
-                    outBlockVector = null;
-                }
-                else if (allocSize > preferredBlockSize / 2)
-                {
-                    // Heuristics: Allocate committed memory if requested size if greater than half of preferred block size.
-                    outPreferCommitted = true;
-                }
-            }
-
-            D3D12_HEAP_FLAGS extraHeapFlags = allocDesc.ExtraHeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS;
-
-            if ((outBlockVector != null) && (extraHeapFlags != 0))
-            {
-                outBlockVector = null;
-            }
-        }
-
-        if (((allocDesc.Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) != 0) || m_AlwaysCommitted)
-        {
-            outBlockVector = null;
-        }
-
-        if ((allocDesc.Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
-        {
-            outCommittedAllocationParams.m_List = null;
-        }
-
-        outCommittedAllocationParams.m_CanAlias = (allocDesc.Flags & D3D12MA_ALLOCATION_FLAG_CAN_ALIAS) != 0;
-
-        if (resDesc != null)
-        {
-            if (resDesc->SampleDesc.Count > 1 && msaaAlwaysCommitted)
-            {
-                outBlockVector = null;
-            }
-
-            if (!outPreferCommitted && PrefersCommittedAllocation(*resDesc))
-            {
-                outPreferCommitted = true;
-            }
-        }
-
-        return ((outBlockVector != null) || (outCommittedAllocationParams.m_List != null)) ? S_OK : E_INVALIDARG;
+        return CalcAllocationParams(allocDesc, allocSize, (D3D12_RESOURCE_DESC*)(resDesc), out outBlockVector, out outCommittedAllocationParams, out outPreferCommitted);
     }
 
     // Returns uint.MaxValue if index cannot be calculcated.
@@ -1657,6 +1675,11 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     private readonly uint CalcDefaultPoolIndex([NativeTypeName("const D3D12MA::ALLOCATION_DESC &")] in D3D12MA_ALLOCATION_DESC allocDesc, D3D12MA_ResourceClass resourceClass)
     {
         D3D12_HEAP_FLAGS extraHeapFlags = allocDesc.ExtraHeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS;
+
+        if (D3D12MA_CREATE_NOT_ZEROED_AVAILABLE != 0)
+        {
+            extraHeapFlags &= ~D3D12_HEAP_FLAG_CREATE_NOT_ZEROED;
+        }
 
         if (extraHeapFlags != 0)
         {
@@ -1682,6 +1705,12 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             case D3D12_HEAP_TYPE_READBACK:
             {
                 poolIndex = 2;
+                break;
+            }
+
+            case D3D12_HEAP_TYPE_GPU_UPLOAD_COPY:
+            {
+                poolIndex = 3;
                 break;
             }
 
@@ -1774,6 +1803,12 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                 break;
             }
 
+            case 3:
+            {
+                outHeapType = D3D12_HEAP_TYPE_GPU_UPLOAD_COPY;
+                break;
+            }
+
             default:
             {
                 D3D12MA_FAIL();
@@ -1785,7 +1820,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     // Registers Pool object in m_Pools.
     internal void RegisterPool(D3D12MA_Pool* pool, D3D12_HEAP_TYPE heapType)
     {
-        uint heapTypeIndex = D3D12MA_HeapTypeToIndex(heapType);
+        uint heapTypeIndex = (uint)(heapType - 1);
 
         using D3D12MA_MutexLockWrite @lock = new D3D12MA_MutexLockWrite(ref m_PoolsMutex[(int)(heapTypeIndex)], m_UseMutex);
         m_Pools[(int)(heapTypeIndex)].PushBack(pool->m_Pimpl);
@@ -1794,7 +1829,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     // Unregisters Pool object from m_Pools.
     internal void UnregisterPool(D3D12MA_Pool* pool, D3D12_HEAP_TYPE heapType)
     {
-        uint heapTypeIndex = D3D12MA_HeapTypeToIndex(heapType);
+        uint heapTypeIndex = (uint)(heapType - 1);
 
         using D3D12MA_MutexLockWrite @lock = new D3D12MA_MutexLockWrite(ref m_PoolsMutex[(int)(heapTypeIndex)], m_UseMutex);
         m_Pools[(int)(heapTypeIndex)].Remove(pool->m_Pimpl);
@@ -1819,20 +1854,57 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         }
     }
 
-    private readonly D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfoNative([NativeTypeName("const D3D12_RESOURCE_DESC &")] in D3D12_RESOURCE_DESC resourceDesc)
+    private readonly D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfoNative([NativeTypeName("const D3D12_RESOURCE_DESC &")] D3D12_RESOURCE_DESC* resourceDesc)
     {
-        return m_Device->GetResourceAllocationInfo(0, 1, (D3D12_RESOURCE_DESC*)(Unsafe.AsPointer(ref Unsafe.AsRef(in resourceDesc))));
+        return m_Device->GetResourceAllocationInfo(0, 1, resourceDesc);
     }
 
-    private readonly D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfoNative([NativeTypeName("const D3D12_RESOURCE_DESC1 &")] in D3D12_RESOURCE_DESC1 resourceDesc)
+    private readonly HRESULT GetResourceAllocationInfoMiddle([NativeTypeName("D3D12_RESOURCE_DESC &")] D3D12_RESOURCE_DESC* inOutResourceDesc, [NativeTypeName("UINT32")] uint NumCastableFormats, [NativeTypeName("const DXGI_FORMAT *")] DXGI_FORMAT* pCastableFormats, [NativeTypeName("D3D12_RESOURCE_ALLOCATION_INFO &")] out D3D12_RESOURCE_ALLOCATION_INFO outAllocInfo)
+    {
+        if (NumCastableFormats > 0)
+        {
+            Unsafe.SkipInit(out outAllocInfo);
+            return E_NOTIMPL;
+        }
+
+        outAllocInfo = GetResourceAllocationInfoNative(inOutResourceDesc);
+        return (outAllocInfo.SizeInBytes != UINT64_MAX) ? S_OK : E_INVALIDARG;
+    }
+
+    private readonly D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo2Native([NativeTypeName("const D3D12_RESOURCE_DESC1 &")] D3D12_RESOURCE_DESC1* resourceDesc)
     {
         D3D12MA_ASSERT(m_Device8 != null);
         Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
+
         D3D12_RESOURCE_ALLOCATION_INFO1 info1Unused;
-        return m_Device8->GetResourceAllocationInfo2(0, 1, (D3D12_RESOURCE_DESC1*)(Unsafe.AsPointer(ref Unsafe.AsRef(in resourceDesc))), &info1Unused);
+        return m_Device8->GetResourceAllocationInfo2(0, 1, resourceDesc, &info1Unused);
     }
 
-    private readonly D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo([NativeTypeName("D3D12_RESOURCE_DESC_T &")] ref D3D12_RESOURCE_DESC inOutResourceDesc)
+    private readonly HRESULT GetResourceAllocationInfoMiddle([NativeTypeName("D3D12_RESOURCE_DESC1 &")] D3D12_RESOURCE_DESC1* inOutResourceDesc, [NativeTypeName("UINT32")] uint NumCastableFormats, [NativeTypeName("const DXGI_FORMAT *")] DXGI_FORMAT* pCastableFormats, [NativeTypeName("D3D12_RESOURCE_ALLOCATION_INFO &")] out D3D12_RESOURCE_ALLOCATION_INFO outAllocInfo)
+    {
+        if (NumCastableFormats > 0)
+        {
+            if (m_Device12 != null)
+            {
+                outAllocInfo = GetResourceAllocationInfo3Native(inOutResourceDesc, NumCastableFormats, pCastableFormats);
+                return outAllocInfo.SizeInBytes != UINT64_MAX ? S_OK : E_INVALIDARG;
+            }
+        }
+
+        outAllocInfo = GetResourceAllocationInfo2Native(inOutResourceDesc);
+        return outAllocInfo.SizeInBytes != UINT64_MAX ? S_OK : E_INVALIDARG;
+    }
+
+    private readonly D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo3Native([NativeTypeName("const D3D12_RESOURCE_DESC1 &")] D3D12_RESOURCE_DESC1* resourceDesc, [NativeTypeName("UINT32")] uint NumCastableFormats, [NativeTypeName("const DXGI_FORMAT *")] DXGI_FORMAT* pCastableFormats)
+    {
+        D3D12MA_ASSERT(m_Device12 != null);
+        Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
+
+        D3D12_RESOURCE_ALLOCATION_INFO1 info1Unused;
+        return m_Device12->GetResourceAllocationInfo3(0, 1, resourceDesc, &NumCastableFormats, &pCastableFormats, &info1Unused);
+    }
+
+    private readonly HRESULT GetResourceAllocationInfo([NativeTypeName("D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC* inOutResourceDesc, [NativeTypeName("UINT32")] uint NumCastableFormats, [NativeTypeName("const DXGI_FORMAT *")] DXGI_FORMAT* pCastableFormats, [NativeTypeName("D3D12_RESOURCE_ALLOCATION_INFO &")] out D3D12_RESOURCE_ALLOCATION_INFO outAllocInfo)
     {
         // Optional optimization: Microsoft documentation says:
         //    https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-getresourceallocationinfo
@@ -1842,80 +1914,43 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         // which is merely the smallest multiple of 64KB that's greater or equal to
         // D3D12_RESOURCE_DESC::Width.
 
-        if ((inOutResourceDesc.Alignment == 0) && (inOutResourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER))
+        if ((inOutResourceDesc->Alignment == 0) && (inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER))
         {
-            return new D3D12_RESOURCE_ALLOCATION_INFO {
-                SizeInBytes = D3D12MA_AlignUp(inOutResourceDesc.Width, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT),
+            outAllocInfo = new D3D12_RESOURCE_ALLOCATION_INFO {
+                SizeInBytes = D3D12MA_AlignUp(inOutResourceDesc->Width, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT),
                 Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
             };
+            return S_OK;
         }
 
         if (D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 0)
         {
-            if ((inOutResourceDesc.Alignment == 0) && (inOutResourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) && ((inOutResourceDesc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) == 0) && ((D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 1) || D3D12MA_CanUseSmallAlignment(inOutResourceDesc)))
+            if ((inOutResourceDesc->Alignment == 0) && (inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) && ((inOutResourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) == 0) && ((D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 1) || D3D12MA_CanUseSmallAlignment(*inOutResourceDesc)))
             {
                 // The algorithm here is based on Microsoft sample: "Small Resources Sample"
                 // https://github.com/microsoft/DirectX-Graphics-Samples/tree/master/Samples/Desktop/D3D12SmallResources
 
-                ulong smallAlignmentToTry = (uint)((inOutResourceDesc.SampleDesc.Count > 1) ? D3D12_SMALL_MSAA_RESOURCE_PLACEMENT_ALIGNMENT : D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT);
-                inOutResourceDesc.Alignment = smallAlignmentToTry;
+                ulong smallAlignmentToTry = (uint)((inOutResourceDesc->SampleDesc.Count > 1) ? D3D12_SMALL_MSAA_RESOURCE_PLACEMENT_ALIGNMENT : D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT);
+                inOutResourceDesc->Alignment = smallAlignmentToTry;
 
-                D3D12_RESOURCE_ALLOCATION_INFO smallAllocInfo = GetResourceAllocationInfoNative(inOutResourceDesc);
+                HRESULT hr = GetResourceAllocationInfoMiddle(inOutResourceDesc, NumCastableFormats, pCastableFormats, out outAllocInfo);
 
                 // Check if alignment requested has been granted.
-                if (smallAllocInfo.Alignment == smallAlignmentToTry)
+                if (SUCCEEDED(hr) && (outAllocInfo.Alignment == smallAlignmentToTry))
                 {
-                    return smallAllocInfo;
+                    return S_OK;
                 }
 
-                inOutResourceDesc.Alignment = 0; // Restore original
+                inOutResourceDesc->Alignment = 0; // Restore original
             }
         }
 
-        return GetResourceAllocationInfoNative(inOutResourceDesc);
+        return GetResourceAllocationInfoMiddle(inOutResourceDesc, NumCastableFormats, pCastableFormats, out outAllocInfo);
     }
 
-    private readonly D3D12_RESOURCE_ALLOCATION_INFO GetResourceAllocationInfo([NativeTypeName("D3D12_RESOURCE_DESC_T &")] ref D3D12_RESOURCE_DESC1 inOutResourceDesc)
+    private readonly HRESULT GetResourceAllocationInfo([NativeTypeName("D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC1* inOutResourceDesc, [NativeTypeName("UINT32")] uint NumCastableFormats, [NativeTypeName("const DXGI_FORMAT *")] DXGI_FORMAT* pCastableFormats, [NativeTypeName("D3D12_RESOURCE_ALLOCATION_INFO &")] out D3D12_RESOURCE_ALLOCATION_INFO outAllocInfo)
     {
-        // Optional optimization: Microsoft documentation says:
-        //    https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-getresourceallocationinfo
-        //
-        // Your application can forgo using GetResourceAllocationInfo for buffer resources
-        // (D3D12_RESOURCE_DIMENSION_BUFFER). Buffers have the same size on all adapters,
-        // which is merely the smallest multiple of 64KB that's greater or equal to
-        // D3D12_RESOURCE_DESC::Width.
-
-        if ((inOutResourceDesc.Alignment == 0) && (inOutResourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER))
-        {
-            return new D3D12_RESOURCE_ALLOCATION_INFO {
-                SizeInBytes = D3D12MA_AlignUp(inOutResourceDesc.Width, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT),
-                Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
-            };
-        }
-
-        if (D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 0)
-        {
-            if ((inOutResourceDesc.Alignment == 0) && (inOutResourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) && ((inOutResourceDesc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) == 0) && ((D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 1) || D3D12MA_CanUseSmallAlignment(inOutResourceDesc)))
-            {
-                // The algorithm here is based on Microsoft sample: "Small Resources Sample"
-                // https://github.com/microsoft/DirectX-Graphics-Samples/tree/master/Samples/Desktop/D3D12SmallResources
-
-                ulong smallAlignmentToTry = (uint)((inOutResourceDesc.SampleDesc.Count > 1) ? D3D12_SMALL_MSAA_RESOURCE_PLACEMENT_ALIGNMENT : D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT);
-                inOutResourceDesc.Alignment = smallAlignmentToTry;
-
-                D3D12_RESOURCE_ALLOCATION_INFO smallAllocInfo = GetResourceAllocationInfoNative(inOutResourceDesc);
-
-                // Check if alignment requested has been granted.
-                if (smallAllocInfo.Alignment == smallAlignmentToTry)
-                {
-                    return smallAllocInfo;
-                }
-
-                inOutResourceDesc.Alignment = 0; // Restore original
-            }
-        }
-
-        return GetResourceAllocationInfoNative(inOutResourceDesc);
+        return GetResourceAllocationInfo((D3D12_RESOURCE_DESC*)(inOutResourceDesc), NumCastableFormats, pCastableFormats, out outAllocInfo);
     }
 
     private bool NewAllocationWithinBudget(D3D12_HEAP_TYPE heapType, [NativeTypeName("UINT64")] ulong size)
@@ -1925,8 +1960,10 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     }
 
     // Writes object { } with data of given budget.
-    private static void WriteBudgetToJson([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json, [NativeTypeName("const D3D12MA::Budget &")] in D3D12MA_Budget budget)
+    private static void WriteBudgetToJson([NativeTypeName("D3D12MA::JsonWriter &")] D3D12MA_JsonWriter* pJson, [NativeTypeName("const D3D12MA::Budget &")] in D3D12MA_Budget budget)
     {
+        ref D3D12MA_JsonWriter json = ref *pJson;
+
         json.BeginObject();
         {
             json.WriteString("BudgetBytes");

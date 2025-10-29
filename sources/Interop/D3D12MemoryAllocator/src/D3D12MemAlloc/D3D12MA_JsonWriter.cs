@@ -1,10 +1,9 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.DirectX.D3D12_TEXTURE_LAYOUT;
 using static TerraFX.Interop.DirectX.D3D12MA_JsonWriter.CollectionType;
@@ -25,9 +24,9 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
     private bool m_InsideString;
 
     // stringBuilder - string builder to write the document to. Must remain alive for the whole lifetime of this object.
-    public D3D12MA_JsonWriter([NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks, [NativeTypeName("D3D12MA::StringBuilder &")] ref D3D12MA_StringBuilder stringBuilder)
+    public D3D12MA_JsonWriter([NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks, [NativeTypeName("D3D12MA::StringBuilder &")] D3D12MA_StringBuilder* stringBuilder)
     {
-        m_SB = (D3D12MA_StringBuilder*)(Unsafe.AsPointer(ref stringBuilder));
+        m_SB = stringBuilder;
         m_Stack = new D3D12MA_Vector<StackItem>(allocationCallbacks);
         m_InsideString = false;
     }

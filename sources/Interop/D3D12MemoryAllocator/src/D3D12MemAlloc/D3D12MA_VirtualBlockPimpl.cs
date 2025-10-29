@@ -1,10 +1,11 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
 using System.Runtime.CompilerServices;
+using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12MA_VIRTUAL_BLOCK_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
@@ -35,14 +36,14 @@ internal unsafe partial struct D3D12MA_VirtualBlockPimpl : IDisposable
         {
             case D3D12MA_VIRTUAL_BLOCK_FLAG_ALGORITHM_LINEAR:
             {
-                D3D12MA_BlockMetadata_Linear* metadata = D3D12MA_BlockMetadata_Linear.Create(allocationCallbacks, (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(ref Unsafe.AsRef(in m_AllocationCallbacks))), true);
+                D3D12MA_BlockMetadata_Linear* metadata = D3D12MA_BlockMetadata_Linear.Create(allocationCallbacks, (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(in m_AllocationCallbacks)), true);
                 m_Metadata = (D3D12MA_BlockMetadata*)(metadata);
                 break;
             }
 
             case 0:
             {
-                D3D12MA_BlockMetadata_TLSF* metadata = D3D12MA_BlockMetadata_TLSF.Create(allocationCallbacks, (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(ref Unsafe.AsRef(in m_AllocationCallbacks))), true);
+                D3D12MA_BlockMetadata_TLSF* metadata = D3D12MA_BlockMetadata_TLSF.Create(allocationCallbacks, (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(in m_AllocationCallbacks)), true);
                 m_Metadata = (D3D12MA_BlockMetadata*)(metadata);
                 break;
             }

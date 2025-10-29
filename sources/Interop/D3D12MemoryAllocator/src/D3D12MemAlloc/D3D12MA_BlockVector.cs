@@ -1,11 +1,10 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 
 using System;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using TerraFX.Interop.Windows;
@@ -48,6 +47,8 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
 
     private ID3D12ProtectedResourceSession* m_ProtectedSession;
 
+    private D3D12_RESIDENCY_PRIORITY m_ResidencyPriority;
+
     // There can be at most one allocation that is completely empty - a hysteresis to avoid pessimistic case of alternating creation and destruction of a ID3D12Heap
     private bool m_HasEmptyBlock;
 
@@ -61,10 +62,10 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
 
     private bool m_IncrementalSort;
 
-    public static D3D12MA_BlockVector* Create([NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocs, D3D12MA_AllocatorPimpl* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES &")] in D3D12_HEAP_PROPERTIES heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize, [NativeTypeName("UINT64")] ulong minAllocationAlignment, [NativeTypeName("UINT32")] uint algorithm, bool denyMsaaTextures, ID3D12ProtectedResourceSession* pProtectedSession)
+    public static D3D12MA_BlockVector* Create([NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocs, D3D12MA_AllocatorPimpl* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES &")] in D3D12_HEAP_PROPERTIES heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize, [NativeTypeName("UINT64")] ulong minAllocationAlignment, [NativeTypeName("UINT32")] uint algorithm, bool denyMsaaTextures, ID3D12ProtectedResourceSession* pProtectedSession, D3D12_RESIDENCY_PRIORITY residencyPriority)
     {
         D3D12MA_BlockVector* result = D3D12MA_NEW<D3D12MA_BlockVector>(allocs);
-        result->_ctor(hAllocator, heapProps, heapFlags, preferredBlockSize, minBlockCount, maxBlockCount, explicitBlockSize, minAllocationAlignment, algorithm, denyMsaaTextures, pProtectedSession);
+        result->_ctor(hAllocator, heapProps, heapFlags, preferredBlockSize, minBlockCount, maxBlockCount, explicitBlockSize, minAllocationAlignment, algorithm, denyMsaaTextures, pProtectedSession, residencyPriority);
         return result;
     }
 
@@ -74,7 +75,7 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         m_IncrementalSort = true;
     }
 
-    private void _ctor(D3D12MA_AllocatorPimpl* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES &")] in D3D12_HEAP_PROPERTIES heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize, [NativeTypeName("UINT64")] ulong minAllocationAlignment, [NativeTypeName("UINT32")] uint algorithm, bool denyMsaaTextures, ID3D12ProtectedResourceSession* pProtectedSession)
+    private void _ctor(D3D12MA_AllocatorPimpl* hAllocator, [NativeTypeName("const D3D12_HEAP_PROPERTIES &")] in D3D12_HEAP_PROPERTIES heapProps, D3D12_HEAP_FLAGS heapFlags, [NativeTypeName("UINT64")] ulong preferredBlockSize, [NativeTypeName("size_t")] nuint minBlockCount, [NativeTypeName("size_t")] nuint maxBlockCount, bool explicitBlockSize, [NativeTypeName("UINT64")] ulong minAllocationAlignment, [NativeTypeName("UINT32")] uint algorithm, bool denyMsaaTextures, ID3D12ProtectedResourceSession* pProtectedSession, D3D12_RESIDENCY_PRIORITY residencyPriority)
     {
         _ctor();
 
@@ -89,6 +90,7 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         m_Algorithm = algorithm;
         m_DenyMsaaTextures = denyMsaaTextures;
         m_ProtectedSession = pProtectedSession;
+        m_ResidencyPriority = residencyPriority;
         m_HasEmptyBlock = false;
         m_Blocks = new D3D12MA_Vector<Pointer<D3D12MA_NormalBlock>>(hAllocator->GetAllocs());
         m_NextBlockId = 0;
@@ -102,6 +104,11 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         }
 
         m_Blocks.Dispose();
+    }
+
+    public readonly D3D12_RESIDENCY_PRIORITY GetResidencyPriority()
+    {
+        return m_ResidencyPriority;
     }
 
     [UnscopedRef]
@@ -174,7 +181,7 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         return m_Blocks.empty();
     }
 
-    public HRESULT Allocate([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, [NativeTypeName("const D3D12MA::ALLOCATION_DESC &")] in D3D12MA_ALLOCATION_DESC allocDesc, [NativeTypeName("size_t")] nuint allocationCount, D3D12MA_Allocation** pAllocations)
+    public HRESULT Allocate([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, [NativeTypeName("const D3D12MA::ALLOCATION_DESC &")] in D3D12MA_ALLOCATION_DESC allocDesc, bool committedAllowed, [NativeTypeName("size_t")] nuint allocationCount, D3D12MA_Allocation** pAllocations)
     {
         nuint allocIndex;
         HRESULT hr = S_OK;
@@ -183,7 +190,7 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         {
             for (allocIndex = 0; allocIndex < allocationCount; ++allocIndex)
             {
-                hr = AllocatePage(size, alignment, allocDesc, pAllocations + allocIndex);
+                hr = AllocatePage(size, alignment, allocDesc, committedAllowed, pAllocations + allocIndex);
 
                 if (FAILED(hr))
                 {
@@ -265,78 +272,38 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         }
     }
 
-    public HRESULT CreateResource([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, [NativeTypeName("const D3D12MA::ALLOCATION_DESC &")] in D3D12MA_ALLOCATION_DESC allocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC &")] in D3D12_RESOURCE_DESC resourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
+    public HRESULT CreateResource([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, [NativeTypeName("const D3D12MA::ALLOCATION_DESC &")] in D3D12MA_ALLOCATION_DESC allocDesc, [NativeTypeName("const D3D12MA_CREATE_RESOURCE_PARAMS &")] in D3D12MA_CREATE_RESOURCE_PARAMS createParams, bool committedAllowed, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
     {
-        HRESULT hr = Allocate(size, alignment, allocDesc, 1, ppAllocation);
+        HRESULT hr = Allocate(size, alignment, allocDesc, committedAllowed, 1, ppAllocation);
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        ID3D12Resource* res = null;
+        hr = m_hAllocator->CreatePlacedResourceWrap((*ppAllocation)->Anonymous.m_Placed.block->GetHeap(), (*ppAllocation)->GetOffset(), createParams, __uuidof<ID3D12Resource>(), (void**)(&res));
 
         if (SUCCEEDED(hr))
         {
-            ID3D12Resource* res = null;
-            hr = m_hAllocator->GetDevice()->CreatePlacedResource((*ppAllocation)->Anonymous.m_Placed.block->GetHeap(), (*ppAllocation)->GetOffset(), (D3D12_RESOURCE_DESC*)(Unsafe.AsPointer(ref Unsafe.AsRef(in resourceDesc))), InitialResourceState, pOptimizedClearValue, __uuidof<ID3D12Resource>(), (void**)(&res));
+            if (ppvResource != null)
+            {
+                hr = res->QueryInterface(riidResource, ppvResource);
+            }
 
             if (SUCCEEDED(hr))
             {
-                if (ppvResource != null)
-                {
-                    hr = res->QueryInterface(riidResource, ppvResource);
-                }
-
-                if (SUCCEEDED(hr))
-                {
-                    (*ppAllocation)->SetResourcePointer(res, (D3D12_RESOURCE_DESC*)(Unsafe.AsPointer(ref Unsafe.AsRef(in resourceDesc))));
-                }
-                else
-                {
-                    _ = res->Release();
-                    D3D12MA_SAFE_RELEASE(ref *ppAllocation);
-                }
+                (*ppAllocation)->SetResourcePointer(res, createParams.GetBaseResourceDesc());
             }
             else
             {
+                _ = res->Release();
                 D3D12MA_SAFE_RELEASE(ref *ppAllocation);
             }
         }
-        return hr;
-    }
-
-    public HRESULT CreateResource2([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, [NativeTypeName("const D3D12MA::ALLOCATION_DESC &")] in D3D12MA_ALLOCATION_DESC allocDesc, [NativeTypeName("const D3D12_RESOURCE_DESC1 &")] in D3D12_RESOURCE_DESC1 resourceDesc, D3D12_RESOURCE_STATES InitialResourceState, [NativeTypeName("const D3D12_CLEAR_VALUE *")] D3D12_CLEAR_VALUE* pOptimizedClearValue, D3D12MA_Allocation** ppAllocation, [NativeTypeName("REFIID")] Guid* riidResource, void** ppvResource)
-    {
-        ID3D12Device8* device8 = m_hAllocator->GetDevice8();
-
-        if (device8 == null)
+        else
         {
-            return E_NOINTERFACE;
-        }
-        Debug.Assert(OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19043, 0));
-
-        HRESULT hr = Allocate(size, alignment, allocDesc, 1, ppAllocation);
-
-        if (SUCCEEDED(hr))
-        {
-            ID3D12Resource* res = null;
-            hr = device8->CreatePlacedResource1((*ppAllocation)->Anonymous.m_Placed.block->GetHeap(), (*ppAllocation)->GetOffset(), (D3D12_RESOURCE_DESC1*)(Unsafe.AsPointer(ref Unsafe.AsRef(in resourceDesc))), InitialResourceState, pOptimizedClearValue, __uuidof<ID3D12Resource>(), (void**)(&res));
-
-            if (SUCCEEDED(hr))
-            {
-                if (ppvResource != null)
-                {
-                    hr = res->QueryInterface(riidResource, ppvResource);
-                }
-
-                if (SUCCEEDED(hr))
-                {
-                    (*ppAllocation)->SetResourcePointer(res, (D3D12_RESOURCE_DESC1*)(Unsafe.AsPointer(ref Unsafe.AsRef(in resourceDesc))));
-                }
-                else
-                {
-                    _ = res->Release();
-                    D3D12MA_SAFE_RELEASE(ref *ppAllocation);
-                }
-            }
-            else
-            {
-                D3D12MA_SAFE_RELEASE(ref *ppAllocation);
-            }
+            D3D12MA_SAFE_RELEASE(ref *ppAllocation);
         }
         return hr;
     }
@@ -371,9 +338,10 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         }
     }
 
-    public void WriteBlockInfoToJson([NativeTypeName("D3D12MA::JsonWriter &")] ref D3D12MA_JsonWriter json)
+    public void WriteBlockInfoToJson([NativeTypeName("D3D12MA::JsonWriter &")] D3D12MA_JsonWriter* pJson)
     {
         using D3D12MA_MutexLockRead @lock = new D3D12MA_MutexLockRead(ref m_Mutex, m_hAllocator->UseMutex());
+        ref D3D12MA_JsonWriter json = ref *pJson;
 
         json.BeginObject();
 
@@ -389,7 +357,7 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
             json.EndString();
 
             json.BeginObject();
-            pBlock->m_pMetadata->WriteAllocationInfoToJson((D3D12MA_JsonWriter*)(Unsafe.AsPointer(ref json)));
+            pBlock->m_pMetadata->WriteAllocationInfoToJson(pJson);
             json.EndObject();
         }
 
@@ -469,7 +437,7 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         D3D12MA_SORT(m_Blocks.begin(), m_Blocks.end(), new @cmp());
     }
 
-    private HRESULT AllocatePage([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, [NativeTypeName("const D3D12MA::ALLOCATION_DESC &")] in D3D12MA_ALLOCATION_DESC allocDesc, D3D12MA_Allocation** pAllocation)
+    private HRESULT AllocatePage([NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, [NativeTypeName("const D3D12MA::ALLOCATION_DESC &")] in D3D12MA_ALLOCATION_DESC allocDesc, bool committedAllowed, D3D12MA_Allocation** pAllocation)
     {
         // Early reject: requested allocation size is larger that maximum block size for this block vector.
         if ((size + D3D12MA_DEBUG_MARGIN) > m_PreferredBlockSize)
@@ -486,8 +454,14 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
             freeMemory = (budget.UsageBytes < budget.BudgetBytes) ? (budget.BudgetBytes - budget.UsageBytes) : 0;
         }
 
+        bool canExceedFreeMemory = !committedAllowed;
+        bool canCreateNewBlock = ((allocDesc.Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) == 0) && (m_Blocks.size() < m_MaxBlockCount);
+
         // Even if we don't have to stay within budget with this allocation, when the budget would be exceeded, we don't want to allocate new blocks, but always create resources as committed.
-        bool canCreateNewBlock = ((allocDesc.Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) == 0) && (m_Blocks.size() < m_MaxBlockCount) && (freeMemory >= size);
+        if ((freeMemory < size) && !canExceedFreeMemory)
+        {
+            canCreateNewBlock = false;
+        }
 
         // 1. Search existing allocations
         {
@@ -534,8 +508,13 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
                 }
             }
 
-            nuint newBlockIndex = 0;
-            HRESULT hr = (newBlockSize <= freeMemory) ? CreateBlock(newBlockSize, &newBlockIndex) : E_OUTOFMEMORY;
+            nuint newBlockIndex = nuint.MaxValue;
+            HRESULT hr = E_OUTOFMEMORY;
+
+            if ((newBlockSize <= freeMemory) || canExceedFreeMemory)
+            {
+                hr = CreateBlock(newBlockSize, &newBlockIndex);
+            }
 
             // Allocation of this size failed? Try 1/2, 1/4, 1/8 of m_PreferredBlockSize.
             if (!m_ExplicitBlockSize)
@@ -544,15 +523,17 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
                 {
                     ulong smallerNewBlockSize = newBlockSize / 2;
 
-                    if (smallerNewBlockSize >= size)
-                    {
-                        newBlockSize = smallerNewBlockSize;
-                        ++newBlockSizeShift;
-                        hr = (newBlockSize <= freeMemory) ? CreateBlock(newBlockSize, &newBlockIndex) : E_OUTOFMEMORY;
-                    }
-                    else
+                    if (smallerNewBlockSize < size)
                     {
                         break;
+                    }
+
+                    newBlockSize = smallerNewBlockSize;
+                    ++newBlockSizeShift;
+
+                    if (newBlockSize <= freeMemory || canExceedFreeMemory)
+                    {
+                        hr = CreateBlock(newBlockSize, &newBlockIndex);
                     }
                 }
             }
@@ -587,12 +568,12 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
 
         if (pBlock->m_pMetadata->CreateAllocationRequest(size, alignment, (allocFlags & D3D12MA_ALLOCATION_FLAG_UPPER_ADDRESS) != 0, strategy, &currRequest))
         {
-            return CommitAllocationRequest(currRequest, pBlock, size, alignment, pPrivateData, pAllocation);
+            return CommitAllocationRequest(&currRequest, pBlock, size, alignment, pPrivateData, pAllocation);
         }
         return E_OUTOFMEMORY;
     }
 
-    internal HRESULT CommitAllocationRequest([NativeTypeName("D3D12MA::AllocationRequest &")] in D3D12MA_AllocationRequest allocRequest, D3D12MA_NormalBlock* pBlock, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, void* pPrivateData, D3D12MA_Allocation** ppAllocation)
+    internal HRESULT CommitAllocationRequest([NativeTypeName("D3D12MA::AllocationRequest &")] D3D12MA_AllocationRequest* allocRequest, D3D12MA_NormalBlock* pBlock, [NativeTypeName("UINT64")] ulong size, [NativeTypeName("UINT64")] ulong alignment, void* pPrivateData, D3D12MA_Allocation** ppAllocation)
     {
         // We no longer have an empty Allocation.
         if (pBlock->m_pMetadata->IsEmpty())
@@ -600,10 +581,10 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
             m_HasEmptyBlock = false;
         }
 
-        *ppAllocation = m_hAllocator->GetAllocationObjectAllocator().Allocate(m_hAllocator, size, alignment, allocRequest.zeroInitialized);
-        pBlock->m_pMetadata->Alloc((D3D12MA_AllocationRequest*)(Unsafe.AsPointer(ref Unsafe.AsRef(in allocRequest))), size, *ppAllocation);
+        *ppAllocation = m_hAllocator->GetAllocationObjectAllocator().Allocate(m_hAllocator, size, alignment);
+        pBlock->m_pMetadata->Alloc(allocRequest, size, *ppAllocation);
 
-        (*ppAllocation)->InitPlaced(allocRequest.allocHandle, pBlock);
+        (*ppAllocation)->InitPlaced(allocRequest->allocHandle, pBlock);
         (*ppAllocation)->SetPrivateData(pPrivateData);
 
         D3D12MA_HEAVY_ASSERT(pBlock->Validate());
@@ -623,6 +604,7 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
             return hr;
         }
 
+        m_hAllocator->SetResidencyPriority((ID3D12Pageable*)(pBlock->GetHeap()), m_ResidencyPriority);
         m_Blocks.push_back(new Pointer<D3D12MA_NormalBlock>(pBlock));
 
         if (pNewBlockIndex != null)

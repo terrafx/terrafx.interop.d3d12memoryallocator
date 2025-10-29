@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -28,12 +28,12 @@ internal unsafe partial struct D3D12MA_Vector<T> : IDisposable
     // allocationCallbacks externally owned, must outlive this object.
     public D3D12MA_Vector([NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks)
     {
-        m_AllocationCallbacks = (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(ref Unsafe.AsRef(in allocationCallbacks)));
+        m_AllocationCallbacks = (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(in allocationCallbacks));
     }
 
     public D3D12MA_Vector([NativeTypeName("size_t")] nuint count, [NativeTypeName("const D3D12MA::ALLOCATION_CALLBACKS &")] in D3D12MA_ALLOCATION_CALLBACKS allocationCallbacks)
     {
-        m_AllocationCallbacks = (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(ref Unsafe.AsRef(in allocationCallbacks)));
+        m_AllocationCallbacks = (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(in allocationCallbacks));
         m_pArray = (count != 0) ? D3D12MA_AllocateArray<T>(allocationCallbacks, count) : null;
         m_Count = count;
         m_Capacity = count;

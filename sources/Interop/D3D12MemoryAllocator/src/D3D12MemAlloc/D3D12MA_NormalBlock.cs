@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -43,6 +43,12 @@ internal unsafe partial struct D3D12MA_NormalBlock : IDisposable
     {
         if (m_pMetadata != null)
         {
+            // Define macro D3D12MA_DEBUG_LOG to receive the list of the unfreed allocations.
+            if (!m_pMetadata->IsEmpty())
+            {
+                m_pMetadata->DebugLogAllAllocations();
+            }
+
             // THIS IS THE MOST IMPORTANT ASSERT IN THE ENTIRE LIBRARY!
             // Hitting it means you have some memory leak - unreleased Allocation objects.
             D3D12MA_ASSERT(m_pMetadata->IsEmpty(), "Some allocations were not freed before destruction of this memory block!");
@@ -101,7 +107,7 @@ internal unsafe partial struct D3D12MA_NormalBlock : IDisposable
         {
             case (uint)(D3D12MA_POOL_FLAG_ALGORITHM_LINEAR):
             {
-                D3D12MA_BlockMetadata_Linear* pMetadata = D3D12MA_BlockMetadata_Linear.Create(Base.m_Allocator->GetAllocs(), (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(ref Unsafe.AsRef(in Base.m_Allocator->GetAllocs()))), false);
+                D3D12MA_BlockMetadata_Linear* pMetadata = D3D12MA_BlockMetadata_Linear.Create(Base.m_Allocator->GetAllocs(), (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(in Base.m_Allocator->GetAllocs())), false);
                 m_pMetadata = (D3D12MA_BlockMetadata*)(pMetadata);
                 break;
             }
@@ -114,7 +120,7 @@ internal unsafe partial struct D3D12MA_NormalBlock : IDisposable
 
             case 0:
             {
-                D3D12MA_BlockMetadata_TLSF* pMetadata = D3D12MA_BlockMetadata_TLSF.Create(Base.m_Allocator->GetAllocs(), (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(ref Unsafe.AsRef(in Base.m_Allocator->GetAllocs()))), false);
+                D3D12MA_BlockMetadata_TLSF* pMetadata = D3D12MA_BlockMetadata_TLSF.Create(Base.m_Allocator->GetAllocs(), (D3D12MA_ALLOCATION_CALLBACKS*)(Unsafe.AsPointer(in Base.m_Allocator->GetAllocs())), false);
                 m_pMetadata = (D3D12MA_BlockMetadata*)(pMetadata);
                 break;
             }

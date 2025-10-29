@@ -1,10 +1,11 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v2.0.1
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.0.1
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATOR_FLAGS;
 
 namespace TerraFX.Interop.DirectX;
 
@@ -23,8 +24,15 @@ public enum D3D12MA_POOL_FLAGS
     D3D12MA_POOL_FLAG_ALGORITHM_LINEAR = 0x1,
 
     /// <summary>Optimization, allocate MSAA textures as committed resources always.</summary>
-    /// <remarks>Specify this flag to create MSAA textures with implicit heaps, as if they were created with flag <see cref="D3D12MA_ALLOCATION_FLAG_COMMITTED" />. Usage of this flags enables pool to create its heaps on smaller alignment not suitable for MSAA textures.</remarks>
+    /// <remarks>
+    ///   <para>Specify this flag to create MSAA textures with implicit heaps, as if they were created with flag <see cref="D3D12MA_ALLOCATION_FLAG_COMMITTED" />. Usage of this flags enables pool to create its heaps on smaller alignment not suitable for MSAA textures.</para>
+    ///   <para>You should always use this flag unless you really need to create some MSAA textures in this pool as placed.</para>
+    /// </remarks>
     D3D12MA_POOL_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED = 0x2,
+
+    /// <summary>Every allocation made in this pool will be created as a committed resource - will have its own memory block.</summary>
+    /// <remarks>There is also an equivalent flag for the entire allocator: <see cref="D3D12MA_ALLOCATOR_FLAG_ALWAYS_COMMITTED" />.</remarks>
+    D3D12MA_POOL_FLAG_ALWAYS_COMMITTED = 0x4,
 
     /// <summary>Bit mask to extract only <c>ALGORITHM</c> bits from entire set of flags.</summary>
     D3D12MA_POOL_FLAG_ALGORITHM_MASK = D3D12MA_POOL_FLAG_ALGORITHM_LINEAR,

@@ -1,7 +1,10 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using static TerraFX.Interop.DirectX.D3D12;
+using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_HEAP_TIER;
+using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATOR_FLAGS;
+using static TerraFX.Interop.DirectX.D3D12MA_POOL_FLAGS;
 
 namespace TerraFX.Interop.DirectX;
 
@@ -17,6 +20,9 @@ public static unsafe partial class D3D12MemAlloc
 
     /// <summary>Define this macro to 0 to disable usage of DXGI 1.4 (needed for <see cref="IDXGIAdapter3"/> and query for memory budget).</summary>
     public static readonly uint D3D12MA_DXGI_1_4 = get_app_context_data(nameof(D3D12MA_DXGI_1_4), 1);
+
+    /// <summary>This macro is defined to 0 or 1 automatically. Define it to 0 to disable support for <see cref="D3D12_HEAP_FLAG_CREATE_NOT_ZEROED"/>.</summary>
+    public static readonly uint D3D12MA_CREATE_NOT_ZEROED_AVAILABLE = get_app_context_data(nameof(D3D12MA_CREATE_NOT_ZEROED_AVAILABLE), 1);
 
     /// <summary>When defined to value other than 0, the library will try to use <see cref="D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT"/> or <see cref="D3D12_SMALL_MSAA_RESOURCE_PLACEMENT_ALIGNMENT"/> for created textures when possible, which can save memory because some small textures may get their alignment 4K and their size a multiply of 4K instead of 64K.</summary>
     /// <remarks>
@@ -34,6 +40,15 @@ public static unsafe partial class D3D12MemAlloc
     ///   </code>
     /// </remarks>
     public static readonly uint D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT = get_app_context_data(nameof(D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT), 1);
+
+    /// <summary>Set of flags recommended for use in <see cref="D3D12MA_ALLOCATOR_DESC.Flags"/> for optimal performance.</summary>
+    public static readonly D3D12MA_ALLOCATOR_FLAGS D3D12MA_RECOMMENDED_ALLOCATOR_FLAGS = get_app_context_data(nameof(D3D12MA_RECOMMENDED_ALLOCATOR_FLAGS), D3D12MA_ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED | D3D12MA_ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED);
+
+    /// <summary>Set of flags recommended for use in <see cref="D3D12MA_POOL_DESC.HeapFlags"/> for optimal performance.</summary>
+    public static readonly D3D12_HEAP_FLAGS D3D12MA_RECOMMENDED_HEAP_FLAGS = get_app_context_data(nameof(D3D12MA_RECOMMENDED_HEAP_FLAGS), (D3D12MA_CREATE_NOT_ZEROED_AVAILABLE != 0) ? D3D12_HEAP_FLAG_CREATE_NOT_ZEROED : D3D12_HEAP_FLAG_NONE);
+
+    /// <summary>Set of flags recommended for use in <see cref="D3D12MA_POOL_DESC.Flags" /> for optimal performance.</summary>
+    public static readonly D3D12MA_POOL_FLAGS D3D12MA_RECOMMENDED_POOL_FLAGS = get_app_context_data(nameof(D3D12MA_RECOMMENDED_POOL_FLAGS), D3D12MA_POOL_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED);
 
     /// <summary>
     /// When defined to value other than 0, the library will execute debug assertions throughout
