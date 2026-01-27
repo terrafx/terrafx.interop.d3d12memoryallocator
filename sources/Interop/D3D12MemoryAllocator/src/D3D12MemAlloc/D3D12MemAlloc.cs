@@ -6,6 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Xml.Linq;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
@@ -241,9 +242,12 @@ public static unsafe partial class D3D12MemAlloc
         }
     }
 
-    internal static void D3D12MA_VALIDATE(bool cond, [CallerArgumentExpression(nameof(cond))] string message = "")
+    internal static void D3D12MA_VALIDATE(bool cond, [CallerArgumentExpression(nameof(cond))] string message = "", [CallerFilePath] string fname = "", [CallerLineNumber] uint line = 0, [CallerMemberName] string func = "")
     {
-        D3D12MA_ASSERT(cond, "Validation failed: " + message);
+        if ((D3D12MA_DEBUG_LEVEL > 0) && !cond)
+        {
+            D3D12MA_ASSERT_FAIL($"Validation failed: {message}", fname, line, func);
+        }
     }
 
     internal static uint D3D12MA_MIN([NativeTypeName("const T &")] uint a, [NativeTypeName("const T &")] uint b)
