@@ -68,7 +68,7 @@ jobs:
     - uses: actions/setup-dotnet@v4
       with:
         global-json-file: ./global.json
-    - run: dotnet tool install --tool-path ./artifacts/tools --prerelease sign
+    - run: dotnet tool install --tool-path ./artifacts/tools --prerelease sign --version 0.9.1-beta.25379.1
     - uses: azure/login@v2
       with:
         allow-no-subscriptions: true
