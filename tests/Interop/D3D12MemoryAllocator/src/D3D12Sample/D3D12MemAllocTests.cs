@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12Sample.cpp in D3D12MemoryAllocator tag v3.0.1
+// Ported from D3D12Sample.cpp in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -390,7 +390,7 @@ public static unsafe partial class D3D12MemAllocTests
         }
 
         string result;
-        double size2 = (double)(size);
+        double size2 = size;
 
         if (size2 >= 1024.0 * 1024.0 * 1024.0 * 1024.0)
         {
@@ -1125,8 +1125,9 @@ public static unsafe partial class D3D12MemAllocTests
             20, 23, 21, // second triangle
         };
 
-        g_CubeIndexCount = (uint)(_countof_iList);
-        nuint iBufferSize = sizeof(ushort) * _countof_iList; ;
+        g_CubeIndexCount = _countof_iList;
+        nuint iBufferSize = sizeof(ushort) * _countof_iList;
+        ;
 
         // create default heap to hold index buffer
         D3D12MA_ALLOCATION_DESC indexBufferAllocDesc = new D3D12MA_ALLOCATION_DESC {
@@ -1310,7 +1311,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             fixed (sbyte* pImageData = imageData)
             {
-                sbyte* rowPtr = (sbyte*)(pImageData);
+                sbyte* rowPtr = pImageData;
 
                 for (uint y = 0; y < sizeY; ++y)
                 {
@@ -1421,7 +1422,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         fixed (char* pName = nameof(textureUpload))
         {
-            _= textureUpload.Get()->SetName(pName);
+            _ = textureUpload.Get()->SetName(pName);
         }
 
         fixed (sbyte* pImageData = imageData)
@@ -1496,7 +1497,7 @@ public static unsafe partial class D3D12MemAllocTests
         {
             mat4 projection = mat4.Perspective(
                 45.0f * (PI / 180.0f),        // fovY
-                (float)(SIZE_X) / (float)(SIZE_Y),  // aspectRatio
+                SIZE_X / (float)(SIZE_Y),  // aspectRatio
                 0.1f,                               // zNear
                 1000.0f                             // zFar
             );
@@ -1515,7 +1516,7 @@ public static unsafe partial class D3D12MemAllocTests
             mat4 worldViewProjection = cube1World * viewProjection;
 
             cb.WorldViewProj = worldViewProjection.Transposed();
-            _= memcpy(g_CbPerObjectAddress[(int)(g_FrameIndex)].Value, &cb, __sizeof<ConstantBuffer1_VS>());
+            _ = memcpy(g_CbPerObjectAddress[(int)(g_FrameIndex)].Value, &cb, __sizeof<ConstantBuffer1_VS>());
 
             mat4 cube2World = mat4.Scaling(0.5f) * mat4.RotationX(g_Time * 2.0f) * mat4.Translation(new vec3(-1.2f, 0.0f, 0.0f)) * cube1World;
             worldViewProjection = cube2World * viewProjection;
@@ -1601,8 +1602,8 @@ public static unsafe partial class D3D12MemAllocTests
         D3D12_VIEWPORT viewport = new D3D12_VIEWPORT {
             TopLeftX = 0.0f,
             TopLeftY = 0.0f,
-            Width = (float)(SIZE_X),
-            Height = (float)(SIZE_Y),
+            Width = SIZE_X,
+            Height = SIZE_Y,
             MinDepth = 0.0f,
             MaxDepth = 1.0f,
         };
@@ -1752,7 +1753,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         if (ENABLE_CPU_ALLOCATION_CALLBACKS)
         {
-            Debug.Assert(Volatile.Read(ref g_CpuAllocationCount) == (nuint)(0u));
+            Debug.Assert(Volatile.Read(ref g_CpuAllocationCount) == 0u);
         }
 
         _ = g_Device.Reset();
@@ -1800,7 +1801,7 @@ public static unsafe partial class D3D12MemAllocTests
                 char* statsString = null;
                 g_Allocator.Get()->BuildStatsString(&statsString, TRUE);
 
-                _ = wprintf("{0}\n", new string((char*)(statsString)));
+                _ = wprintf("{0}\n", new string(statsString));
                 g_Allocator.Get()->FreeStatsString(statsString);
             }
             break;
@@ -1975,10 +1976,10 @@ public static unsafe partial class D3D12MemAllocTests
                 else
                 {
                     ulong newTimeValue = GetTickCount64() - g_TimeOffset;
-                    g_TimeDelta = (float)(newTimeValue - g_TimeValue) * 0.001f;
+                    g_TimeDelta = (newTimeValue - g_TimeValue) * 0.001f;
 
                     g_TimeValue = newTimeValue;
-                    g_Time = (float)(newTimeValue) * 0.001f;
+                    g_Time = newTimeValue * 0.001f;
 
                     Update();
                     Render();

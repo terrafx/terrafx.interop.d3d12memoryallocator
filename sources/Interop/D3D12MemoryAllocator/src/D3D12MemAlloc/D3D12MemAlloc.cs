@@ -1,12 +1,11 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Xml.Linq;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
@@ -98,6 +97,8 @@ public static unsafe partial class D3D12MemAlloc
     internal const D3D12_RESIDENCY_PRIORITY D3D12_RESIDENCY_PRIORITY_NONE = default;
 
     internal const D3D12_HEAP_TYPE D3D12_HEAP_TYPE_GPU_UPLOAD_COPY = D3D12_HEAP_TYPE_GPU_UPLOAD;
+
+    internal const D3D12_RESOURCE_FLAGS D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT_COPY = D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
 
     internal const uint DXGI_MEMORY_SEGMENT_GROUP_LOCAL_COPY = (uint)(DXGI_MEMORY_SEGMENT_GROUP_LOCAL);
 
@@ -283,9 +284,7 @@ public static unsafe partial class D3D12MemAlloc
     internal static void D3D12MA_SWAP<T>(ref T a, ref T b)
         where T : unmanaged
     {
-        T tmp = a;
-        a = b;
-        b = tmp;
+        (b, a) = (a, b);
     }
 
     internal static void D3D12MA_SWAP<T>(ref T* a, ref T* b)
@@ -881,7 +880,7 @@ public static unsafe partial class D3D12MemAlloc
             }
         }
     }
-    
+
     internal static D3D12MA_ResourceClass D3D12MA_ResourceDescToResourceClass([NativeTypeName("const D3D12_RESOURCE_DESC_T &")] in D3D12_RESOURCE_DESC resDesc)
     {
         if (resDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
@@ -950,28 +949,28 @@ public static unsafe partial class D3D12MemAlloc
 
         switch (bitsPerPixel)
         {
-            case   8:
+            case 8:
             {
                 tileSizeX = 64;
                 tileSizeY = 64;
                 break;
             }
 
-            case  16:
+            case 16:
             {
                 tileSizeX = 64;
                 tileSizeY = 32;
                 break;
             }
 
-            case  32:
+            case 32:
             {
                 tileSizeX = 32;
                 tileSizeY = 32;
                 break;
             }
 
-            case  64:
+            case 64:
             {
                 tileSizeX = 32;
                 tileSizeY = 16;
@@ -1085,7 +1084,12 @@ public static unsafe partial class D3D12MemAlloc
 
     internal static bool D3D12MA_ValidateAllocateMemoryParameters([NativeTypeName("const D3D12MA::ALLOCATION_DESC *")] D3D12MA_ALLOCATION_DESC* pAllocDesc, [NativeTypeName("const D3D12_RESOURCE_ALLOCATION_INFO *")] D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo, D3D12MA_Allocation** ppAllocation)
     {
-        return (pAllocDesc != null) && (pAllocInfo != null) && (ppAllocation != null) && ((pAllocInfo->Alignment == 0) || (pAllocInfo->Alignment == D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT) || (pAllocInfo->Alignment == D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT)) && (pAllocInfo->SizeInBytes != 0) && (pAllocInfo->SizeInBytes % (64ul * 1024) == 0);
+        return (pAllocDesc != null) &&
+               (pAllocInfo != null) &&
+               (ppAllocation != null) &&
+               ulong.IsPow2(pAllocInfo->Alignment) &&
+               (pAllocInfo->SizeInBytes > 0) &&
+               ((pAllocInfo->SizeInBytes % 4) == 0);
     }
 
     internal static void D3D12MA_ClearStatistics([NativeTypeName("D3D12MA::Statistics &")] out D3D12MA_Statistics outStats)

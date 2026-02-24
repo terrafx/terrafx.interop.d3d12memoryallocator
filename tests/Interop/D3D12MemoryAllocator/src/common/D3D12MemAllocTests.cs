@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from Common.h and Common.cpp in D3D12MemoryAllocator tag v3.0.1
+// Ported from Common.h and Common.cpp in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -93,19 +93,19 @@ public static unsafe partial class D3D12MemAllocTests
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint RoundDiv(uint x, uint y)
     {
-        return (x + (y / (uint)(2))) / y;
+        return (x + (y / 2)) / y;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static nuint RoundDiv(nuint x, nuint y)
     {
-        return (x + (y / (nuint)(2))) / y;
+        return (x + (y / 2)) / y;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong RoundDiv(ulong x, ulong y)
     {
-        return (x + (y / (ulong)(2))) / y;
+        return (x + (y / 2)) / y;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

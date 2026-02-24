@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -17,6 +17,8 @@ using static TerraFX.Interop.DirectX.D3D12_MEMORY_POOL;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_DIMENSION;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12_RESOURCE_HEAP_TIER;
+using static TerraFX.Interop.DirectX.D3D12_TEXTURE_LAYOUT;
+using static TerraFX.Interop.DirectX.D3D12_TIGHT_ALIGNMENT_TIER;
 using static TerraFX.Interop.DirectX.D3D12MA_Allocation.Type;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATOR_FLAGS;
@@ -41,6 +43,8 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     private bool m_MsaaAlwaysCommitted;
 
     private bool m_PreferSmallBuffersCommitted;
+
+    private bool m_UseTightAlignment;
 
     private bool m_DefaultPoolsNotZeroed;
 
@@ -73,6 +77,8 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     private D3D12_FEATURE_DATA_D3D12_OPTIONS m_D3D12Options;
 
     private BOOL m_GPUUploadHeapSupported;
+
+    private BOOL m_TightAlignmentSupported;
 
     private D3D12_FEATURE_DATA_ARCHITECTURE m_D3D12Architecture;
 
@@ -119,6 +125,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         m_AlwaysCommitted = (desc.Flags & D3D12MA_ALLOCATOR_FLAG_ALWAYS_COMMITTED) != 0;
         m_MsaaAlwaysCommitted = (desc.Flags & D3D12MA_ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED) != 0;
         m_PreferSmallBuffersCommitted = (desc.Flags & D3D12MA_ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED) == 0;
+        m_UseTightAlignment = (desc.Flags & D3D12MA_ALLOCATOR_FLAG_DONT_USE_TIGHT_ALIGNMENT) == 0;
         m_Device = desc.pDevice;
         m_Adapter = desc.pAdapter;
         m_PreferredBlockSize = (desc.PreferredBlockSize != 0) ? desc.PreferredBlockSize : D3D12MA_DEFAULT_BLOCK_SIZE;
@@ -241,6 +248,16 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         return m_GPUUploadHeapSupported != FALSE;
     }
 
+    public readonly bool IsTightAlignmentSupported()
+    {
+        return m_TightAlignmentSupported != FALSE;
+    }
+
+    public readonly bool IsTightAlignmentEnabled()
+    {
+        return IsTightAlignmentSupported() && m_UseTightAlignment;
+    }
+
     public readonly bool UseMutex()
     {
         return m_UseMutex;
@@ -341,6 +358,22 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             m_GPUUploadHeapSupported = options16.GPUUploadHeapSupported;
         }
 
+        D3D12_FEATURE_DATA_TIGHT_ALIGNMENT tightAlignment = default;
+        hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_TIGHT_ALIGNMENT, &tightAlignment, (uint)(sizeof(D3D12_FEATURE_DATA_TIGHT_ALIGNMENT)));
+
+        if (SUCCEEDED(hr))
+        {
+            m_TightAlignmentSupported = (tightAlignment.SupportTier >= D3D12_TIGHT_ALIGNMENT_TIER_1);
+
+            // If tight alignment is supported (checked by the code above) and wasn't disabled by the developer
+            // (with D3D12MA_ALLOCATOR_FLAG_DONT_USE_TIGHT_ALIGNMENT), disable the preference for creating small buffers as committed,
+            // as if D3D12MA_ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED was specified.
+            if (IsTightAlignmentEnabled())
+            {
+                m_PreferSmallBuffersCommitted = false;
+            }
+        }
+
         hr = m_Device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &((D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)))->m_D3D12Architecture, __sizeof<D3D12_FEATURE_DATA_ARCHITECTURE>());
 
         if (FAILED(hr))
@@ -361,7 +394,21 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                 heapFlags |= D3D12_HEAP_FLAG_CREATE_NOT_ZEROED;
             }
 
-            D3D12MA_BlockVector* blockVector = D3D12MA_BlockVector.Create(GetAllocs(), (D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)), heapProps, heapFlags, m_PreferredBlockSize, 0, nuint.MaxValue, false, D3D12MA_DEBUG_ALIGNMENT, 0, m_MsaaAlwaysCommitted, null, D3D12_RESIDENCY_PRIORITY_NONE);
+            D3D12MA_BlockVector* blockVector = D3D12MA_BlockVector.Create(
+                GetAllocs(),
+                (D3D12MA_AllocatorPimpl*)(Unsafe.AsPointer(ref this)),
+                heapProps,
+                heapFlags,
+                m_PreferredBlockSize,
+                0,
+                nuint.MaxValue,
+                false,
+                D3D12MA_DEFAULT_ALIGNMENT,
+                0,
+                m_MsaaAlwaysCommitted,
+                null,
+                D3D12_RESIDENCY_PRIORITY_NONE
+            );
             m_BlockVectors[(int)(i)] = new Pointer<D3D12MA_BlockVector>(blockVector);
 
             // No need to call m_pBlockVectors[i]->CreateMinBlocks here, becase minBlockCount is 0.
@@ -453,7 +500,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
             }
 
             // Microsoft defined pCastableFormats parameter as pointer to non-const and only fixed it in later Agility SDK, thus we need const_cast.
-            return m_Device10->CreatePlacedResource2(pHeap, HeapOffset, createParams.GetResourceDesc1(), createParams.GetInitialLayout(), createParams.GetOptimizedClearValue(), createParams.GetNumCastableFormats(), (DXGI_FORMAT*)(createParams.GetCastableFormats()), riidResource, ppvResource);
+            return m_Device10->CreatePlacedResource2(pHeap, HeapOffset, createParams.GetResourceDesc1(), createParams.GetInitialLayout(), createParams.GetOptimizedClearValue(), createParams.GetNumCastableFormats(), createParams.GetCastableFormats(), riidResource, ppvResource);
         }
 
         if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE_AND_DESC1)
@@ -993,6 +1040,9 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
                     json.WriteString("GPUUploadHeapSupported");
                     json.WriteBool(m_GPUUploadHeapSupported != FALSE);
+
+                    json.WriteString("TightAlignmentSupported");
+                    json.WriteBool(m_TightAlignmentSupported != FALSE);
                 }
                 json.EndObject();
             }
@@ -1298,7 +1348,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                                 json.EndString(D3D12MA_HeapSubTypeName[heapSubType]);
 
                                 json.BeginObject();
-                                writeHeapInfo(&json, m_BlockVectors[(int)(heapType * 3 + heapSubType)].Value, (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[heapType])), false);
+                                writeHeapInfo(&json, m_BlockVectors[heapType * 3 + heapSubType].Value, (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[heapType])), false);
                                 json.EndObject();
                             }
                         }
@@ -1366,7 +1416,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
     }
 
     // Heuristics that decides whether a resource should better be placed in its own, dedicated allocation (committed resource rather than placed resource).
-    private bool PrefersCommittedAllocation([NativeTypeName("const D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC* resourceDesc, D3D12MA_ALLOCATION_FLAGS strategy)
+    private readonly bool PrefersCommittedAllocation([NativeTypeName("const D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC* resourceDesc, D3D12MA_ALLOCATION_FLAGS strategy)
     {
         // Prefer creating small buffers <= 32 KB as committed, because drivers pack them better, while placed buffers require 64 KB alignment.
         // Creating as committed would be slower.
@@ -1380,7 +1430,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
         return false;
     }
 
-    private bool PrefersCommittedAllocation([NativeTypeName("const D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC1* resourceDesc, D3D12MA_ALLOCATION_FLAGS strategy)
+    private readonly bool PrefersCommittedAllocation([NativeTypeName("const D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC1* resourceDesc, D3D12MA_ALLOCATION_FLAGS strategy)
     {
         return PrefersCommittedAllocation((D3D12_RESOURCE_DESC*)(resourceDesc), strategy);
     }
@@ -1446,7 +1496,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                 }
 
                 // Microsoft defined pCastableFormats parameter as pointer to non-const and only fixed it in later Agility SDK, thus we need const_cast.
-                hr = m_Device10->CreateCommittedResource3(pHeapProperties, committedAllocParams.m_HeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS, createParams.GetResourceDesc1(), createParams.GetInitialLayout(), createParams.GetOptimizedClearValue(), committedAllocParams.m_ProtectedSession, createParams.GetNumCastableFormats(), (DXGI_FORMAT*)(createParams.GetCastableFormats()), __uuidof<ID3D12Resource>(), (void**)(&res));
+                hr = m_Device10->CreateCommittedResource3(pHeapProperties, committedAllocParams.m_HeapFlags & ~D3D12MA_RESOURCE_CLASS_HEAP_FLAGS, createParams.GetResourceDesc1(), createParams.GetInitialLayout(), createParams.GetOptimizedClearValue(), committedAllocParams.m_ProtectedSession, createParams.GetNumCastableFormats(), createParams.GetCastableFormats(), __uuidof<ID3D12Resource>(), (void**)(&res));
             }
             else if (createParams.Variant == D3D12MA_CREATE_RESOURCE_PARAMS.VARIANT.WITH_STATE_AND_DESC1)
             {
@@ -1744,6 +1794,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                     return poolIndex * 3 + 2;
                 }
 
+                case D3D12MA_ResourceClass.Unknown:
                 default:
                 {
                     return uint.MaxValue;
@@ -1766,7 +1817,7 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                     outHeapFlags = D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
                     break;
                 }
-                
+
                 case 1:
                 {
                     outHeapFlags = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES;
@@ -1776,6 +1827,12 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
                 case 2:
                 {
                     outHeapFlags = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
+                    break;
+                }
+
+                default:
+                {
+                    D3D12MA_FAIL();
                     break;
                 }
             }
@@ -1906,15 +1963,32 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
     private readonly HRESULT GetResourceAllocationInfo([NativeTypeName("D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC* inOutResourceDesc, [NativeTypeName("UINT32")] uint NumCastableFormats, [NativeTypeName("const DXGI_FORMAT *")] DXGI_FORMAT* pCastableFormats, [NativeTypeName("D3D12_RESOURCE_ALLOCATION_INFO &")] out D3D12_RESOURCE_ALLOCATION_INFO outAllocInfo)
     {
-        // Optional optimization: Microsoft documentation says:
-        //    https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-getresourceallocationinfo
+        if (IsTightAlignmentEnabled())
+        {
+            // Don't allow USE_TIGHT_ALIGNMENT together with ALLOW_CROSS_ADAPTER as there is a D3D Debug Layer error:
+            // D3D12 ERROR: ID3D12Device::GetResourceAllocationInfo: D3D12_RESOURCE_DESC::Flag D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT will be ignored since D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER is set. [ STATE_CREATION ERROR #599: CREATERESOURCE_INVALIDMISCFLAGS]
+            //
+            // Also don't allow it together with D3D12_TEXTURE_LAYOUT_64KB_*_SWIZZLE, as there is this error (see issue #86):
+            // D3D12 ERROR: ID3D12Device::GetResourceAllocationInfo: D3D12_RESOURCE_DESC::Flag D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT is not valid when the layout is either D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE or D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE (...). [ STATE_CREATION ERROR #599: CREATERESOURCE_INVALIDMISCFLAGS]
+
+            if (((inOutResourceDesc->Flags & D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER) == 0) &&
+                (inOutResourceDesc->Layout != D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE) &&
+                (inOutResourceDesc->Layout != D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE))
+            {
+                inOutResourceDesc->Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+            }
+        }
+
+        // Optional optimization: Microsoft documentation of the ID3D12Device::GetResourceAllocationInfo function says:
         //
         // Your application can forgo using GetResourceAllocationInfo for buffer resources
         // (D3D12_RESOURCE_DIMENSION_BUFFER). Buffers have the same size on all adapters,
         // which is merely the smallest multiple of 64KB that's greater or equal to
         // D3D12_RESOURCE_DESC::Width.
 
-        if ((inOutResourceDesc->Alignment == 0) && (inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER))
+        if ((inOutResourceDesc->Alignment == 0) &&
+            (inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) &&
+            !IsTightAlignmentEnabled())
         {
             outAllocInfo = new D3D12_RESOURCE_ALLOCATION_INFO {
                 SizeInBytes = D3D12MA_AlignUp(inOutResourceDesc->Width, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT),
@@ -1925,7 +1999,11 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
         if (D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 0)
         {
-            if ((inOutResourceDesc->Alignment == 0) && (inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) && ((inOutResourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) == 0) && ((D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 1) || D3D12MA_CanUseSmallAlignment(*inOutResourceDesc)))
+            if ((inOutResourceDesc->Alignment == 0) &&
+                ((inOutResourceDesc->Flags & D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT_COPY) == 0) &&
+                ((inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE1D) || (inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) || (inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)) &&
+                ((inOutResourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) == 0) &&
+                ((D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 1) || D3D12MA_CanUseSmallAlignment(*inOutResourceDesc)))
             {
                 // The algorithm here is based on Microsoft sample: "Small Resources Sample"
                 // https://github.com/microsoft/DirectX-Graphics-Samples/tree/master/Samples/Desktop/D3D12SmallResources

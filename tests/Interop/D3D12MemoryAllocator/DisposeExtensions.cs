@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace TerraFX.Interop.DirectX.UnitTests;
 
-internal static unsafe partial class DisposeExtensions
+internal static partial class DisposeExtensions
 {
     public static void Dispose<T>(this List<T> list)
         where T : IDisposable

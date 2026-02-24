@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -50,7 +50,7 @@ internal unsafe partial struct D3D12MA_List<T> : IDisposable
     {
         return m_Count == 0;
     }
-    
+
     public readonly Item* Front()
     {
         return m_pFront;
@@ -91,7 +91,7 @@ internal unsafe partial struct D3D12MA_List<T> : IDisposable
     {
         Remove(it.m_pItem);
     }
-    
+
     public iterator begin()
     {
         return new iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref this)), Front());
@@ -111,7 +111,7 @@ internal unsafe partial struct D3D12MA_List<T> : IDisposable
     {
         return new reverse_iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref this)), null);
     }
-    
+
     public readonly const_iterator cbegin()
     {
         return new const_iterator((D3D12MA_List<T>*)(Unsafe.AsPointer(ref Unsafe.AsRef(in this))), Front());
@@ -225,7 +225,6 @@ internal unsafe partial struct D3D12MA_List<T> : IDisposable
         m_ItemAllocator.Free(pFrontItem);
         --m_Count;
     }
-
 
     // Item can be null - it means PushBack.
     public Item* InsertBefore(Item* pItem)

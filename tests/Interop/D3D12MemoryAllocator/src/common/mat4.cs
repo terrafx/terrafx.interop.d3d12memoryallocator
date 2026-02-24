@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from Common.h and Common.cpp in D3D12MemoryAllocator tag v3.0.1
+// Ported from Common.h and Common.cpp in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -137,16 +137,16 @@ public unsafe partial struct mat4
             1.0f, 0.0f, 0.0f, 0.0f,
             0.0f, 1.0f, 0.0f, 0.0f,
             0.0f, 0.0f, 1.0f, 0.0f,
-            v.x,  v.y,  v.z,  1.0f
+            v.x, v.y, v.z, 1.0f
         );
     }
 
     public static mat4 Scaling(float s)
     {
         return new mat4(
-            s,    0.0f, 0.0f, 0.0f,
-            0.0f, s,    0.0f, 0.0f,
-            0.0f, 0.0f, s,    0.0f,
+            s, 0.0f, 0.0f, 0.0f,
+            0.0f, s, 0.0f, 0.0f,
+            0.0f, 0.0f, s, 0.0f,
             0.0f, 0.0f, 0.0f, 1.0f
         );
     }
@@ -154,9 +154,9 @@ public unsafe partial struct mat4
     public static mat4 Scaling([NativeTypeName("const vec3 &")] in vec3 s)
     {
         return new mat4(
-            s.x,  0.0f, 0.0f, 0.0f,
-            0.0f, s.y,  0.0f, 0.0f,
-            0.0f, 0.0f, s.z,  0.0f,
+            s.x, 0.0f, 0.0f, 0.0f,
+            0.0f, s.y, 0.0f, 0.0f,
+            0.0f, 0.0f, s.z, 0.0f,
             0.0f, 0.0f, 0.0f, 1.0f
         );
     }
@@ -167,10 +167,10 @@ public unsafe partial struct mat4
         float c = MathF.Cos(angle);
 
         return new mat4(
-            1.0f,  0.0f, 0.0f, 0.0f,
-            0.0f,  c,    s,    0.0f,
-            0.0f, -s,    c,    0.0f,
-            0.0f,  0.0f, 0.0f, 1.0f);
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, c, s, 0.0f,
+            0.0f, -s, c, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f);
     }
 
     public static mat4 RotationY(float angle)
@@ -179,8 +179,8 @@ public unsafe partial struct mat4
         float c = MathF.Cos(angle);
 
         return new mat4(
-             c,    s,    0.0f, 0.0f,
-            -s,    c,    0.0f, 0.0f,
+             c, s, 0.0f, 0.0f,
+            -s, c, 0.0f, 0.0f,
              0.0f, 0.0f, 1.0f, 0.0f,
              0.0f, 0.0f, 0.0f, 1.0f
         );
@@ -192,10 +192,10 @@ public unsafe partial struct mat4
         float c = MathF.Cos(angle);
 
         return new mat4(
-            c,    0.0f, -s,    0.0f,
-            0.0f, 1.0f,  0.0f, 0.0f,
-            s,    0.0f,  c,    0.0f,
-            0.0f, 0.0f,  0.0f, 1.0f
+            c, 0.0f, -s, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            s, 0.0f, c, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f
         );
     }
 
@@ -205,10 +205,10 @@ public unsafe partial struct mat4
         float xScale = yScale / aspectRatio;
 
         return new mat4(
-            xScale, 0.0f,    0.0f,                          0.0f,
-            0.0f,   yScale,  0.0f,                          0.0f,
-            0.0f,   0.0f,    zFar / (zFar - zNear),         1.0f,
-            0.0f,   0.0f,   -zNear * zFar / (zFar - zNear), 0.0f
+            xScale, 0.0f, 0.0f, 0.0f,
+            0.0f, yScale, 0.0f, 0.0f,
+            0.0f, 0.0f, zFar / (zFar - zNear), 1.0f,
+            0.0f, 0.0f, -zNear * zFar / (zFar - zNear), 0.0f
         );
     }
 
@@ -219,9 +219,9 @@ public unsafe partial struct mat4
         vec3 yAxis = Cross(zAxis, xAxis);
 
         return new mat4(
-             xAxis.x,          yAxis.x,          zAxis.x,         0.0f,
-             xAxis.y,          yAxis.y,          zAxis.y,         0.0f,
-             xAxis.z,          yAxis.z,          zAxis.z,         0.0f,
+             xAxis.x, yAxis.x, zAxis.x, 0.0f,
+             xAxis.y, yAxis.y, zAxis.y, 0.0f,
+             xAxis.z, yAxis.z, zAxis.z, 0.0f,
             -Dot(xAxis, eye), -Dot(yAxis, eye), -Dot(zAxis, eye), 1.0f
         );
     }

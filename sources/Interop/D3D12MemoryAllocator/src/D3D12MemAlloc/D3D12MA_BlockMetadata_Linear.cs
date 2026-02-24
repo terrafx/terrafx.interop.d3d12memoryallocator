@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System.Runtime.CompilerServices;
@@ -450,7 +450,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear : D3D12MA_BlockMetad
             if ((resultOffset + allocSize + GetDebugMargin()) <= freeSpaceEnd)
             {
                 // All tests passed: Success.
-                pAllocationRequest->allocHandle = (ulong)(resultOffset + 1);
+                pAllocationRequest->allocHandle = resultOffset + 1;
 
                 // pAllocationRequest->item, customData unused.
                 pAllocationRequest->algorithmData = (uint)(ALLOC_REQUEST_END_OF_1ST);
@@ -482,7 +482,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear : D3D12MA_BlockMetad
             if (((index1st == suballocations1st.size()) && ((resultOffset + allocSize + GetDebugMargin()) <= blockSize)) || ((index1st < suballocations1st.size()) && ((resultOffset + allocSize + GetDebugMargin()) <= suballocations1st[index1st].offset)))
             {
                 // All tests passed: Success.
-                pAllocationRequest->allocHandle = (ulong)(resultOffset + 1);
+                pAllocationRequest->allocHandle = resultOffset + 1;
                 pAllocationRequest->algorithmData = (uint)(ALLOC_REQUEST_END_OF_2ND);
 
                 // pAllocationRequest->item, customData unused.
@@ -547,7 +547,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear : D3D12MA_BlockMetad
         if (endOf1st + GetDebugMargin() <= resultOffset)
         {
             // All tests passed: Success.
-            pAllocationRequest->allocHandle = (ulong)(resultOffset + 1);
+            pAllocationRequest->allocHandle = resultOffset + 1;
 
             // pAllocationRequest->item unused.
             pAllocationRequest->algorithmData = (uint)(ALLOC_REQUEST_UPPER_ADDRESS);

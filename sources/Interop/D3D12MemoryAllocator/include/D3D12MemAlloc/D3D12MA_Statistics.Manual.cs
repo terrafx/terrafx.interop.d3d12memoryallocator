@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.0.1
+// Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -22,9 +22,9 @@ public partial struct D3D12MA_Statistics : IEquatable<D3D12MA_Statistics>
 
     public static bool operator !=(in D3D12MA_Statistics lhs, in D3D12MA_Statistics rhs) => !(lhs == rhs);
 
-    public override bool Equals([NotNullWhen(true)] object? obj) => (obj is D3D12MA_Statistics other) && Equals(other);
+    public override readonly bool Equals([NotNullWhen(true)] object? obj) => (obj is D3D12MA_Statistics other) && Equals(other);
 
-    public bool Equals(D3D12MA_Statistics other) => (this == other);
+    public readonly bool Equals(D3D12MA_Statistics other) => (this == other);
 
-    public override int GetHashCode() => HashCode.Combine(BlockCount, AllocationCount, BlockBytes, AllocationBytes);
+    public override readonly int GetHashCode() => HashCode.Combine(BlockCount, AllocationCount, BlockBytes, AllocationBytes);
 }

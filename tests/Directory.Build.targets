@@ -15,7 +15,8 @@
   <!-- Settings that append the existing setting value -->
   <PropertyGroup>
     <!-- CA1515: Consider making public types internal -->
-    <NoWarn>$(NoWarn);CA1515</NoWarn>
+    <!-- IDE0010: Add missing cases to switch statement -->
+    <NoWarn>$(NoWarn);CA1515;IDE0010</NoWarn>
   </PropertyGroup>
 
 </Project>

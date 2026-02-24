@@ -1,6 +1,6 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.0.1
+// Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
@@ -136,7 +136,7 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
             // points U+0000 to U+D7FF and U+E000 to U+FFFF are encoded in two bytes,
             // and everything else takes more than two bytes. We will reject any
             // multi wchar character encodings for simplicity.
-            uint val = (uint)(*p);
+            uint val = *p;
 
             D3D12MA_ASSERT(((val <= 0xD7FF) || (0xE000 <= val && val <= 0xFFFF)), "Character not currently supported.");
 
@@ -219,9 +219,9 @@ internal unsafe partial struct D3D12MA_JsonWriter : IDisposable
                             if (hexDigit < 10)
                             {
                                 m_SB->Add((char)('0' + (char)(hexDigit)));
-                            }   
+                            }
                             else
-                            {   
+                            {
                                 m_SB->Add((char)('A' + (char)(hexDigit)));
                             }
                         }

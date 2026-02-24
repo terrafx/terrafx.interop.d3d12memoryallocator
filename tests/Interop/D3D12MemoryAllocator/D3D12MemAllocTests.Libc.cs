@@ -146,14 +146,14 @@ public static unsafe partial class D3D12MemAllocTests
 
     internal static int wcscmp([NativeTypeName("const wchar_t *")] char* s1, string? s2)
     {
-        ReadOnlySpan<char> tmp = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)(s1));
+        ReadOnlySpan<char> tmp = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(s1);
         return tmp.CompareTo(s2, StringComparison.Ordinal);
     }
 
     [return: NativeTypeName("wchar_t *")]
     internal static char* wcsstr([NativeTypeName("const wchar_t *")] char* s1, string s2)
     {
-        ReadOnlySpan<char> tmp = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)(s1));
+        ReadOnlySpan<char> tmp = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(s1);
         int index = tmp.IndexOf(s2, StringComparison.Ordinal);
         return (index != -1) ? (s1 + index) : null;
     }
@@ -179,7 +179,7 @@ public static unsafe partial class D3D12MemAllocTests
         return wprintf(string.Format(CultureInfo.InvariantCulture, format, arg0, arg1, arg2));
     }
 
-    internal static int wprintf(string format, object[] args)
+    internal static int wprintf(string format, params object[] args)
     {
         return wprintf(string.Format(CultureInfo.InvariantCulture, format, args));
     }
