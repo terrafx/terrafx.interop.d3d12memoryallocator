@@ -93,19 +93,19 @@ public static unsafe partial class D3D12MemAllocTests
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint RoundDiv(uint x, uint y)
     {
-        return (x + (y / (uint)(2))) / y;
+        return (x + (y / 2)) / y;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static nuint RoundDiv(nuint x, nuint y)
     {
-        return (x + (y / (nuint)(2))) / y;
+        return (x + (y / 2)) / y;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong RoundDiv(ulong x, ulong y)
     {
-        return (x + (y / (ulong)(2))) / y;
+        return (x + (y / 2)) / y;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

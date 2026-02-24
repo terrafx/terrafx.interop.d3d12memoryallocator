@@ -6,7 +6,7 @@
 namespace TerraFX.Interop.DirectX;
 
 /// <summary>Statistics returned for defragmentation process by function <see cref="D3D12MA_DefragmentationContext.GetStats" />.</summary>
-public unsafe partial struct D3D12MA_DEFRAGMENTATION_STATS
+public partial struct D3D12MA_DEFRAGMENTATION_STATS
 {
     /// <summary>Total number of bytes that have been copied while moving allocations to different places.</summary>
     [NativeTypeName("UINT64")]

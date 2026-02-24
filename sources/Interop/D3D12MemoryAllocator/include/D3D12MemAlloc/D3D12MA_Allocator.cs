@@ -4,7 +4,6 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using System.Collections;
 using System.Runtime.CompilerServices;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
@@ -149,6 +148,17 @@ public unsafe partial struct D3D12MA_Allocator : D3D12MA_IUnknownImpl.Interface,
     public readonly BOOL IsGPUUploadHeapSupported()
     {
         return m_Pimpl->IsGPUUploadHeapSupported();
+    }
+
+    /// <summary>Returns true if resource tight alignment is supported on the current system.</summary>
+    /// <returns></returns>
+    /// <remarks>
+    ///   <para>When supported, it is automatically used by the library, unless <see cref="D3D12MA_ALLOCATOR_FLAG_DONT_USE_TIGHT_ALIGNMENT" /> flag was specified on allocator creation.</para>
+    ///   <para>This flag is fetched from <see cref="D3D12_FEATURE_DATA_TIGHT_ALIGNMENT.SupportTier" />.</para>
+    /// </remarks>
+    public readonly BOOL IsTightAlignmentSupported()
+    {
+        return m_Pimpl->IsTightAlignmentSupported();
     }
 
     /// <summary>Returns total amount of memory of specific segment group, in bytes.</summary>

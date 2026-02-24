@@ -248,7 +248,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
     [return: NativeTypeName("UINT64")]
     internal static ulong GetAllocationOffset(D3D12MA_BlockMetadata_Linear* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle)
     {
-        return (ulong)(allocHandle - 1);
+        return allocHandle - 1;
     }
 
     [VtblIndex(7)]
@@ -262,7 +262,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void GetAllocationInfo(D3D12MA_BlockMetadata_Linear* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle, [NativeTypeName("D3D12MA::VIRTUAL_ALLOCATION_INFO &")] D3D12MA_VIRTUAL_ALLOCATION_INFO* outInfo)
     {
-        ref readonly D3D12MA_Suballocation suballoc = ref pThis->FindSuballocation((ulong)(allocHandle - 1));
+        ref readonly D3D12MA_Suballocation suballoc = ref pThis->FindSuballocation(allocHandle - 1);
 
         outInfo->Offset = suballoc.offset;
         outInfo->Size = suballoc.size;
@@ -290,7 +290,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void Alloc(D3D12MA_BlockMetadata_Linear* pThis, [NativeTypeName("const D3D12MA::AllocationRequest &")] D3D12MA_AllocationRequest* request, [NativeTypeName("UINT64")] ulong allocSize, void* PrivateData)
     {
-        ulong offset = (ulong)(request->allocHandle - 1);
+        ulong offset = request->allocHandle - 1;
 
         D3D12MA_Suballocation newSuballoc = new D3D12MA_Suballocation {
             offset = offset,
@@ -384,7 +384,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
         ref D3D12MA_Vector<D3D12MA_Suballocation> suballocations1st = ref pThis->AccessSuballocations1st();
         ref D3D12MA_Vector<D3D12MA_Suballocation> suballocations2nd = ref pThis->AccessSuballocations2nd();
 
-        ulong offset = (ulong)(allocHandle - 1);
+        ulong offset = allocHandle - 1;
 
         if (!suballocations1st.empty())
         {
@@ -487,7 +487,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
     {
         // Function only used for defragmentation, which is disabled for this algorithm
         D3D12MA_FAIL();
-        return (ulong)(0);
+        return 0;
     }
 
     [VtblIndex(14)]
@@ -497,7 +497,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
     {
         // Function only used for defragmentation, which is disabled for this algorithm
         D3D12MA_FAIL();
-        return (ulong)(0);
+        return 0;
     }
 
     [VtblIndex(15)]
@@ -514,14 +514,14 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void* GetAllocationPrivateData(D3D12MA_BlockMetadata_Linear* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle)
     {
-        return pThis->FindSuballocation((ulong)(allocHandle - 1)).privateData;
+        return pThis->FindSuballocation(allocHandle - 1).privateData;
     }
 
     [VtblIndex(17)]
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     internal static void SetAllocationPrivateData(D3D12MA_BlockMetadata_Linear* pThis, [NativeTypeName("D3D12MA::AllocHandle")] ulong allocHandle, void* privateData)
     {
-        ref D3D12MA_Suballocation suballoc = ref pThis->FindSuballocation((ulong)(allocHandle - 1));
+        ref D3D12MA_Suballocation suballoc = ref pThis->FindSuballocation(allocHandle - 1);
         suballoc.privateData = privateData;
     }
 

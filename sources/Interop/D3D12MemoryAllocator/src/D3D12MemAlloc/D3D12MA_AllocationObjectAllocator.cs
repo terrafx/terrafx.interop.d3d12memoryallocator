@@ -4,7 +4,6 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using TerraFX.Interop.Windows;
 
 namespace TerraFX.Interop.DirectX;
 
@@ -13,7 +12,7 @@ internal unsafe partial struct D3D12MA_AllocationObjectAllocator : IDisposable
 {
     private D3D12MA_MUTEX m_Mutex;
 
-    private bool m_UseMutex;
+    private readonly bool m_UseMutex;
 
     private D3D12MA_PoolAllocator<D3D12MA_Allocation> m_Allocator;
 

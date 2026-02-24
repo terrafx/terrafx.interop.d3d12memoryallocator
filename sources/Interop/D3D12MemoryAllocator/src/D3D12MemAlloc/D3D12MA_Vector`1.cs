@@ -123,13 +123,13 @@ internal unsafe partial struct D3D12MA_Vector<T> : IDisposable
     [return: NativeTypeName("const iterator")]
     public readonly T* crbegin()
     {
-        return cend() -1;
+        return cend() - 1;
     }
 
     [return: NativeTypeName("const iterator")]
     public readonly T* crend()
     {
-        return cbegin() -1;
+        return cbegin() - 1;
     }
 
     public void push_front([NativeTypeName("const T &")] in T src)
@@ -194,7 +194,7 @@ internal unsafe partial struct D3D12MA_Vector<T> : IDisposable
         }
     }
 
-    public void resize([NativeTypeName("size_t")] nuint  newCount, bool freeMemory = false)
+    public void resize([NativeTypeName("size_t")] nuint newCount, bool freeMemory = false)
     {
         nuint newCapacity = m_Capacity;
 
@@ -225,7 +225,7 @@ internal unsafe partial struct D3D12MA_Vector<T> : IDisposable
         m_Count = newCount;
     }
 
-    public void insert([NativeTypeName("size_t")] nuint  index, [NativeTypeName("const T &")] in T src)
+    public void insert([NativeTypeName("size_t")] nuint index, [NativeTypeName("const T &")] in T src)
     {
         D3D12MA_HEAVY_ASSERT(index <= m_Count);
 

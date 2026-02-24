@@ -39,15 +39,15 @@ public static unsafe partial class D3D12MemAlloc
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static unsafe nuint __alignof<T>()
+    internal static nuint __alignof<T>()
         where T : unmanaged
     {
         AlignOf<T> alignof = new AlignOf<T>();
-        return (nuint)(nint)(Unsafe.ByteOffset(ref alignof.Origin, ref Unsafe.As<T, byte>(ref alignof.Target)));
+        return (nuint)Unsafe.ByteOffset(ref alignof.Origin, ref Unsafe.As<T, byte>(ref alignof.Target));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static unsafe uint __sizeof<T>()
+    internal static uint __sizeof<T>()
         where T : unmanaged
     {
         return (uint)(sizeof(T));

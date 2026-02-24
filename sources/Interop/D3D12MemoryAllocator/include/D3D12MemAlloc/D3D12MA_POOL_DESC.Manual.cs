@@ -3,12 +3,7 @@
 // Ported from D3D12MemAlloc.h in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-using System;
-using TerraFX.Interop.Gdiplus;
-using static TerraFX.Interop.DirectX.D3D12_HEAP_FLAGS;
-using static TerraFX.Interop.DirectX.D3D12_HEAP_TYPE;
 using static TerraFX.Interop.DirectX.D3D12_RESIDENCY_PRIORITY;
-using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 
 namespace TerraFX.Interop.DirectX;

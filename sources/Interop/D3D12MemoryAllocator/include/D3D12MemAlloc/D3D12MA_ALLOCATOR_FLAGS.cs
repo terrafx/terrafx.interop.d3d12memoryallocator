@@ -40,6 +40,13 @@ public enum D3D12MA_ALLOCATOR_FLAGS
     D3D12MA_ALLOCATOR_FLAG_MSAA_TEXTURES_ALWAYS_COMMITTED = 0x8,
 
     /// <summary>Disable optimization that prefers creating small buffers as committed to avoid 64 KB alignment.</summary>
-    /// <remarks>By default, the library prefers creating small buffers &lt;= 32 KB as committed, because drivers tend to pack them better, while placed buffers require 64 KB alignment. This, however, may decrease performance, as creating committed resources involves allocation of implicit heaps, which may take longer than creating placed resources in existing heaps. Passing this flag will disable this committed preference globally for the allocator. It can also be disabled for a single allocation by using <see cref="D3D12MA_ALLOCATION_FLAG_STRATEGY_MIN_TIME" />.</remarks>
+    /// <remarks>
+    ///   <para>By default, the library prefers creating small buffers &lt;= 32 KB as committed, because drivers tend to pack them better, while placed buffers require 64 KB alignment. This, however, may decrease performance, as creating committed resources involves allocation of implicit heaps, which may take longer than creating placed resources in existing heaps. Passing this flag will disable this committed preference globally for the allocator. It can also be disabled for a single allocation by using <see cref="D3D12MA_ALLOCATION_FLAG_STRATEGY_MIN_TIME" />.</para>
+    ///   <para>If the tight resource alignment feature is used by the library (which happens automatically whenever supported, unless you use flag <see cref="D3D12MA_ALLOCATOR_FLAG_DONT_USE_TIGHT_ALIGNMENT"/>), then small buffers are not preferred as committed. Long story short, you don't need to specify any of these flags. The library chooses the most optimal method automatically.</para>
+    /// </remarks>
     D3D12MA_ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED = 0x10,
+
+    /// <summary>Disables the use of the tight alignment feature even when it is supported on the current system. By default, the feature is used whenever available.</summary>
+    /// <remarks>Support can be checked by <see cref="D3D12MA_Allocator.IsTightAlignmentSupported()" /> regardless of using this flag.</remarks>
+    D3D12MA_ALLOCATOR_FLAG_DONT_USE_TIGHT_ALIGNMENT = 0x20,
 }

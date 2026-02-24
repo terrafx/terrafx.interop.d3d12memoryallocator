@@ -5,7 +5,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12MA_VIRTUAL_BLOCK_FLAGS;
 using static TerraFX.Interop.DirectX.D3D12MemAlloc;
 

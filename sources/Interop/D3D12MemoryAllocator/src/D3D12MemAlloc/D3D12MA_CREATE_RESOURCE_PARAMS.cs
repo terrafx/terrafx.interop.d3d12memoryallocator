@@ -119,7 +119,6 @@ internal unsafe partial struct D3D12MA_CREATE_RESOURCE_PARAMS
         return pCastableFormats;
     }
 
-
     public enum VARIANT
     {
         INVALID = 0,

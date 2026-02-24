@@ -4,7 +4,6 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using TerraFX.Interop.Windows;
 
 namespace TerraFX.Interop.DirectX;
 
@@ -23,7 +22,7 @@ internal static unsafe partial class D3D12MA_PoolAllocator
                 D3D12MA_PoolAllocator<T>.Item* pItem = &block.pItems[block.FirstFreeIndex];
                 block.FirstFreeIndex = pItem->NextFreeIndex;
 
-                T* result = (T*)(&pItem->Value);
+                T* result = &pItem->Value;
                 return result;
             }
         }

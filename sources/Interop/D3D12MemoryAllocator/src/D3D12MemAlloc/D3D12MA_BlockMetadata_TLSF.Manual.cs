@@ -654,7 +654,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
     {
         if (pThis->m_AllocCount == 0)
         {
-            return (ulong)(0);
+            return 0;
         }
 
         for (Block* block = pThis->m_NullBlock->prevPhysical; block != null; block = block->prevPhysical)
@@ -666,7 +666,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
         }
 
         D3D12MA_FAIL("If m_AllocCount > 0 then should find any allocation!");
-        return (ulong)(0);
+        return 0;
     }
 
     [VtblIndex(14)]
@@ -684,7 +684,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_TLSF
                 return (ulong)(block);
             }
         }
-        return (ulong)(0);
+        return 0;
     }
 
     [VtblIndex(15)]

@@ -3,8 +3,6 @@
 // Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-using TerraFX.Interop.Windows;
-
 namespace TerraFX.Interop.DirectX;
 
 /// <summary>Parameters of planned allocation inside a NormalBlock.</summary>

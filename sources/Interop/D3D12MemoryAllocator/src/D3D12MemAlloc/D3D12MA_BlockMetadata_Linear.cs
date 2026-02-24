@@ -450,7 +450,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear : D3D12MA_BlockMetad
             if ((resultOffset + allocSize + GetDebugMargin()) <= freeSpaceEnd)
             {
                 // All tests passed: Success.
-                pAllocationRequest->allocHandle = (ulong)(resultOffset + 1);
+                pAllocationRequest->allocHandle = resultOffset + 1;
 
                 // pAllocationRequest->item, customData unused.
                 pAllocationRequest->algorithmData = (uint)(ALLOC_REQUEST_END_OF_1ST);
@@ -482,7 +482,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear : D3D12MA_BlockMetad
             if (((index1st == suballocations1st.size()) && ((resultOffset + allocSize + GetDebugMargin()) <= blockSize)) || ((index1st < suballocations1st.size()) && ((resultOffset + allocSize + GetDebugMargin()) <= suballocations1st[index1st].offset)))
             {
                 // All tests passed: Success.
-                pAllocationRequest->allocHandle = (ulong)(resultOffset + 1);
+                pAllocationRequest->allocHandle = resultOffset + 1;
                 pAllocationRequest->algorithmData = (uint)(ALLOC_REQUEST_END_OF_2ND);
 
                 // pAllocationRequest->item, customData unused.
@@ -547,7 +547,7 @@ internal unsafe partial struct D3D12MA_BlockMetadata_Linear : D3D12MA_BlockMetad
         if (endOf1st + GetDebugMargin() <= resultOffset)
         {
             // All tests passed: Success.
-            pAllocationRequest->allocHandle = (ulong)(resultOffset + 1);
+            pAllocationRequest->allocHandle = resultOffset + 1;
 
             // pAllocationRequest->item unused.
             pAllocationRequest->algorithmData = (uint)(ALLOC_REQUEST_UPPER_ADDRESS);

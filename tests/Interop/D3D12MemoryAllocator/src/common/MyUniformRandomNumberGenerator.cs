@@ -11,7 +11,7 @@ public readonly unsafe partial struct MyUniformRandomNumberGenerator
 {
     [NativeTypeName("RandomNumberGenerator &")]
     private readonly RandomNumberGenerator* m_Gen;
-    
+
     public MyUniformRandomNumberGenerator([NativeTypeName("RandomNumberGenerator &")] ref RandomNumberGenerator gen)
     {
         m_Gen = (RandomNumberGenerator*)(Unsafe.AsPointer(ref gen));

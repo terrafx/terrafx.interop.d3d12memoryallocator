@@ -5,7 +5,7 @@
 
 namespace TerraFX.Interop.DirectX;
 
-internal unsafe struct D3D12MA_SuballocationOffsetGreater
+internal struct D3D12MA_SuballocationOffsetGreater
     : D3D12MA_CmpLess<D3D12MA_Suballocation>
 {
     public readonly int Compare(D3D12MA_Suballocation lhs, D3D12MA_Suballocation rhs)

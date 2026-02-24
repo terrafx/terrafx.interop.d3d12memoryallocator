@@ -6,12 +6,12 @@
 using System.Collections.Generic;
 namespace TerraFX.Interop.DirectX;
 
-internal unsafe interface D3D12MA_CmpLess<T> : D3D12MA_CmpLess<T, T>, IComparer<T>
+internal interface D3D12MA_CmpLess<T> : D3D12MA_CmpLess<T, T>, IComparer<T>
     where T : unmanaged
 {
 }
 
-internal unsafe interface D3D12MA_CmpLess<TLeft, TRight>
+internal interface D3D12MA_CmpLess<TLeft, TRight>
     where TLeft : unmanaged
     where TRight : unmanaged
 {

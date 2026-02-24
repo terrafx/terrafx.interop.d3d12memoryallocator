@@ -3,7 +3,6 @@
 // Ported from D3D12MemAlloc.cpp in D3D12MemoryAllocator tag v3.1.0
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
-
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -86,7 +85,7 @@ internal unsafe partial struct D3D12MA_BlockVector : IDisposable
         m_MinBlockCount = minBlockCount;
         m_MaxBlockCount = maxBlockCount;
         m_ExplicitBlockSize = explicitBlockSize;
-        m_MinAllocationAlignment = minAllocationAlignment;
+        m_MinAllocationAlignment = D3D12MA_MAX(minAllocationAlignment, D3D12MA_DEBUG_ALIGNMENT);
         m_Algorithm = algorithm;
         m_DenyMsaaTextures = denyMsaaTextures;
         m_ProtectedSession = pProtectedSession;

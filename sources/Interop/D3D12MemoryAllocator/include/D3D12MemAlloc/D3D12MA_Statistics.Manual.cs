@@ -22,9 +22,9 @@ public partial struct D3D12MA_Statistics : IEquatable<D3D12MA_Statistics>
 
     public static bool operator !=(in D3D12MA_Statistics lhs, in D3D12MA_Statistics rhs) => !(lhs == rhs);
 
-    public override bool Equals([NotNullWhen(true)] object? obj) => (obj is D3D12MA_Statistics other) && Equals(other);
+    public override readonly bool Equals([NotNullWhen(true)] object? obj) => (obj is D3D12MA_Statistics other) && Equals(other);
 
-    public bool Equals(D3D12MA_Statistics other) => (this == other);
+    public readonly bool Equals(D3D12MA_Statistics other) => (this == other);
 
-    public override int GetHashCode() => HashCode.Combine(BlockCount, AllocationCount, BlockBytes, AllocationBytes);
+    public override readonly int GetHashCode() => HashCode.Combine(BlockCount, AllocationCount, BlockBytes, AllocationBytes);
 }

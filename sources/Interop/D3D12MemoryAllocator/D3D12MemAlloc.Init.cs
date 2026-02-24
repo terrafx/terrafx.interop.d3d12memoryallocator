@@ -66,7 +66,12 @@ public static unsafe partial class D3D12MemAlloc
     /// </summary>
     public static readonly uint D3D12MA_DEBUG_LEVEL = get_app_context_data(nameof(D3D12MA_DEBUG_LEVEL), IsDebug ? 1u : 0u);
 
-    /// <summary>Minimum alignment of all allocations, in bytes. Set to more than 1 for debugging purposes only.Must be power of two.</summary>
+    /// <summary>Default alignment of allocations in default pools and custom pools with MinAllocationAlignment == 0.</summary>
+    /// <remarks>Can be lowered for custom pools by specifying custom MinAllocationAlignment > 0.</remarks>
+    public static readonly ulong D3D12MA_DEFAULT_ALIGNMENT = get_app_context_data(nameof(D3D12MA_DEFAULT_ALIGNMENT), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+
+    /// <summary>Minimum alignment of all allocations, in bytes. Set to more than 1 for debugging purposes only.</summary>
+    /// <remarks>Must be power of two.</remarks>
     public static readonly ulong D3D12MA_DEBUG_ALIGNMENT = get_app_context_data(nameof(D3D12MA_DEBUG_ALIGNMENT), 1UL);
 
     /// <summary>Minimum margin before and after every allocation, in bytes. Set nonzero for debugging purposes only.</summary>

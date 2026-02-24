@@ -4,7 +4,6 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -13,8 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
-using TerraFX.Interop;
-using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12;
 using static TerraFX.Interop.DirectX.D3D12_BARRIER_LAYOUT;
@@ -68,6 +65,17 @@ public static unsafe partial class D3D12MemAllocTests
         "FORWARD",
         "BACKWARD",
         "RANDOM",
+    ];
+
+    // Indexes match enum D3D12_HEAP_TYPE.
+    [NativeTypeName("const WCHAR *[]")]
+    internal static string[] HEAP_TYPE_NAMES = [
+        "",
+        "DEFAULT",
+        "UPLOAD",
+        "READBACK",
+        "CUSTOM",
+        "GPU_UPLOAD",
     ];
 
     internal const uint TestCommittedResourcesAndJson_count = 4;
@@ -282,6 +290,14 @@ public static unsafe partial class D3D12MemAllocTests
 
             if (resDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
             {
+                // Fix for D3D12 ERROR: ID3D12Device::CreatePlacedResource: D3D12_RESOURCE_DESC::Alignment is invalid.
+                // The value is 8.
+                // When D3D12_RESOURCE_DESC::Flag bit for D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT is set, Alignment must be 0. [ STATE_CREATION ERROR #721: CREATERESOURCE_INVALIDALIGNMENT]
+                if ((resDesc.Flags & D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT_COPY) != 0)
+                {
+                    resDesc.Alignment = 0;
+                }
+
                 using ComPtr<D3D12MA_Allocation> uploadAlloc = new ComPtr<D3D12MA_Allocation>();
                 CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, uploadAlloc.GetAddressOf(), IID_NULL, null));
 
@@ -395,6 +411,14 @@ public static unsafe partial class D3D12MemAllocTests
 
             if (resDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
             {
+                // Fix for D3D12 ERROR: ID3D12Device::CreatePlacedResource: D3D12_RESOURCE_DESC::Alignment is invalid.
+                // The value is 8.
+                // When D3D12_RESOURCE_DESC::Flag bit for D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT is set, Alignment must be 0. [ STATE_CREATION ERROR #721: CREATERESOURCE_INVALIDALIGNMENT]
+                if ((resDesc.Flags & D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT_COPY) != 0)
+                {
+                    resDesc.Alignment = 0;
+                }
+
                 using ComPtr<D3D12MA_Allocation> downloadAlloc = new ComPtr<D3D12MA_Allocation>();
                 CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, downloadAlloc.GetAddressOf(), IID_NULL, null));
 
@@ -472,7 +496,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(D3D12_HEAP_TYPE_UPLOAD, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS);
 
-        nuint BUF_COUNT = 10;
+        const nuint BUF_COUNT = 10;
         ComPtr<D3D12MA_Allocation>* buffers = stackalloc ComPtr<D3D12MA_Allocation>[(int)(BUF_COUNT)];
 
         for (nuint algorithmIndex = 0; algorithmIndex < 2; ++algorithmIndex)
@@ -626,7 +650,7 @@ public static unsafe partial class D3D12MemAllocTests
             // Select different heaps
             for (byte heapType = 0; heapType < 5; ++heapType)
             {
-                Unsafe.SkipInit(out D3D12_RESOURCE_STATES state);
+                D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON;
                 D3D12_CPU_PAGE_PROPERTY cpuPageType = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
                 D3D12_MEMORY_POOL memoryPool = D3D12_MEMORY_POOL_UNKNOWN;
 
@@ -635,28 +659,24 @@ public static unsafe partial class D3D12MemAllocTests
                     case 0:
                     {
                         allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
-                        state = D3D12_RESOURCE_STATE_COMMON;
                         break;
                     }
 
                     case 1:
                     {
                         allocDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
-                        state = D3D12_RESOURCE_STATE_GENERIC_READ;
                         break;
                     }
 
                     case 2:
                     {
                         allocDesc.HeapType = D3D12_HEAP_TYPE_READBACK;
-                        state = D3D12_RESOURCE_STATE_COPY_DEST;
                         break;
                     }
 
                     case 3:
                     {
                         allocDesc.HeapType = D3D12_HEAP_TYPE_CUSTOM;
-                        state = D3D12_RESOURCE_STATE_COMMON;
                         cpuPageType = D3D12_CPU_PAGE_PROPERTY_NOT_AVAILABLE;
                         memoryPool = ctx.allocator->IsUMA() ? D3D12_MEMORY_POOL_L0 : D3D12_MEMORY_POOL_L1;
                         break;
@@ -665,9 +685,14 @@ public static unsafe partial class D3D12MemAllocTests
                     case 4:
                     {
                         allocDesc.HeapType = D3D12_HEAP_TYPE_CUSTOM;
-                        state = D3D12_RESOURCE_STATE_GENERIC_READ;
                         cpuPageType = D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE;
                         memoryPool = D3D12_MEMORY_POOL_L0;
+                        break;
+                    }
+
+                    default:
+                    {
+                        D3D12MA_FAIL();
                         break;
                     }
                 }
@@ -702,6 +727,12 @@ public static unsafe partial class D3D12MemAllocTests
                                 resFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
                                 break;
                             }
+
+                            default:
+                            {
+                                D3D12MA_FAIL();
+                                break;
+                            }
                         }
                     }
 
@@ -734,6 +765,12 @@ public static unsafe partial class D3D12MemAllocTests
 
                             break;
                         }
+
+                        default:
+                        {
+                            D3D12MA_FAIL();
+                            break;
+                        }
                     }
 
                     // Select different allocation flags
@@ -750,6 +787,12 @@ public static unsafe partial class D3D12MemAllocTests
                             case 1:
                             {
                                 allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
+                                break;
+                            }
+
+                            default:
+                            {
+                                D3D12MA_FAIL();
                                 break;
                             }
                         }
@@ -802,6 +845,12 @@ public static unsafe partial class D3D12MemAllocTests
                                             CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, state, null, alloc.GetAddressOf(), IID_NULL, null));
                                             break;
                                         }
+
+                                        default:
+                                        {
+                                            D3D12MA_FAIL();
+                                            break;
+                                        }
                                     }
                                 }
                                 else
@@ -818,6 +867,12 @@ public static unsafe partial class D3D12MemAllocTests
                                         {
                                             FillResourceDescForBuffer(out resDesc, 1024);
                                             CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, state, null, alloc.GetAddressOf(), IID_NULL, null));
+                                            break;
+                                        }
+
+                                        default:
+                                        {
+                                            D3D12MA_FAIL();
                                             break;
                                         }
                                     }
@@ -850,13 +905,18 @@ public static unsafe partial class D3D12MemAllocTests
                                         }
                                         break;
                                     }
+
+                                    default:
+                                    {
+                                        D3D12MA_FAIL();
+                                        break;
+                                    }
                                 }
 
                                 allocs.Add(alloc);
                                 _ = alloc.Detach();
                             }
                         }
-
                     }
                 }
             }
@@ -887,7 +947,17 @@ public static unsafe partial class D3D12MemAllocTests
         for (uint i = 0; i < count; ++i)
         {
             bool receiveExplicitResource = i < 2;
-            CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, resources[i].allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (receiveExplicitResource ? (void**)(&resources[i].resource) : null)));
+            CHECK_HR(
+                ctx.allocator->CreateResource(
+                    &allocDesc,
+                    &resourceDesc,
+                    D3D12_RESOURCE_STATE_COMMON,
+                    null,
+                    resources[i].allocation.GetAddressOf(),
+                    __uuidof<ID3D12Resource>(),
+                    (receiveExplicitResource ? (void**)(&resources[i].resource) : null)
+                )
+            );
 
             if (receiveExplicitResource)
             {
@@ -943,6 +1013,9 @@ public static unsafe partial class D3D12MemAllocTests
     {
         _ = wprintf("Test small buffers\n");
 
+        bool isTightAlignmentEnabled = ctx.allocator->IsTightAlignmentSupported() && ((ctx.allocatorFlags & D3D12MA_ALLOCATOR_FLAG_DONT_USE_TIGHT_ALIGNMENT) == 0);
+        bool expectSmallBuffersCommitted = !isTightAlignmentEnabled && ((ctx.allocatorFlags & D3D12MA_ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED) == 0);
+
         D3D12MA_POOL_DESC poolDesc = new D3D12MA_POOL_DESC(
             D3D12_HEAP_TYPE_DEFAULT,
             D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS
@@ -956,7 +1029,7 @@ public static unsafe partial class D3D12MemAllocTests
         D3D12_RESOURCE_DESC largeResDesc = resDesc;
         largeResDesc.Width = 128 * KILOBYTE;
 
-        List<ResourceWithAllocation> resources = new List<ResourceWithAllocation>();
+        List<ResourceWithAllocation> resources = [];
 
         // A large buffer placed inside the heap to allocate first block.
         {
@@ -984,17 +1057,10 @@ public static unsafe partial class D3D12MemAllocTests
             CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, resWithAlloc.allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resWithAlloc.resource)));
             CHECK_BOOL((resWithAlloc.allocation.Get() != null) && (resWithAlloc.allocation.Get()->GetResource() != null));
 
-            // May or may not be committed, depending on the PREFER_SMALL_BUFFERS_COMMITTED and TIGHT_ALIGNMENT settings.
+            // Expected to be committed?
             bool isCommitted = resWithAlloc.allocation.Get()->GetHeap() == null;
+            CHECK_BOOL(isCommitted == expectSmallBuffersCommitted);
 
-            if (isCommitted)
-            {
-                _ = wprintf("    Small buffer %llu B inside a custom pool was created as committed.\n", resDesc.Width);
-            }
-            else
-            {
-                _ = wprintf("    Small buffer %llu B inside a custom pool was created as placed.\n", resDesc.Width);
-            }
             resources.Add(resWithAlloc);
         }
 
@@ -1443,7 +1509,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             // Default parameters
             allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NONE;
-            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null);
+            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, alloc.GetAddressOf(), IID_NULL, null);
 
             CHECK_BOOL(SUCCEEDED(hr) && (alloc.Get() != null) && (alloc.Get()->GetResource() != null));
 
@@ -1459,7 +1525,7 @@ public static unsafe partial class D3D12MemAllocTests
             if (poolTypeI != 2)
             {
                 allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_COMMITTED;
-                hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null);
+                hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, alloc.GetAddressOf(), IID_NULL, null);
 
                 CHECK_BOOL(SUCCEEDED(hr) && (alloc.Get() != null) && (alloc.Get()->GetResource() != null));
                 CHECK_BOOL(alloc.Get()->GetOffset() == 0); // Committed
@@ -1473,7 +1539,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             // NEVER_ALLOCATE #1
             allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE;
-            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null);
+            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, alloc.GetAddressOf(), IID_NULL, null);
 
             CHECK_BOOL(SUCCEEDED(hr) && (alloc.Get() != null) && (alloc.Get()->GetResource() != null));
             CHECK_BOOL(alloc.Get()->GetHeap() == defaultAllocHeap); // Same memory block as default one.
@@ -1486,7 +1552,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             // NEVER_ALLOCATE #2. Should fail in pool2 as it has no space.
             allocDesc.Flags = D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE;
-            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, alloc.GetAddressOf(), IID_NULL, null);
+            hr = ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, alloc.GetAddressOf(), IID_NULL, null);
 
             if (poolTypeI == 2)
             {
@@ -1521,6 +1587,12 @@ public static unsafe partial class D3D12MemAllocTests
                 {
                     poolBlockCount = 1;
                     break; // Only custom pool, no dedicated allocation.
+                }
+
+                default:
+                {
+                    D3D12MA_FAIL();
+                    break;
                 }
             }
 
@@ -2251,7 +2323,7 @@ public static unsafe partial class D3D12MemAllocTests
             // Destroy buffers.
             for (nuint i = BUF_COUNT; i-- != 0;)
             {
-                allocs[i].Reset();
+                _ = allocs[i].Reset();
             }
 
             // Get pool stats "End".
@@ -2265,7 +2337,7 @@ public static unsafe partial class D3D12MemAllocTests
             }
 
             // Destroy the pool.
-            pool.Reset();
+            _ = pool.Reset();
 
             // Get stats "End".
             D3D12MA_Budget localBudgetEnd = new D3D12MA_Budget();
@@ -2422,9 +2494,39 @@ public static unsafe partial class D3D12MemAllocTests
         // Create 3 sets of resources.
         for (uint i = 0; i < count; ++i)
         {
-            CHECK_HR(ctx.allocator->CreateResource(&allocDescUpload, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, null, resourcesUpload[i].allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resourcesUpload[i].resource)));
-            CHECK_HR(ctx.allocator->CreateResource(&allocDescDefault, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, resourcesDefault[i].allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resourcesDefault[i].resource)));
-            CHECK_HR(ctx.allocator->CreateResource(&allocDescReadback, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, null, resourcesReadback[i].allocation.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&resourcesReadback[i].resource)));
+            CHECK_HR(
+                ctx.allocator->CreateResource(
+                    &allocDescUpload,
+                    &resourceDesc,
+                    D3D12_RESOURCE_STATE_COMMON,
+                    null,
+                    resourcesUpload[i].allocation.GetAddressOf(),
+                    __uuidof<ID3D12Resource>(),
+                    (void**)(&resourcesUpload[i].resource)
+                )
+            );
+            CHECK_HR(
+                ctx.allocator->CreateResource(
+                    &allocDescDefault,
+                    &resourceDesc,
+                    D3D12_RESOURCE_STATE_COMMON,
+                    null,
+                    resourcesDefault[i].allocation.GetAddressOf(),
+                    __uuidof<ID3D12Resource>(),
+                    (void**)(&resourcesDefault[i].resource)
+                )
+            );
+            CHECK_HR(
+                ctx.allocator->CreateResource(
+                    &allocDescReadback,
+                    &resourceDesc,
+                    D3D12_RESOURCE_STATE_COMMON,
+                    null,
+                    resourcesReadback[i].allocation.GetAddressOf(),
+                    __uuidof<ID3D12Resource>(),
+                    (void**)(&resourcesReadback[i].resource)
+                )
+            );
         }
 
         // Map and fill data in UPLOAD.
@@ -3121,7 +3223,8 @@ public static unsafe partial class D3D12MemAllocTests
             for (nuint i = 0, countToDelete = (uint)(buffInfo.Count) / 2; i < countToDelete; ++i)
             {
                 buffInfo[^1].Dispose();
-                buffInfo.RemoveAt(buffInfo.Count - 1);;
+                buffInfo.RemoveAt(buffInfo.Count - 1);
+                ;
             }
 
             // Add one more buffer.
@@ -3137,7 +3240,8 @@ public static unsafe partial class D3D12MemAllocTests
             while (buffInfo.Count != 0)
             {
                 buffInfo[^1].Dispose();
-                buffInfo.RemoveAt(buffInfo.Count - 1);;
+                buffInfo.RemoveAt(buffInfo.Count - 1);
+                ;
             }
         }
 
@@ -3240,7 +3344,8 @@ public static unsafe partial class D3D12MemAllocTests
             while (buffInfo.Count != 0)
             {
                 buffInfo[^1].Dispose();
-                buffInfo.RemoveAt(buffInfo.Count - 1);;
+                buffInfo.RemoveAt(buffInfo.Count - 1);
+                ;
             }
         }
 
@@ -3450,7 +3555,7 @@ public static unsafe partial class D3D12MemAllocTests
                             algorithm = D3D12MA_POOL_FLAG_NONE;
                             break;
                         }
-                        
+
                         case 1:
                         {
                             algorithm = D3D12MA_POOL_FLAG_ALGORITHM_LINEAR;
@@ -3600,7 +3705,7 @@ public static unsafe partial class D3D12MemAllocTests
         using ComPtr<ID3D12Resource> res2 = new ComPtr<ID3D12Resource>();
 
         CHECK_HR(ctx.allocator->CreateResource2(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, null, allocPtr2.GetAddressOf(), __uuidof<ID3D12Resource>(), (void**)(&res2)));
-        CHECK_BOOL(allocPtr2.Get()->GetHeap()!= null);
+        CHECK_BOOL(allocPtr2.Get()->GetHeap() != null);
 
         // Create an aliasing buffer
         using ComPtr<ID3D12Resource> res3 = new ComPtr<ID3D12Resource>();
@@ -3612,7 +3717,7 @@ public static unsafe partial class D3D12MemAllocTests
         _ = wprintf("Test ID3D12Device10\n");
 
         using ComPtr<ID3D12Device10> dev10 = new ComPtr<ID3D12Device10>();
-        if(FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device10>(), (void**)(&dev10))))
+        if (FAILED(ctx.device->QueryInterface(__uuidof<ID3D12Device10>(), (void**)(&dev10))))
         {
             _ = wprintf("QueryInterface for ID3D12Device10 failed!\n");
             return;
@@ -3780,7 +3885,7 @@ public static unsafe partial class D3D12MemAllocTests
 
             uint* mappedData = null;
             CHECK_HR(res->Map(0, (D3D12_RANGE*)(Unsafe.AsPointer(ref Unsafe.AsRef(in EMPTY_RANGE))), (void**)&mappedData)); // {0, 0} - not reading anything.
-            for(uint i = 0; i < resDesc.Width / sizeof(uint); ++i)
+            for (uint i = 0; i < resDesc.Width / sizeof(uint); ++i)
             {
                 mappedData[i] = i * 3;
             }
@@ -3860,7 +3965,8 @@ public static unsafe partial class D3D12MemAllocTests
             CHECK_BOOL(endStats.BlockBytes >= begStats.BlockBytes);
             CHECK_BOOL(endStats.AllocationCount == begStats.AllocationCount + totalAllocCount);
             CHECK_BOOL(endStats.AllocationBytes > begStats.AllocationBytes + 2 * bigResDesc.Width);
-        };
+        }
+
         validateStats(totalAllocCount, ref bigResDesc, begLocalBudget.Stats, endLocalBudget.Stats);
         validateStats(totalAllocCount, ref bigResDesc, begStats.Total.Stats, endStats.Total.Stats);
         validateStats(totalAllocCount, ref bigResDesc, begStats.MemorySegmentGroup[0].Stats, endStats.MemorySegmentGroup[0].Stats); // DXGI_MEMORY_SEGMENT_GROUP_LOCAL
@@ -3869,6 +3975,79 @@ public static unsafe partial class D3D12MemAllocTests
         for (var i = 0; i < 2; ++i)
         {
             bigAllocs[i].Dispose();
+        }
+    }
+
+    internal static void TestTightAlignment([NativeTypeName("const TestContext &")] in TestContext ctx)
+    {
+        _ = wprintf("Test resource tight alignment\n");
+
+        bool isTightAlignmentEnabled = ctx.allocator->IsTightAlignmentSupported() && ((ctx.allocatorFlags & D3D12MA_ALLOCATOR_FLAG_DONT_USE_TIGHT_ALIGNMENT) == 0);
+
+        // Use a custom pool to make sure our small buffers are not created as committed.
+        D3D12MA_POOL_DESC poolDesc = default;
+        poolDesc.BlockSize = MEGABYTE;
+        poolDesc.MinBlockCount = poolDesc.MaxBlockCount = 1;
+
+        FillResourceDescForBuffer(out D3D12_RESOURCE_DESC resDesc, 4);
+
+        ReadOnlySpan<D3D12_HEAP_TYPE> heapTypes = [D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_UPLOAD];
+
+        const nuint ALLOC_COUNT = 2;
+        ComPtr<D3D12MA_Allocation>* allocs = stackalloc ComPtr<D3D12MA_Allocation>[(int)(ALLOC_COUNT)];
+
+        foreach (var heapType in heapTypes)
+        {
+            poolDesc.HeapProperties.Type = heapType;
+
+            for (uint minAlignmentTestIndex = 0; minAlignmentTestIndex < 2; minAlignmentTestIndex++)
+            {
+                // MinAllocationAlignment == 0 - default alignment.
+                // MinAllocationAlignment == 1 - minimum possible alignment.
+                poolDesc.MinAllocationAlignment = minAlignmentTestIndex;
+
+                using ComPtr<D3D12MA_Pool> pool = new ComPtr<D3D12MA_Pool>();
+                CHECK_HR(ctx.allocator->CreatePool(&poolDesc, pool.GetAddressOf()));
+
+                D3D12MA_ALLOCATION_DESC allocDesc = default;
+                allocDesc.CustomPool = pool.Get();
+
+                for (nuint i = 0; i < ALLOC_COUNT; i++)
+                {
+                    CHECK_HR(ctx.allocator->CreateResource(&allocDesc, &resDesc, D3D12_RESOURCE_STATE_COMMON, null, allocs[i].GetAddressOf(), IID_NULL, null));
+                    CHECK_BOOL((allocs[i].Get() != null) && (allocs[i].Get()->GetResource() != null));
+                }
+
+                ulong secondAllocOffset = allocs[1].Get()->GetOffset();
+
+                // Print the offset of the 2nd buffer.
+                _ = wprintf("    In D3D12_HEAP_TYPE_{0}, with MinAllocationAlignment={1}, a {2} B buffer was aligned to {3} B.\n",
+                    HEAP_TYPE_NAMES[(uint)heapType],
+                    poolDesc.MinAllocationAlignment,
+                    resDesc.Width,
+                    secondAllocOffset
+                );
+
+                ulong expectedMinAlignment = 1;
+
+                if (isTightAlignmentEnabled)
+                {
+                    if (minAlignmentTestIndex == 0)
+                    {
+                        expectedMinAlignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+                    }
+                }
+                else
+                {
+                    expectedMinAlignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+                }
+                CHECK_BOOL(secondAllocOffset % expectedMinAlignment == 0);
+
+                for (nuint i = 0; i < ALLOC_COUNT; i++)
+                {
+                    allocs[i].Dispose();
+                }
+            }
         }
     }
 
@@ -3968,7 +4147,7 @@ public static unsafe partial class D3D12MemAllocTests
         char* json = null;
         block.Get()->BuildStatsString(&json);
         {
-            ReadOnlySpan<char> str = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)(json));
+            ReadOnlySpan<char> str = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(json);
             CHECK_BOOL(str.IndexOf("\"CustomData\": 1") != -1);
             CHECK_BOOL(str.IndexOf("\"CustomData\": 2") != -1);
         }
@@ -4044,10 +4223,16 @@ public static unsafe partial class D3D12MemAllocTests
                     blockDesc.Flags = D3D12MA_VIRTUAL_BLOCK_FLAG_NONE;
                     break;
                 }
-                
+
                 case 1:
                 {
                     blockDesc.Flags = D3D12MA_VIRTUAL_BLOCK_FLAG_ALGORITHM_LINEAR;
+                    break;
+                }
+
+                default:
+                {
+                    D3D12MA_FAIL();
                     break;
                 }
             }
@@ -4351,6 +4536,14 @@ public static unsafe partial class D3D12MemAllocTests
 
                 // Create new resource
                 D3D12_RESOURCE_DESC desc = stepInfo.pMoves[i].pSrcAllocation->GetResource()->GetDesc();
+
+                // Fix for D3D12 ERROR: ID3D12Device::CreatePlacedResource: D3D12_RESOURCE_DESC::Alignment is invalid.
+                // The value is 8.
+                // When D3D12_RESOURCE_DESC::Flag bit for D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT is set, Alignment must be 0. [ STATE_CREATION ERROR #721: CREATERESOURCE_INVALIDALIGNMENT]
+                if ((desc.Flags & D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT_COPY) != 0)
+                {
+                    desc.Alignment = 0;
+                }
 
                 using ComPtr<ID3D12Resource> dstRes = new ComPtr<ID3D12Resource>();
                 CHECK_HR(ctx.device->CreatePlacedResource(stepInfo.pMoves[i].pDstTmpAllocation->GetHeap(), stepInfo.pMoves[i].pDstTmpAllocation->GetOffset(), &desc, isDefaultHeap ? D3D12_RESOURCE_STATE_COPY_DEST : D3D12_RESOURCE_STATE_GENERIC_READ, null, __uuidof<ID3D12Resource>(), (void**)(&dstRes)));
@@ -4836,6 +5029,12 @@ public static unsafe partial class D3D12MemAllocTests
                     defragDesc.Flags = D3D12MA_DEFRAGMENTATION_FLAG_ALGORITHM_FULL;
                     break;
                 }
+
+                default:
+                {
+                    D3D12MA_FAIL();
+                    break;
+                }
             }
 
             _ = wprintf("  Algorithm = {0}\n", DefragmentationAlgorithmToStr((uint)(defragDesc.Flags)));
@@ -5015,7 +5214,7 @@ public static unsafe partial class D3D12MemAllocTests
 
         for (nuint i = 0; i < allocationsToDelete; ++i)
         {
-            nuint index = (nuint)(rand.Generate() % (uint)(allocations.Count));
+            nuint index = rand.Generate() % (uint)(allocations.Count);
             allocations[(int)(index)].Dispose();
             allocations.RemoveAt((int)(index));
         }
@@ -5577,6 +5776,7 @@ public static unsafe partial class D3D12MemAllocTests
             }
 
             TestGPUUploadHeap(ctx);
+            TestTightAlignment(ctx);
         }
     }
 

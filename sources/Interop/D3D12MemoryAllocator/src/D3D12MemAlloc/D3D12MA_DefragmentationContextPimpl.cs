@@ -4,7 +4,6 @@
 // Original source is Copyright © Advanced Micro Devices, Inc. All rights reserved. Licensed under the MIT License (MIT).
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using TerraFX.Interop.Windows;
 using static TerraFX.Interop.DirectX.D3D12MA_ALLOCATION_FLAGS;
@@ -342,14 +341,14 @@ internal unsafe partial struct D3D12MA_DefragmentationContextPimpl : IDisposable
 
                     using (D3D12MA_MutexLockRead @lock = new D3D12MA_MutexLockRead(ref vector->GetMutex(), vector->m_hAllocator->UseMutex()))
                     {
-                        
+
                         dstBlockSize = move.pDstTmpAllocation->GetBlock()->m_pMetadata->GetSize();
                     }
                     _ = move.pDstTmpAllocation->Release();
 
-                    using (D3D12MA_MutexLockRead  @lock = new D3D12MA_MutexLockRead(ref vector->GetMutex(), vector->m_hAllocator->UseMutex()))
+                    using (D3D12MA_MutexLockRead @lock = new D3D12MA_MutexLockRead(ref vector->GetMutex(), vector->m_hAllocator->UseMutex()))
                     {
-                        
+
                         freedBlockSize += dstBlockSize * (currentCount - vector->GetBlockCount());
                         currentCount = vector->GetBlockCount();
                     }
