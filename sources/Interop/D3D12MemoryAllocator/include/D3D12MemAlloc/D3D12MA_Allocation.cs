@@ -372,7 +372,11 @@ public unsafe partial struct D3D12MA_Allocation : D3D12MA_IUnknownImpl.Interface
 
     internal void SetResourcePointer(ID3D12Resource* resource, [NativeTypeName("const D3D12_RESOURCE_DESC_T *")] D3D12_RESOURCE_DESC1* pResourceDesc)
     {
-        SetResourcePointer(resource, (D3D12_RESOURCE_DESC*)(pResourceDesc));
+        D3D12MA_ASSERT((m_Resource == null) && (pResourceDesc != null));
+        m_Resource = resource;
+        m_PackedData.SetResourceDimension(pResourceDesc->Dimension);
+        m_PackedData.SetResourceFlags(pResourceDesc->Flags);
+        m_PackedData.SetTextureLayout(pResourceDesc->Layout);
     }
 
     private void FreeName()

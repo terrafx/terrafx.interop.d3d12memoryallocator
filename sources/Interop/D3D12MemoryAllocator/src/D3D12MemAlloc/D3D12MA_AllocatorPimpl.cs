@@ -1432,7 +1432,16 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
     private readonly bool PrefersCommittedAllocation([NativeTypeName("const D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC1* resourceDesc, D3D12MA_ALLOCATION_FLAGS strategy)
     {
-        return PrefersCommittedAllocation((D3D12_RESOURCE_DESC*)(resourceDesc), strategy);
+        // Prefer creating small buffers <= 32 KB as committed, because drivers pack them better, while placed buffers require 64 KB alignment.
+        // Creating as committed would be slower.
+
+        if ((resourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) && (resourceDesc->Width <= (D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT / 2)) && (strategy != D3D12MA_ALLOCATION_FLAG_STRATEGY_MIN_TIME) && m_PreferSmallBuffersCommitted)
+        {
+            return true;
+        }
+
+        // Intentional. It may change in the future.
+        return false;
     }
 
     // Allocates and registers new committed resource with implicit heap, as dedicated allocation.
@@ -1717,7 +1726,93 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
     private HRESULT CalcAllocationParams([NativeTypeName("const D3D12MA::ALLOCATION_DESC &")] in D3D12MA_ALLOCATION_DESC allocDesc, [NativeTypeName("UINT64")] ulong allocSize, [NativeTypeName("const D3D12_RESOURCE_DESC_T *")] D3D12_RESOURCE_DESC1* resDesc, [NativeTypeName("D3D12MA::BlockVector *&")] out D3D12MA_BlockVector* outBlockVector, [NativeTypeName("D3D12MA::CommittedAllocationParameters &")] out D3D12MA_CommittedAllocationParameters outCommittedAllocationParams, [NativeTypeName("bool &")] out bool outPreferCommitted)
     {
-        return CalcAllocationParams(allocDesc, allocSize, (D3D12_RESOURCE_DESC*)(resDesc), out outBlockVector, out outCommittedAllocationParams, out outPreferCommitted);
+        outBlockVector = null;
+        outCommittedAllocationParams = new D3D12MA_CommittedAllocationParameters();
+        outPreferCommitted = false;
+
+        if ((allocDesc.HeapType == D3D12_HEAP_TYPE_GPU_UPLOAD_COPY) && !IsGPUUploadHeapSupported())
+        {
+            return E_NOTIMPL;
+        }
+
+        bool msaaAlwaysCommitted;
+
+        if (allocDesc.CustomPool != null)
+        {
+            D3D12MA_PoolPimpl* pool = allocDesc.CustomPool->m_Pimpl;
+
+            msaaAlwaysCommitted = pool->GetBlockVector()->DeniesMsaaTextures();
+
+            if (!pool->AlwaysCommitted())
+            {
+                outBlockVector = pool->GetBlockVector();
+            }
+
+            ref readonly var desc = ref pool->GetDesc();
+            outCommittedAllocationParams.m_ProtectedSession = desc.pProtectedSession;
+            outCommittedAllocationParams.m_HeapProperties = desc.HeapProperties;
+            outCommittedAllocationParams.m_HeapFlags = desc.HeapFlags;
+            outCommittedAllocationParams.m_List = pool->GetCommittedAllocationList();
+            outCommittedAllocationParams.m_ResidencyPriority = pool->GetDesc().ResidencyPriority;
+        }
+        else
+        {
+            if (!D3D12MA_IsHeapTypeStandard(allocDesc.HeapType))
+            {
+                return E_INVALIDARG;
+            }
+            msaaAlwaysCommitted = m_MsaaAlwaysCommitted;
+
+            outCommittedAllocationParams.m_HeapProperties = D3D12MA_StandardHeapTypeToHeapProperties(allocDesc.HeapType);
+            outCommittedAllocationParams.m_HeapFlags = allocDesc.ExtraHeapFlags;
+            outCommittedAllocationParams.m_List = (D3D12MA_CommittedAllocationList*)(Unsafe.AsPointer(ref m_CommittedAllocations[(int)(D3D12MA_StandardHeapTypeToIndex(allocDesc.HeapType))]));
+
+            D3D12MA_ResourceClass resourceClass = (resDesc != null) ? D3D12MA_ResourceDescToResourceClass(*resDesc) : D3D12MA_HeapFlagsToResourceClass(allocDesc.ExtraHeapFlags);
+            uint defaultPoolIndex = CalcDefaultPoolIndex(allocDesc, resourceClass);
+
+            if (defaultPoolIndex != uint.MaxValue)
+            {
+                outBlockVector = m_BlockVectors[(int)(defaultPoolIndex)].Value;
+                ulong preferredBlockSize = outBlockVector->GetPreferredBlockSize();
+
+                if (allocSize > preferredBlockSize)
+                {
+                    outBlockVector = null;
+                }
+                else if (allocSize > preferredBlockSize / 2)
+                {
+                    // Heuristics: Allocate committed memory if requested size if greater than half of preferred block size.
+                    outPreferCommitted = true;
+                }
+            }
+        }
+
+        if (((allocDesc.Flags & D3D12MA_ALLOCATION_FLAG_COMMITTED) != 0) || m_AlwaysCommitted)
+        {
+            outBlockVector = null;
+        }
+
+        if ((allocDesc.Flags & D3D12MA_ALLOCATION_FLAG_NEVER_ALLOCATE) != 0)
+        {
+            outCommittedAllocationParams.m_List = null;
+        }
+
+        outCommittedAllocationParams.m_CanAlias = (allocDesc.Flags & D3D12MA_ALLOCATION_FLAG_CAN_ALIAS) != 0;
+
+        if (resDesc != null)
+        {
+            if (resDesc->SampleDesc.Count > 1 && msaaAlwaysCommitted)
+            {
+                outBlockVector = null;
+            }
+
+            if (!outPreferCommitted && PrefersCommittedAllocation(resDesc, allocDesc.Flags & D3D12MA_ALLOCATION_FLAG_STRATEGY_MASK))
+            {
+                outPreferCommitted = true;
+            }
+        }
+
+        return ((outBlockVector != null) || (outCommittedAllocationParams.m_List != null)) ? S_OK : E_INVALIDARG;
     }
 
     // Returns uint.MaxValue if index cannot be calculcated.
@@ -2028,7 +2123,67 @@ internal unsafe partial struct D3D12MA_AllocatorPimpl : IDisposable
 
     private readonly HRESULT GetResourceAllocationInfo([NativeTypeName("D3D12_RESOURCE_DESC_T &")] D3D12_RESOURCE_DESC1* inOutResourceDesc, [NativeTypeName("UINT32")] uint NumCastableFormats, [NativeTypeName("const DXGI_FORMAT *")] DXGI_FORMAT* pCastableFormats, [NativeTypeName("D3D12_RESOURCE_ALLOCATION_INFO &")] out D3D12_RESOURCE_ALLOCATION_INFO outAllocInfo)
     {
-        return GetResourceAllocationInfo((D3D12_RESOURCE_DESC*)(inOutResourceDesc), NumCastableFormats, pCastableFormats, out outAllocInfo);
+        if (IsTightAlignmentEnabled())
+        {
+            // Don't allow USE_TIGHT_ALIGNMENT together with ALLOW_CROSS_ADAPTER as there is a D3D Debug Layer error:
+            // D3D12 ERROR: ID3D12Device::GetResourceAllocationInfo: D3D12_RESOURCE_DESC::Flag D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT will be ignored since D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER is set. [ STATE_CREATION ERROR #599: CREATERESOURCE_INVALIDMISCFLAGS]
+            //
+            // Also don't allow it together with D3D12_TEXTURE_LAYOUT_64KB_*_SWIZZLE, as there is this error (see issue #86):
+            // D3D12 ERROR: ID3D12Device::GetResourceAllocationInfo: D3D12_RESOURCE_DESC::Flag D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT is not valid when the layout is either D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE or D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE (...). [ STATE_CREATION ERROR #599: CREATERESOURCE_INVALIDMISCFLAGS]
+
+            if (((inOutResourceDesc->Flags & D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER) == 0) &&
+                (inOutResourceDesc->Layout != D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE) &&
+                (inOutResourceDesc->Layout != D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE))
+            {
+                inOutResourceDesc->Flags |= D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT;
+            }
+        }
+
+        // Optional optimization: Microsoft documentation of the ID3D12Device::GetResourceAllocationInfo function says:
+        //
+        // Your application can forgo using GetResourceAllocationInfo for buffer resources
+        // (D3D12_RESOURCE_DIMENSION_BUFFER). Buffers have the same size on all adapters,
+        // which is merely the smallest multiple of 64KB that's greater or equal to
+        // D3D12_RESOURCE_DESC::Width.
+
+        if ((inOutResourceDesc->Alignment == 0) &&
+            (inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) &&
+            !IsTightAlignmentEnabled())
+        {
+            outAllocInfo = new D3D12_RESOURCE_ALLOCATION_INFO {
+                SizeInBytes = D3D12MA_AlignUp(inOutResourceDesc->Width, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT),
+                Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
+            };
+            return S_OK;
+        }
+
+        if (D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 0)
+        {
+            if ((inOutResourceDesc->Alignment == 0) &&
+                ((inOutResourceDesc->Flags & D3D12_RESOURCE_FLAG_USE_TIGHT_ALIGNMENT_COPY) == 0) &&
+                ((inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE1D) || (inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D) || (inOutResourceDesc->Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)) &&
+                ((inOutResourceDesc->Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) == 0) &&
+                ((D3D12MA_USE_SMALL_RESOURCE_PLACEMENT_ALIGNMENT != 1) || D3D12MA_CanUseSmallAlignment(*inOutResourceDesc)))
+            {
+                // The algorithm here is based on Microsoft sample: "Small Resources Sample"
+                // https://github.com/microsoft/DirectX-Graphics-Samples/tree/master/Samples/Desktop/D3D12SmallResources
+
+                ulong smallAlignmentToTry = (uint)((inOutResourceDesc->SampleDesc.Count > 1) ? D3D12_SMALL_MSAA_RESOURCE_PLACEMENT_ALIGNMENT : D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT);
+                inOutResourceDesc->Alignment = smallAlignmentToTry;
+
+                HRESULT hr = GetResourceAllocationInfoMiddle(inOutResourceDesc, NumCastableFormats, pCastableFormats, out outAllocInfo);
+
+                // Check if alignment requested has been granted.
+                if (SUCCEEDED(hr) && (outAllocInfo.Alignment == smallAlignmentToTry))
+                {
+                    return S_OK;
+                }
+
+                inOutResourceDesc->Alignment = 0; // Restore original
+            }
+        }
+
+        return GetResourceAllocationInfoMiddle(inOutResourceDesc, NumCastableFormats, pCastableFormats, out outAllocInfo);
     }
 
     private bool NewAllocationWithinBudget(D3D12_HEAP_TYPE heapType, [NativeTypeName("UINT64")] ulong size)
